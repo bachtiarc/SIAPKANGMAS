@@ -2,7 +2,6 @@
 ## Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah
 ## Praktik Kerja Laangan (PKL)
 
----
 ### Deskripsi Umum
 Proyek ini merupakan pengembangan **Sistem Informasi Praktik Kerja Lapangan (PKL)** berbasis web yang ditujukan untuk mendukung pengelolaan kegiatan PKL di **Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah**.  
 
