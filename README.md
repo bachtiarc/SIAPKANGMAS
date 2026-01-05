@@ -20,4 +20,4 @@ Proyek ini merupakan pengembangan **Sistem Informasi Praktik Kerja Lapangan (PKL
 
 ---
 
-### Struktur Direktori Utama
+#### By: CIKAL WAHYUNING BACHTUAR & EVIA AUAMARA UNSA NASYTA
