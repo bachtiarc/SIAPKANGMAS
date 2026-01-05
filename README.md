@@ -1,15 +1,12 @@
 # Sistem Informasi PKL  
 ## Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah
-
-### Project Kerja Praktik (PKL)
+## Praktik Kerja Laangan (PKL)
 
 ---
-
 ### Deskripsi Umum
 Proyek ini merupakan pengembangan **Sistem Informasi Praktik Kerja Lapangan (PKL)** berbasis web yang ditujukan untuk mendukung pengelolaan kegiatan PKL di **Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah**.  
 
 ---
-
 ### Teknologi yang Digunakan
 - **Framework** : Laravel
 - **Bahasa Pemrograman** : PHP
