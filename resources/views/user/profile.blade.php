@@ -177,7 +177,7 @@
                         <input type="password" name="password" required
                             class="font-lato w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Minimal 8 karakter...">
-                        <p class="font-lato text-xs text-gray-500 mt-1">* Buat password Anda 12 karakter atau lebih.</p>
+                        <p class="font-lato text-xs text-gray-500 mt-1">* Buat password Anda 8 karakter atau lebih.</p>
                     </div>
 
                     <!-- Confirm Password -->
