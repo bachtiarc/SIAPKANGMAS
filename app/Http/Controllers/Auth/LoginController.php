@@ -3,30 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class LoginController extends Controller
 {
-    use AuthenticatesUsers;
-
     /**
-     * Where to redirect users after login.
-     */
-    protected $redirectTo = '/dashboard';
-
-    /**
-     * Create a new controller instance.
-     */
-    public function __construct()
-    {
-        $this->middleware('guest')->except('logout');
-    }
-
-    /**
-     * Show the login form
+     * Show the login form.
      */
     public function showLoginForm()
     {
@@ -38,80 +22,91 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
-        $this->validateLogin($request);
-
-        // If the class is using the ThrottlesLogins trait, we can automatically throttle
-        // the login attempts for this application. We'll key this by the username and
-        // the IP address of the client making these requests into this application.
-        if (method_exists($this, 'hasTooManyLoginAttempts') &&
-            $this->hasTooManyLoginAttempts($request)) {
-            $this->fireLockoutEvent($request);
-
-            return $this->sendLockoutResponse($request);
+        // Validate the form data
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required',
+                'g-recaptcha-response' => 'required|captcha',
+            ], [
+                'email.required' => 'Email wajib diisi.',
+                'email.email' => 'Format email tidak valid.',
+                'password.required' => 'Password wajib diisi.',
+                'g-recaptcha-response.required' => 'Mohon centang reCAPTCHA.',
+                'g-recaptcha-response.captcha' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Validation failed, redirect back with errors
+            return back()
+                ->withErrors($e->errors())
+                ->withInput($request->only('email'));
         }
 
-        if ($this->attemptLogin($request)) {
-            if ($request->hasSession()) {
-                $request->session()->put('auth.password_confirmed_at', time());
+        // Attempt to log the user in
+        $credentials = $request->only('email', 'password');
+        
+        // Remember Me: if checkbox is checked, remember for 30 days
+        $remember = $request->filled('remember');
+        
+        if (Auth::attempt($credentials, $remember)) {
+            $request->session()->regenerate();
+
+            $user = Auth::user();
+            
+            // Log successful login for debugging
+            Log::info('User logged in', [
+                'email' => $user->email,
+                'role' => $user->role,
+                'verified' => $user->hasVerifiedEmail(),
+                'remember' => $remember
+            ]);
+
+            // Check if email is verified
+            if (!$user->hasVerifiedEmail()) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                
+                return redirect()->route('verification.notice')
+                    ->with('error', 'Email Anda belum diverifikasi. Silakan cek email Anda.');
             }
 
-            return $this->sendLoginResponse($request);
-        }
+            // Check user role matches selected tab (optional, for better UX)
+            $userType = $request->input('user_type', 'user');
+            $isAdmin = $user->role === 'admin';
 
-        // If the login attempt was unsuccessful we will increment the number of attempts
-        // to login and redirect the user back to the login form. Of course, when this
-        // user surpasses their maximum number of attempts they will get locked out.
-        $this->incrementLoginAttempts($request);
+            // If user selected "Admin" tab but is not admin, or vice versa
+            if (($userType === 'admin' && !$isAdmin) || ($userType === 'user' && $isAdmin)) {
+                $message = $isAdmin 
+                    ? 'Anda adalah Admin. Silakan gunakan tab Admin untuk login.' 
+                    : 'Anda adalah Pengguna. Silakan gunakan tab Pengguna untuk login.';
+                
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                
+                return redirect()->route('login')
+                    ->with('error', $message)
+                    ->withInput($request->only('email'));
+            }
 
-        return $this->sendFailedLoginResponse($request);
-    }
-
-    /**
-     * Validate the user login request.
-     */
-    protected function validateLogin(Request $request)
-    {
-        $request->validate([
-            $this->username() => 'required|string',
-            'password' => 'required|string',
-            'g-recaptcha-response' => 'required|captcha',
-        ], [
-            'email.required' => 'Email wajib diisi.',
-            'password.required' => 'Password wajib diisi.',
-            'g-recaptcha-response.required' => 'Silakan centang "I\'m not a robot".',
-            'g-recaptcha-response.captcha' => 'Verifikasi captcha gagal. Silakan coba lagi.',
-        ]);
-    }
-
-    /**
-     * Get the login username to be used by the controller.
-     */
-    public function username()
-    {
-        return 'email';
-    }
-
-    /**
-     * The user has been authenticated.
-     */
-    protected function authenticated(Request $request, $user)
-    {
-        // Check if email is verified
-        if (!$user->hasVerifiedEmail()) {
-            Auth::logout();
+            // Redirect based on role
+            if ($isAdmin) {
+                return redirect()->intended(route('admin.dashboard'));
+            }
             
-            return redirect()->route('login')
-                ->withErrors([
-                    'email' => 'Email Anda belum diverifikasi. Silakan cek email untuk link verifikasi.',
-                ]);
+            return redirect()->intended(route('user.dashboard'));
         }
 
-        // Redirect based on role
-        if ($user->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
+        // If login attempt failed
+        Log::warning('Login failed', [
+            'email' => $request->email,
+            'ip' => $request->ip()
+        ]);
 
-        return redirect()->route('user.dashboard');
+        return back()
+            ->withInput($request->only('email'))
+            ->withErrors(['email' => 'Email atau password salah.']);
     }
 
     /**
@@ -124,6 +119,7 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect()->route('login')
+            ->with('success', 'Anda telah berhasil logout.');
     }
 }
