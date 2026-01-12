@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     
     <!-- reCAPTCHA -->
-    {!! NoCaptcha::renderJs() !!}
+    {!! app('captcha')->renderJs() !!}
     
     <style>
         /* Font Configuration */
