@@ -35,16 +35,18 @@ Route::middleware('guest')->group(function () {
 // Logout (Authenticated Users Only)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
-// Email Verification Routes
-Route::middleware('auth')->group(function () {
-    Route::get('/email/verify', [VerificationController::class, 'show'])->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
-        ->middleware('signed')
-        ->name('verification.verify');
-    Route::post('/email/resend', [VerificationController::class, 'resend'])
-        ->middleware('throttle:6,1')
-        ->name('verification.resend');
-});
+// Show verification notice (need auth)
+Route::get('/email/verify', [VerificationController::class, 'show'])
+    ->middleware('auth')
+    ->name('verification.notice');
+
+// Resend verification email (need auth)
+Route::post('/email/resend', [VerificationController::class, 'resend'])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.resend');
+
+Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
+    ->name('verification.verify');
 
 // User Dashboard (Authenticated + Verified)
 Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(function () {

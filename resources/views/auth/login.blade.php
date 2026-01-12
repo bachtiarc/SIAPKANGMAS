@@ -42,10 +42,44 @@
     .animation-delay-4000 {
         animation-delay: 10s;
     }
+
+    /* Toast Animation */
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+
+    .toast-enter {
+        animation: slideIn 0.3s ease-out forwards;
+    }
+
+    .toast-exit {
+        animation: slideOut 0.3s ease-in forwards;
+    }
 </style>
 @endpush
 
 @section('content')
+<!-- Toast Notification Container -->
+<div id="toast-container" class="fixed top-6 right-6 z-50"></div>
+
 <!-- Background with Gradient Animation -->
 <div class="min-h-screen bg-gradient-to-br from-white via-blue-50 to-white animate-gradient-slow relative overflow-hidden flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     
@@ -240,5 +274,58 @@ function togglePassword() {
         eyeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
     }
 }
+
+// Toast Notification Function
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast-enter bg-white shadow-lg rounded-lg p-4 mb-3 flex items-center space-x-3 min-w-[320px] border-l-4 ${
+        type === 'success' ? 'border-green-500' : 'border-blue-500'
+    }`;
+    
+    toast.innerHTML = `
+        <div class="flex-shrink-0">
+            <svg class="w-6 h-6 ${type === 'success' ? 'text-green-500' : 'text-blue-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${type === 'success' 
+                    ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
+                    : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
+                }
+            </svg>
+        </div>
+        <div class="flex-1">
+            <p class="font-montserrat text-sm font-semibold text-gray-900">${message}</p>
+        </div>
+        <button onclick="this.parentElement.remove()" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        toast.classList.remove('toast-enter');
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+// Check for verification success message
+@if(session('verified'))
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast('{{ session("verified") }}', 'success');
+    });
+@endif
+
+// Check for info message
+@if(session('info'))
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast('{{ session("info") }}', 'info');
+    });
+@endif
 </script>
 @endpush

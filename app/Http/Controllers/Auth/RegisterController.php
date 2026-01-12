@@ -146,10 +146,11 @@ class RegisterController extends Controller
             'role' => 'user', 
         ]);
 
+        // Send email verification
         $user->notify(new CustomVerifyEmail);
 
-        // Redirect to verification notice
-        return redirect()->route('verification.notice')
-            ->with('success', 'Registrasi berhasil! Silakan cek email Anda untuk verifikasi akun.');
+        // Redirect back to register page with success modal flag
+        return redirect()->route('register')
+            ->with('registration_success', true);
     }
 }
