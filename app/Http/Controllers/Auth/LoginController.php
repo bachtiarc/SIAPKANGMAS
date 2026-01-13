@@ -67,8 +67,9 @@ class LoginController extends Controller
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
                 
-                return redirect()->route('verification.notice')
-                    ->with('error', 'Email Anda belum diverifikasi. Silakan cek email Anda.');
+                return redirect()->route('login')
+                    ->with('unverified', 'Akun Anda belum terverifikasi. Silakan cek email Anda.')
+                    ->withInput($request->only('email'));
             }
 
             // Check user role matches selected tab (optional, for better UX)

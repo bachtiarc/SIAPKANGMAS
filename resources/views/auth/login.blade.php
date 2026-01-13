@@ -279,19 +279,31 @@ function togglePassword() {
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     
+    // Define colors based on type
+    let borderColor, iconColor, icon;
+    
+    if (type === 'success') {
+        borderColor = 'border-green-500';
+        iconColor = 'text-green-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else if (type === 'error') {
+        borderColor = 'border-red-500';
+        iconColor = 'text-red-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else {
+        borderColor = 'border-blue-500';
+        iconColor = 'text-blue-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    }
+    
     // Create toast element
     const toast = document.createElement('div');
-    toast.className = `toast-enter bg-white shadow-lg rounded-lg p-4 mb-3 flex items-center space-x-3 min-w-[320px] border-l-4 ${
-        type === 'success' ? 'border-green-500' : 'border-blue-500'
-    }`;
+    toast.className = `toast-enter bg-white shadow-lg rounded-lg p-4 mb-3 flex items-center space-x-3 min-w-[320px] border-l-4 ${borderColor}`;
     
     toast.innerHTML = `
         <div class="flex-shrink-0">
-            <svg class="w-6 h-6 ${type === 'success' ? 'text-green-500' : 'text-blue-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                ${type === 'success' 
-                    ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
-                    : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
-                }
+            <svg class="w-6 h-6 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${icon}
             </svg>
         </div>
         <div class="flex-1">
@@ -325,6 +337,13 @@ function showToast(message, type = 'success') {
 @if(session('info'))
     document.addEventListener('DOMContentLoaded', function() {
         showToast('{{ session("info") }}', 'info');
+    });
+@endif
+
+// Check for unverified message (RED TOAST)
+@if(session('unverified'))
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast('{{ session("unverified") }}', 'error');
     });
 @endif
 </script>

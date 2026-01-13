@@ -232,6 +232,39 @@
     </div>
 </div>
 
+<!-- Success Modal (matching screenshot) -->
+<div id="successModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+    <div class="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 text-center">
+        
+        <!-- Icon -->
+        <div class="flex justify-center mb-6">
+            <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Title -->
+        <h2 class="font-montserrat text-2xl font-bold text-gray-900 mb-4">
+            Cek Email Anda untuk Verifikasi
+        </h2>
+
+        <!-- Message -->
+        <p class="font-lato text-gray-600 mb-8 leading-relaxed">
+            Kami telah mengirimkan email verifikasi ke alamat email Anda. Silakan klik tautan verifikasi tersebut untuk mengaktifkan akun Anda.
+        </p>
+
+        <!-- Buttons -->
+        <div class="space-y-3">
+            <a href="{{ route('login') }}" class="font-montserrat block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-200">
+                Kembali ke Halaman Login
+            </a>
+        </div>
+
+    </div>
+</div>
+
 @push('styles')
 <style>
     /* Subtle Slow Gradient Animation */
@@ -309,6 +342,30 @@ document.addEventListener('DOMContentLoaded', function() {
     if (oldJabatan) {
         updateJabatanOptions();
         document.getElementById('jabatan').value = oldJabatan;
+    }
+    
+    // Show success modal if registration successful
+    @if(session('registration_success'))
+        showSuccessModal();
+    @endif
+});
+
+// Show success modal
+function showSuccessModal() {
+    const modal = document.getElementById('successModal');
+    modal.style.display = 'flex';
+}
+
+// Hide success modal
+function hideSuccessModal() {
+    const modal = document.getElementById('successModal');
+    modal.style.display = 'none';
+}
+
+// Close modal when clicking outside
+document.getElementById('successModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideSuccessModal();
     }
 });
 </script>

@@ -110,7 +110,6 @@ class RegisterController extends Controller
             'bidang' => 'required|string|max:255',
             'jabatan' => 'required|string|max:255',
             'password' => 'required|string|min:8|confirmed',
-            'g-recaptcha-response' => 'required|captcha',
         ], [
             'name.required' => 'Nama lengkap wajib diisi.',
             'nip.required' => 'NIP wajib diisi.',
@@ -124,8 +123,6 @@ class RegisterController extends Controller
             'password.required' => 'Password wajib diisi.',
             'password.min' => 'Password minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
-            'g-recaptcha-response.required' => 'Mohon centang reCAPTCHA.',
-            'g-recaptcha-response.captcha' => 'Verifikasi reCAPTCHA gagal.',
         ]);
 
         if ($validator->fails()) {
@@ -149,7 +146,7 @@ class RegisterController extends Controller
         // Send email verification
         $user->notify(new CustomVerifyEmail);
 
-        // Redirect back to register page with success modal flag
+        // STAY IN REGISTER PAGE - just redirect back with success flag
         return redirect()->route('register')
             ->with('registration_success', true);
     }
