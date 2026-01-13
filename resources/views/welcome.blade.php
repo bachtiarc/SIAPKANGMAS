@@ -11,8 +11,7 @@
                 Selamat Datang di <span class="text-blue-600">SIAP</span><span class="text-orange-500">KANGMAS</span>
             </h1>
             <p class="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
-                Layanan bantuan terintegrasi untuk mendukung konsultasi, pengaduan, dan permohonan informasi Anda<br>
-                di Dinas Perindustrian dan Perdagangan Jawa Tengah.
+                Layanan bantuan terintegrasi untuk mendukung konsultasi, pengaduan, dan permohonan informasi Anda di Dinas Perindustrian dan Perdagangan Jawa Tengah.
             </p>
             
             <div class="flex justify-center space-x-4">

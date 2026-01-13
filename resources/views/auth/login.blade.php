@@ -199,9 +199,9 @@
                 </div>
 
                 <!-- reCAPTCHA -->
-                <div class="flex justify-center">
-                    {!! NoCaptcha::renderJs() !!}
-                    {!! NoCaptcha::display() !!}
+
+                <div class="mb-6 flex justify-center">
+                    {!! app('captcha')->display() !!}
                 </div>
 
                 <!-- Submit Button -->

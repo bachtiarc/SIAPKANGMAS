@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\User\ProfileController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 
 // Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -56,15 +57,20 @@ Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(fu
 });
 
 // Admin Dashboard (Authenticated + Verified + Admin Role)
-Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
-});
+// Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+//     Route::get('/dashboard', function () {
+//         return view('admin.dashboard');
+//     })->name('dashboard');
+// });
 
 Route::middleware(['auth', 'verified'])->prefix('user')->name('user.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
     Route::put('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update'); 
+});
+
+// Admin Routes (requires admin role + verified)
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 });
