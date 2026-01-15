@@ -80,13 +80,13 @@ class ProfileController extends Controller
     public function updatePhoto(Request $request)
     {
         try {
-            // Validate file
+            // Validate file with PROPER 2MB limit
             $request->validate([
-                'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048', // 2048 KB = 2 MB
             ], [
                 'profile_photo.required' => 'Foto profil wajib dipilih.',
                 'profile_photo.image' => 'File harus berupa gambar.',
-                'profile_photo.mimes' => 'Format foto harus jpeg, png, atau jpg.',
+                'profile_photo.mimes' => 'Format foto harus JPEG, PNG, atau JPG.',
                 'profile_photo.max' => 'Ukuran foto maksimal 2MB.',
             ]);
 
@@ -151,8 +151,9 @@ class ProfileController extends Controller
             return back()->with('photo_success', 'Foto profil berhasil diperbarui!');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Validation error - let Laravel handle it
-            throw $e;
+            // Get first validation error message
+            $errorMessage = $e->validator->errors()->first('profile_photo');
+            return back()->with('photo_error', $errorMessage);
         } catch (\Exception $e) {
             Log::error('Profile photo upload failed with exception', [
                 'user_id' => auth()->id(),
@@ -169,29 +170,48 @@ class ProfileController extends Controller
      */
     public function updatePassword(Request $request)
     {
-        $request->validate([
-            'current_password' => 'required',
-            'password' => 'required|min:8|confirmed',
-        ], [
-            'current_password.required' => 'Password saat ini wajib diisi.',
-            'password.required' => 'Password baru wajib diisi.',
-            'password.min' => 'Password minimal 8 karakter.',
-            'password.confirmed' => 'Konfirmasi password tidak cocok.',
-        ]);
+        try {
+            $request->validate([
+                'current_password' => 'required',
+                'password' => 'required|min:8|confirmed',
+            ], [
+                'current_password.required' => 'Password saat ini wajib diisi.',
+                'password.required' => 'Password baru wajib diisi.',
+                'password.min' => 'Password minimal 8 karakter.',
+                'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            ]);
 
-        $user = auth()->user();
+            $user = auth()->user();
 
-        // Check if current password is correct
-        if (!Hash::check($request->current_password, $user->password)) {
-            return back()->with('password_error', 'Password saat ini tidak sesuai.');
+            // Check if current password is correct
+            if (!Hash::check($request->current_password, $user->password)) {
+                return back()->with('password_error', 'Password saat ini tidak sesuai.');
+            }
+
+            // FIX: Check if new password is SAME as old password
+            if (Hash::check($request->password, $user->password)) {
+                return back()->with('password_error', 'Password baru harus berbeda dari password lama.');
+            }
+
+            // Update password
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            Log::info('User password updated', ['user_id' => $user->id]);
+
+            return back()->with('password_success', 'Password berhasil diubah!');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Get first validation error message
+            $errorMessage = $e->validator->errors()->first();
+            return back()->with('password_error', $errorMessage);
+        } catch (\Exception $e) {
+            Log::error('Password update failed with exception', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+            
+            return back()->with('password_error', 'Gagal mengubah password. Silakan coba lagi.');
         }
-
-        // Update password
-        $user->password = Hash::make($request->password);
-        $user->save();
-
-        Log::info('User password updated', ['user_id' => $user->id]);
-
-        return back()->with('password_success', 'Password berhasil diubah!');
     }
 }

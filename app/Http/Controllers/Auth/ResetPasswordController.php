@@ -51,7 +51,7 @@ class ResetPasswordController extends Controller
         );
 
         return $status === Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('status', 'Password Anda berhasil di reset! Silakan login.')
+            ? redirect()->route('login')->with('password_reset_success', 'Password Anda berhasil di reset! Silakan login.')
             : back()->withErrors(['email' => 'Link reset password tidak valid atau sudah kadaluarsa.']);
     }
 }

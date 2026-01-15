@@ -3,6 +3,9 @@
 @section('title', 'Profil Pengguna')
 
 @section('content')
+<!-- Toast Container (TAMBAHAN BARU) -->
+<div id="toast-container" class="fixed top-6 right-6 z-50"></div>
+
 <div class="p-6">
     <!-- Page Header -->
     <div class="mb-6">
@@ -35,21 +38,12 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             </svg>
                         </label>
-                        <input type="file" name="profile_photo" id="profile_photo" accept="image/*" class="hidden" onchange="document.getElementById('photoForm').submit()">
+                        <!-- UPDATED: Added onchange validation -->
+                        <input type="file" name="profile_photo" id="profile_photo" accept="image/jpeg,image/jpg,image/png" class="hidden" onchange="validateFileSize(this)">
                     </form>
                 </div>
 
-                @if(session('photo_success'))
-                    <div class="mb-4 bg-green-50 border-2 border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm font-semibold">
-                        ✓ {{ session('photo_success') }}
-                    </div>
-                @endif
-
-                @if(session('photo_error'))
-                    <div class="mb-4 bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-semibold">
-                        ✕ {{ session('photo_error') }}
-                    </div>
-                @endif
+                <!-- REMOVED: Static success/error messages (now using toast) -->
 
                 <!-- User Info -->
                 <h2 class="font-montserrat text-xl font-bold text-gray-900 mb-1">
@@ -138,26 +132,7 @@
                     <h3 class="font-montserrat text-xl font-bold text-gray-900">Keamanan Akun</h3>
                 </div>
 
-                <!-- Success/Error Messages -->
-                @if (session('password_success'))
-                    <div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-                        {{ session('password_success') }}
-                    </div>
-                @endif
-
-                @if (session('password_error'))
-                    <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                        {{ session('password_error') }}
-                    </div>
-                @endif
-
-                @if ($errors->any())
-                    <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                        @foreach ($errors->all() as $error)
-                            <p>{{ $error }}</p>
-                        @endforeach
-                    </div>
-                @endif
+                <!-- REMOVED: Static success/error messages (now using toast) -->
 
                 <form action="{{ route('user.password.update') }}" method="POST" class="space-y-4">
                     @csrf
@@ -200,3 +175,137 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+/* Toast Animation */
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+.toast-enter {
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+.toast-exit {
+    animation: slideOut 0.3s ease-in forwards;
+}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+// Toast Notification Function
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    
+    let borderColor, iconColor, icon;
+    
+    if (type === 'success') {
+        borderColor = 'border-green-500';
+        iconColor = 'text-green-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else if (type === 'error') {
+        borderColor = 'border-red-500';
+        iconColor = 'text-red-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else {
+        borderColor = 'border-blue-500';
+        iconColor = 'text-blue-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-enter bg-white shadow-lg rounded-lg p-4 mb-3 flex items-center space-x-3 min-w-[320px] border-l-4 ${borderColor}`;
+    
+    toast.innerHTML = `
+        <div class="flex-shrink-0">
+            <svg class="w-6 h-6 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${icon}
+            </svg>
+        </div>
+        <div class="flex-1">
+            <p class="font-montserrat text-sm font-semibold text-gray-900">${message}</p>
+        </div>
+        <button onclick="this.parentElement.remove()" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.remove('toast-enter');
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+// FRONTEND FILE SIZE VALIDATION (CRITICAL!)
+function validateFileSize(input) {
+    const file = input.files[0];
+    
+    if (!file) return;
+    
+    // Check file size (2MB = 2097152 bytes)
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    
+    if (file.size > maxSize) {
+        const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+        showToast(`Ukuran foto maksimal 2MB! File Anda: ${fileSizeMB}MB`, 'error');
+        input.value = ''; // Clear input
+        return false;
+    }
+    
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+        showToast('Format foto harus JPG, JPEG, atau PNG!', 'error');
+        input.value = ''; // Clear input
+        return false;
+    }
+    
+    // If validation passes, submit form
+    document.getElementById('photoForm').submit();
+    return true;
+}
+
+// Check for photo success/error toasts (from backend)
+@if(session('photo_success'))
+    showToast('{{ session("photo_success") }}', 'success');
+@endif
+
+@if(session('photo_error'))
+    showToast('{{ session("photo_error") }}', 'error');
+@endif
+
+// Check for password success/error toasts (from backend)
+@if(session('password_success'))
+    showToast('{{ session("password_success") }}', 'success');
+@endif
+
+@if(session('password_error'))
+    showToast('{{ session("password_error") }}', 'error');
+@endif
+</script>
+@endpush

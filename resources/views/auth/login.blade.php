@@ -346,5 +346,12 @@ function showToast(message, type = 'success') {
         showToast('{{ session("unverified") }}', 'error');
     });
 @endif
+
+// Check for password reset success (GREEN TOAST)
+@if(session('password_reset_success'))
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast('{{ session("password_reset_success") }}', 'success');
+    });
+@endif
 </script>
 @endpush
