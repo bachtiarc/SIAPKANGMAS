@@ -72,7 +72,7 @@
                             Daftar
                         </a>
                     @else
-                        <a href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : route('user.dashboard') }}" class="font-montserrat text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                        <a href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : (auth()->user()->user_type == 'pegawai' ? route('user.dashboard') : route('masyarakat.dashboard')) }}" class="font-montserrat text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">
                             Dashboard
                         </a>
                         <form action="{{ route('logout') }}" method="POST" class="inline">
@@ -116,7 +116,7 @@
                         Daftar
                     </a>
                 @else
-                    <a href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : route('user.dashboard') }}" class="font-montserrat block text-gray-700 hover:bg-gray-100 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium">
+                    <a href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : (auth()->user()->user_type == 'pegawai' ? route('user.dashboard') : route('masyarakat.dashboard')) }}" class="font-montserrat block text-gray-700 hover:bg-gray-100 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium">
                         Dashboard
                     </a>
                     <form action="{{ route('logout') }}" method="POST">

@@ -22,7 +22,7 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
-        // Validate the form data
+        // Tetap menggunakan validasi asli milikmu
         try {
             $request->validate([
                 'email' => 'required|email',
@@ -36,32 +36,25 @@ class LoginController extends Controller
                 'g-recaptcha-response.captcha' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Validation failed, redirect back with errors
             return back()
                 ->withErrors($e->errors())
                 ->withInput($request->only('email'));
         }
 
-        // Attempt to log the user in
         $credentials = $request->only('email', 'password');
-        
-        // Remember Me: if checkbox is checked, remember for 30 days
         $remember = $request->filled('remember');
         
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
-
             $user = Auth::user();
             
-            // Log successful login for debugging
             Log::info('User logged in', [
                 'email' => $user->email,
                 'role' => $user->role,
-                'verified' => $user->hasVerifiedEmail(),
-                'remember' => $remember
+                'user_type' => $user->user_type ?? 'not_set'
             ]);
 
-            // Check if email is verified
+            // Cek verifikasi email
             if (!$user->hasVerifiedEmail()) {
                 Auth::logout();
                 $request->session()->invalidate();
@@ -72,12 +65,11 @@ class LoginController extends Controller
                     ->withInput($request->only('email'));
             }
 
-            // Check user role matches selected tab (optional, for better UX)
-            $userType = $request->input('user_type', 'user');
+            // Logic Pengecekan Tab Login (Admin vs Pengguna)
+            $selectedTab = $request->input('user_type', 'user');
             $isAdmin = $user->role === 'admin';
 
-            // If user selected "Admin" tab but is not admin, or vice versa
-            if (($userType === 'admin' && !$isAdmin) || ($userType === 'user' && $isAdmin)) {
+            if (($selectedTab === 'admin' && !$isAdmin) || ($selectedTab === 'user' && $isAdmin)) {
                 $message = $isAdmin 
                     ? 'Anda adalah Admin. Silakan gunakan tab Admin untuk login.' 
                     : 'Anda adalah Pengguna. Silakan gunakan tab Pengguna untuk login.';
@@ -91,15 +83,20 @@ class LoginController extends Controller
                     ->withInput($request->only('email'));
             }
 
-            // Redirect based on role
+            // --- REDIRECT BERDASARKAN ROLE & USER_TYPE (FIXED) ---
             if ($isAdmin) {
                 return redirect()->intended(route('admin.dashboard'));
             }
             
-            return redirect()->intended(route('user.dashboard'));
+            // Pegawai menggunakan folder 'user' maka routenya 'user.dashboard'
+            if ($user->user_type === 'pegawai') {
+                return redirect()->intended(route('user.dashboard'));
+            } 
+            
+            // Masyarakat umum menggunakan route 'masyarakat.dashboard'
+            return redirect()->intended(route('masyarakat.dashboard'));
         }
 
-        // If login attempt failed
         Log::warning('Login failed', [
             'email' => $request->email,
             'ip' => $request->ip()
@@ -116,7 +113,6 @@ class LoginController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

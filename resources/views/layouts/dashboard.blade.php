@@ -1,5 +1,3 @@
-<!-- resources/views/layouts/dashboard.blade.php -->
- 
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -109,7 +107,6 @@
         
         <aside id="sidebar" class="sidebar bg-gray-50 border-r border-gray-200 flex-shrink-0 overflow-y-auto relative" style="width: 88px;">
 
-            <!-- FIX 1: Logo clickable to home -->
             <div class="h-24 flex items-center justify-center px-4">
                 <a href="{{ route('home') }}" class="inline-block">
                     <img id="logo-icon" src="{{ asset('images/logo_icon.png') }}" alt="SIAPKANGMAS" class="h-14 w-14 object-contain cursor-pointer hover:opacity-80 transition">
@@ -119,7 +116,13 @@
 
             <nav class="py-6">
                 <div class="px-4 space-y-2">
-                    <a href="{{ route('user.dashboard') }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs('user.dashboard') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Dashboard">
+                    @php
+                        // Deteksi route prefix untuk penentuan link dashboard & profil
+                        $dashRoute = (auth()->user()->user_type == 'pegawai') ? 'user.dashboard' : 'masyarakat.dashboard';
+                        $profileRoute = (auth()->user()->user_type == 'pegawai') ? 'user.profile' : 'masyarakat.profile';
+                    @endphp
+
+                    <a href="{{ route($dashRoute) }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs($dashRoute) ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Dashboard">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 13a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM13 4a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zM13 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
                         </svg>
@@ -154,7 +157,7 @@
                         <span class="sidebar-text ml-4 whitespace-nowrap font-semibold">Riwayat Pengajuan</span>
                     </a>
 
-                    <a href="{{ route('user.profile') }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs('user.profile') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Profil Pengguna">
+                    <a href="{{ route($profileRoute) }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs($profileRoute) ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Profil Pengguna">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                         </svg>
@@ -167,7 +170,6 @@
                 </div>
 
                 <div class="px-4 space-y-2">
-                    <!-- Logout Button (triggers modal) -->
                     <button type="button" onclick="showLogoutModal()" class="w-full nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all text-red-600 hover:bg-red-50" title="Keluar">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -175,7 +177,6 @@
                         <span class="sidebar-text ml-4 whitespace-nowrap font-semibold">Keluar</span>
                     </button>
                     
-                    <!-- Hidden logout form -->
                     <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
                         @csrf
                     </form>
@@ -222,10 +223,8 @@
 
     </div>
 
-    <!-- Logout Confirmation Modal -->
     <div id="logoutModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="display: none; z-index: 100;">
         <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
-            <!-- Icon -->
             <div class="flex justify-center mb-6">
                 <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
                     <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,17 +233,14 @@
                 </div>
             </div>
 
-            <!-- Title -->
             <h2 class="font-montserrat text-2xl font-bold text-gray-900 text-center mb-3">
                 Konfirmasi Logout
             </h2>
 
-            <!-- Message -->
             <p class="font-lato text-gray-600 text-center mb-8">
                 Anda yakin ingin keluar dari akun Anda?
             </p>
 
-            <!-- Buttons -->
             <div class="flex gap-3">
                 <button type="button" onclick="hideLogoutModal()" class="flex-1 font-montserrat px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
                     Batal

@@ -7,16 +7,14 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use App\Notifications\CustomVerifyEmail;
 
 class RegisterController extends Controller
 {
-    /**
-     * Show the registration form.
-     */
     public function showRegistrationForm()
     {
-        // Organization structure based on official document
+        // Organization structure for pegawai
         $organizationStructure = [
             'Sekretariat' => [
                 'Sekeretariat',
@@ -97,11 +95,11 @@ class RegisterController extends Controller
     }
 
     /**
-     * Handle a registration request.
+     * Handle PEGAWAI registration
      */
-    public function register(Request $request)
+    public function registerPegawai(Request $request)
     {
-        // Validate the input
+        // Tetap seperti code awalmu karena sudah benar
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'nip' => 'required|string|max:18|unique:users',
@@ -109,7 +107,7 @@ class RegisterController extends Controller
             'phone' => [
                 'required',
                 'string',
-                'regex:/^62[0-9]{9,14}$/', 
+                'regex:/^62[0-9]{9,13}$/',
             ],
             'bidang' => 'required|string|max:255',
             'jabatan' => 'required|string|max:255',
@@ -122,7 +120,7 @@ class RegisterController extends Controller
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email sudah terdaftar.',
             'phone.required' => 'Nomor telepon wajib diisi.',
-            'phone.regex' => 'Format nomor telepon harus 62xxxxxxxxx (tanpa tanda + dan spasi). Contoh: 628123456789',
+            'phone.regex' => 'Format nomor telepon harus 62xxxxxxxxx. Contoh: 628123456789',
             'bidang.required' => 'Bidang/Balai wajib dipilih.',
             'jabatan.required' => 'Jabatan/Seksi/Subbag wajib dipilih.',
             'password.required' => 'Password wajib diisi.',
@@ -136,7 +134,6 @@ class RegisterController extends Controller
                 ->withInput();
         }
 
-        // Create the user
         $user = User::create([
             'name' => $request->name,
             'nip' => $request->nip,
@@ -145,13 +142,62 @@ class RegisterController extends Controller
             'bidang' => $request->bidang,
             'jabatan' => $request->jabatan,
             'password' => Hash::make($request->password),
-            'role' => 'user', 
+            'role' => 'user',
+            'user_type' => 'pegawai',
         ]);
 
-        // Send email verification
         $user->notify(new CustomVerifyEmail);
 
         return redirect()->route('register')
             ->with('registration_success', true);
+    }
+
+    /**
+     * Handle MASYARAKAT UMUM registration
+     */
+    public function registerMasyarakat(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'nik' => 'required|string|size:16|unique:users', 
+            'email' => 'required|string|email|max:255|unique:users',
+            'phone' => ['required', 'string', 'regex:/^62[0-9]{9,13}$/'],
+            'address' => 'required|string', 
+            'foto_ktp' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'nik.required' => 'NIK wajib diisi.',
+            'nik.size' => 'NIK harus 16 digit.',
+            'nik.unique' => 'NIK sudah terdaftar.',
+            'address.required' => 'Alamat lengkap wajib diisi.',
+            'foto_ktp.required' => 'Foto KTP wajib diunggah.',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->route('register')->withErrors($validator)->withInput();
+        }
+
+        $fotoKtpPath = null;
+        if ($request->hasFile('foto_ktp')) {
+            $fotoKtpPath = $request->file('foto_ktp')->store('ktp-photos', 'public');
+        }
+
+        // PROSES INSERT
+        $user = User::create([
+            'name' => $request->name,
+            'nik' => $request->nik,  
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'address' => $request->address, 
+            'foto_ktp' => $fotoKtpPath,
+            'password' => Hash::make($request->password),
+            'role' => 'user', 
+            'user_type' => 'masyarakat_umum', 
+        ]);
+
+        $user->notify(new \App\Notifications\CustomVerifyEmail);
+
+        return redirect()->route('register')->with('registration_success', true);
     }
 }
