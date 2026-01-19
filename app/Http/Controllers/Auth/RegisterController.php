@@ -106,7 +106,11 @@ class RegisterController extends Controller
             'name' => 'required|string|max:255',
             'nip' => 'required|string|max:18|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'required|string|max:15',
+            'phone' => [
+                'required',
+                'string',
+                'regex:/^62[0-9]{9,14}$/', 
+            ],
             'bidang' => 'required|string|max:255',
             'jabatan' => 'required|string|max:255',
             'password' => 'required|string|min:8|confirmed',
@@ -118,6 +122,7 @@ class RegisterController extends Controller
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email sudah terdaftar.',
             'phone.required' => 'Nomor telepon wajib diisi.',
+            'phone.regex' => 'Format nomor telepon harus 62xxxxxxxxx (tanpa tanda + dan spasi). Contoh: 628123456789',
             'bidang.required' => 'Bidang/Balai wajib dipilih.',
             'jabatan.required' => 'Jabatan/Seksi/Subbag wajib dipilih.',
             'password.required' => 'Password wajib diisi.',
@@ -146,7 +151,6 @@ class RegisterController extends Controller
         // Send email verification
         $user->notify(new CustomVerifyEmail);
 
-        // STAY IN REGISTER PAGE - just redirect back with success flag
         return redirect()->route('register')
             ->with('registration_success', true);
     }
