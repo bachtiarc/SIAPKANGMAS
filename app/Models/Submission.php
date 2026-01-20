@@ -12,8 +12,6 @@ class Submission extends Model
 
     protected $fillable = [
         'ticket_id',
-        'full_ticket_number',
-        'ticket_number',
         'user_id',
         'category_id',
         'title',
@@ -102,7 +100,7 @@ class Submission extends Model
         'Seksi Pengendalian dan Informasi Industri Non Agro' => '606',
         
         // Balai Pengujian Dan Sertifikasi Mutu Barang Surakarta (07)
-        'Kepala Sub Bagian Tata Usaha' => '701', // BPSMB Surakarta
+        'Kepala Sub Bagian Tata Usaha' => '701',
         'Kepala Seksi Pelayanan Teknis Pengujian Dan Kalibrasi' => '702',
         'Kepala Seksi Pengembangan Jasa Pengujian Dan Kalibrasi' => '703',
         'Sub Bagian Tata Usaha' => '704',
@@ -110,10 +108,31 @@ class Submission extends Model
         'Seksi Pengembangan Jasa Pengujian Dan Kalibrasi' => '706',
         
         // Balai Pengujian Dan Sertifikasi Mutu Barang Semarang (08)
-        // 'Kepala Sub Bagian Tata Usaha' => '801', // Duplicate with 701
-        // Use context from bidang to differentiate
+        // Kepala Sub Bagian Tata Usaha => '801' (handled by context)
         
-        // Add more mappings as needed...
+        // Balai Industri Produk Tekstil Dan Alas Kaki (09)
+        // Kepala Sub Bagian Tata Usaha => '901' (handled by context)
+        'Kepala Seksi Pengembangan Produk Tekstil' => '902',
+        'Kepala Seksi Pengembangan Produk Alas Kaki' => '903',
+        // Sub Bagian Tata Usaha => '904' (handled by context)
+        'Seksi Pengembangan Produk Tekstil' => '905',
+        'Seksi Pengembangan Produk Alas Kaki' => '906',
+        
+        // Balai Industri Kreatif Digital Dan Kemasan (10)
+        // Kepala Sub Bagian Tata Usaha => '1001' (handled by context)
+        'Kepala Seksi Industri Kreatif Digital' => '1002',
+        'Kepala Seksi Pengembangan Kemasan' => '1003',
+        // Sub Bagian Tata Usaha => '1004' (handled by context)
+        'Seksi Industri Kreatif Digital' => '1005',
+        'Seksi Pengembangan Kemasan' => '1006',
+        
+        // Balai Industri Logam Dan Kayu (11)
+        // Kepala Sub Bagian Tata Usaha => '1101' (handled by context)
+        'Kepala Seksi Pelayanan Jasa Keteknikan' => '1102',
+        'Kepala Seksi Penerapan Dan Rekayasa' => '1103',
+        // Sub Bagian Tata Usaha => '1104' (handled by context)
+        'Seksi Pelayanan Jasa Keteknikan' => '1105',
+        'Seksi Penerapan Dan Rekayasa' => '1106',
     ];
 
     /**
@@ -126,38 +145,21 @@ class Submission extends Model
         static::creating(function ($submission) {
             $user = $submission->user;
             
+            // Generate ticket_id dengan format lengkap
             $submission->ticket_id = self::generateTicketId($user);
-            
-            $submission->full_ticket_number = self::generateFullTicketNumber($user);
-            
-            $submission->ticket_number = $submission->full_ticket_number;
         });
     }
 
     /**
-     * Generate SHORT ticket ID
-     * Format: PI02_03_JAN26
+     * Generate ticket ID dengan format: PI.01.106.12012026_010
+     * Format: PI.XX.YYY.DDMMYYYY_NNN
+     * - PI: Permohonan Informasi
+     * - XX: Kode Bidang/Balai
+     * - YYY: Kode Sub Bagian/Jabatan
+     * - DDMMYYYY: Tanggal pengajuan
+     * - NNN: Nomor urut bulan ini
      */
     private static function generateTicketId($user)
-    {
-        $prefix = 'PI'; 
-        $day = date('d'); 
-        $month = strtoupper(date('M')); 
-        $year = date('y'); 
-        
-        // Get daily sequence number
-        $today = date('Y-m-d');
-        $count = self::whereDate('created_at', $today)->count();
-        $sequence = str_pad($count + 1, 3, '0', STR_PAD_LEFT); 
-        
-        return "{$prefix}{$day}_{$sequence}_{$month}{$year}"; 
-    }
-
-    /**
-     * Generate FULL ticket number with complex format
-     * Format: PI.01.106.12012026_010
-     */
-    private static function generateFullTicketNumber($user)
     {
         $prefix = 'PI'; // Permohonan Informasi
         
@@ -184,12 +186,12 @@ class Submission extends Model
         // Special handling for duplicate jabatan names across different balai
         if ($jabatan === 'Kepala Sub Bagian Tata Usaha') {
             $bidangCode = self::$bidangCodes[$bidang] ?? '00';
-            return $bidangCode . '01'; 
+            return $bidangCode . '01'; // 701, 801, 901, 1001, 1101
         }
         
         if ($jabatan === 'Sub Bagian Tata Usaha') {
             $bidangCode = self::$bidangCodes[$bidang] ?? '00';
-            return $bidangCode . '04'; 
+            return $bidangCode . '04'; // 704, 804, 904, 1004, 1104
         }
         
         // Normal lookup
@@ -198,12 +200,10 @@ class Submission extends Model
 
     /**
      * Get monthly sequence number
-     * Returns format: _001, _002, _010, etc.
+     * Returns format: 001, 002, 010, etc.
      */
     private static function getMonthlySequence()
     {
-        $currentMonth = date('Y-m');
-        
         // Count submissions in current month
         $count = self::whereYear('created_at', date('Y'))
             ->whereMonth('created_at', date('m'))
@@ -253,10 +253,10 @@ class Submission extends Model
     public function getStatusBadgeAttribute()
     {
         return [
-            'pending' => 'bg-yellow-100 text-yellow-800',
-            'in_progress' => 'bg-blue-100 text-blue-800',
-            'completed' => 'bg-green-100 text-green-800',
-            'rejected' => 'bg-red-100 text-red-800',
+            'pending'     => 'bg-blue-100 text-blue-800',   
+            'in_progress' => 'bg-blue-100 text-blue-800',   
+            'completed'   => 'bg-green-100 text-green-800', 
+            'rejected'    => 'bg-red-100 text-red-800',  
         ][$this->status] ?? 'bg-gray-100 text-gray-800';
     }
 
@@ -266,10 +266,10 @@ class Submission extends Model
     public function getStatusLabelAttribute()
     {
         return [
-            'pending' => 'Menunggu',
+            'pending'     => 'Diproses', 
             'in_progress' => 'Diproses',
-            'completed' => 'Selesai',
-            'rejected' => 'Ditolak',
+            'completed'   => 'Selesai',
+            'rejected'    => 'Ditolak',
         ][$this->status] ?? 'Unknown';
     }
 

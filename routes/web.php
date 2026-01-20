@@ -71,6 +71,10 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
     
     // PDF DOWNLOAD
     Route::get('/permohonan-informasi/{submission}/pdf', [UserSubmissionPdfController::class, 'download'])->name('submissions.download');
+
+    // VIEW DOCUMENT
+    Route::get('/permohonan-informasi/document/{document}', [UserSubmissionController::class, 'viewDocument'])
+    ->name('submissions.view-document');
 });
 
 // User Masyarakat Dashboard 

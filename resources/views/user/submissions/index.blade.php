@@ -31,31 +31,50 @@
                 Buat Pengajuan Formulir Baru
             </a>
 
-            <!-- Search -->
-            <form method="GET" class="flex space-x-2">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari pengajuan atau tiket.." 
+            <!-- Search - DIPERBAIKI: tambahkan action dan pertahankan parameter status -->
+            <form method="GET" action="{{ route('user.submissions.index') }}" class="flex space-x-2">
+                <!-- Hidden input untuk mempertahankan filter status saat search -->
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari ID tiket atau nama pengajuan.." 
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64">
                 <button type="submit" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
                 </button>
+                
+                <!-- Tombol Reset (muncul jika ada pencarian) -->
+                @if(request('search'))
+                    <a href="{{ route('user.submissions.index', request('status') ? ['status' => request('status')] : []) }}" 
+                       class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition flex items-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </a>
+                @endif
             </form>
         </div>
 
-        <!-- Filters -->
+        <!-- Filters - DIPERBAIKI: pertahankan parameter search saat ganti filter -->
         <div class="mt-4 flex items-center space-x-2">
             <span class="text-sm text-gray-600">Filter:</span>
-            <a href="{{ route('user.submissions.index') }}" class="px-3 py-1 rounded-lg text-sm {{ !request('status') || request('status') == 'semua' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+            <a href="{{ route('user.submissions.index', request('search') ? ['search' => request('search')] : []) }}" 
+               class="px-3 py-1 rounded-lg text-sm {{ !request('status') || request('status') == 'semua' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 Semua
             </a>
-            <a href="{{ route('user.submissions.index', ['status' => 'pending']) }}" class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+            <a href="{{ route('user.submissions.index', array_filter(['status' => 'pending', 'search' => request('search')])) }}" 
+               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 Diproses
             </a>
-            <a href="{{ route('user.submissions.index', ['status' => 'completed']) }}" class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'completed' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+            <a href="{{ route('user.submissions.index', array_filter(['status' => 'completed', 'search' => request('search')])) }}" 
+               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'completed' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 Selesai
             </a>
-            <a href="{{ route('user.submissions.index', ['status' => 'rejected']) }}" class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'rejected' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+            <a href="{{ route('user.submissions.index', array_filter(['status' => 'rejected', 'search' => request('search')])) }}" 
+               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'rejected' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 Ditolak
             </a>
         </div>

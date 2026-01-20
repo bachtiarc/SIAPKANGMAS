@@ -206,7 +206,7 @@
                 </div>
             </div>
             <div class="items-center px-4 py-3 space-y-2">
-                <button onclick="window.location.href='{{ route('user.submissions.index') }}'" 
+                <button onclick="window.location.href='{{ route('user.submissions.show', session('submission_id')) }}'" 
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
                     Lacak Status
                 </button>
