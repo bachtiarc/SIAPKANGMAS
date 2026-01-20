@@ -5,7 +5,6 @@
 @section('content')
 <div class="space-y-6">
     <div class="flex flex-col gap-2">
-        <h2 class="font-montserrat text-2xl font-bold text-blue-700">Manajemen Pengajuan</h2>
         <p class="font-lato text-gray-600">Kelola dan unduh laporan pengajuan layanan bantuan Dinas Perindustrian dan Perdagangan Jawa Tengah.</p>
     </div>
 
@@ -57,62 +56,124 @@
             </a>
         </div>
 
-        <div class="p-6 border-b border-gray-200">
-            <form action="{{ route('admin.submissions.permohonan') }}" method="GET" class="flex flex-wrap items-end gap-4">
-                
-                <div class="flex items-center gap-2">
-                    <div class="flex flex-col gap-1">
-                        <label class="text-xs font-semibold text-gray-600">Tgl Pengajuan :</label>
-                        <input type="date" name="start_date" value="{{ request('start_date') }}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+    <form action="{{ route('admin.submissions.permohonan') }}" method="GET" class="w-full">
+        <div class="p-4 border-b border-gray-200">
+            <div class="overflow-x-auto">
+                <div class="min-w-max flex items-end gap-4">
+
+                    {{-- Rentang tanggal --}}
+                    <div class="shrink-0">
+                        <label class="block text-xs font-semibold text-gray-600 mb-2">Rentang Tanggal :</label>
+                        <div class="flex items-center gap-2">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <input type="date" name="start_date" value="{{ request('start_date') }}"
+                                    class="pl-10 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 text-gray-600 w-40">
+                            </div>
+
+                            <span class="text-gray-400 font-medium">-</span>
+
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <input type="date" name="end_date" value="{{ request('end_date') }}"
+                                    class="pl-10 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 text-gray-600 w-40">
+                            </div>
+                        </div>
                     </div>
-                    <span class="text-gray-400 mt-5">-</span>
-                    <div class="flex flex-col gap-1 mt-5">
-                        <input type="date" name="end_date" value="{{ request('end_date') }}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+
+                    {{-- Pelapor --}}
+                    <div class="shrink-0 w-44">
+                        <label class="block text-xs font-semibold text-gray-600 mb-2">Pelapor :</label>
+                        <div class="relative">
+                            <select name="type"
+                                class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-600">
+                                <option value="Semua">Semua</option>
+                                <option value="pegawai" {{ request('type') == 'pegawai' ? 'selected' : '' }}>Pegawai</option>
+                                <option value="masyarakat" {{ request('type') == 'masyarakat' ? 'selected' : '' }}>Masyarakat</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-xs font-semibold text-gray-600">Pelapor :</label>
-                    <select name="type" class="px-3 py-2 border border-gray-300 rounded-lg text-sm min-w-[120px] focus:ring-blue-500 focus:border-blue-500">
-                        <option value="Semua">Semua</option>
-                        <option value="pegawai">Pegawai</option>
-                        <option value="masyarakat">Masyarakat</option>
-                    </select>
-                </div>
+                    {{-- Kategori --}}
+                    <div class="shrink-0 w-64">
+                        <label class="block text-xs font-semibold text-gray-600 mb-2">Kategori :</label>
+                        <div class="relative">
+                            <select name="category"
+                                class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-600 truncate">
+                                <option value="Semua">Semua</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}" {{ request('category') == $cat->id ? 'selected' : '' }}>
+                                        {{ $cat->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-xs font-semibold text-gray-600">Kategori :</label>
-                    <select name="category" class="px-3 py-2 border border-gray-300 rounded-lg text-sm min-w-[150px] focus:ring-blue-500 focus:border-blue-500">
-                        <option value="Semua">Semua</option>
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}" {{ request('category') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                    {{-- Status --}}
+                    <div class="shrink-0 w-44">
+                        <label class="block text-xs font-semibold text-gray-600 mb-2">Status :</label>
+                        <div class="relative">
+                            <select name="status"
+                                class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-600">
+                                <option value="Semua">Semua</option>
+                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>Diproses</option>
+                                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Selesai</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-xs font-semibold text-gray-600">Status :</label>
-                    <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm min-w-[120px] focus:ring-blue-500 focus:border-blue-500">
-                        <option value="Semua">Semua</option>
-                        <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>Diproses</option>
-                        <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Selesai</option>
-                    </select>
-                </div>
+                    {{-- Tombol --}}
+                    <div class="shrink-0 flex items-center gap-2 ml-2">
+                        <button type="submit"
+                            class="px-4 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition shadow-sm whitespace-nowrap">
+                            Terapkan
+                        </button>
 
-                <div class="flex gap-2 ml-auto">
-                    <button type="submit" class="px-4 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition">
-                        Terapkan
-                    </button>
-                    <a href="{{ route('admin.submissions.permohonan') }}" class="px-4 py-2 border border-blue-600 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-50 transition">
-                        Reset
-                    </a>
-                    <button type="button" class="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    </button>
+                        <a href="{{ route('admin.submissions.permohonan') }}"
+                            class="px-4 py-2 border border-blue-600 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-50 transition shadow-sm bg-white whitespace-nowrap">
+                            Reset
+                        </a>
+
+                        <button type="button"
+                            class="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition shadow-sm flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                        </button>
+                    </div>
+
                 </div>
-            </form>
+            </div>
         </div>
+    </form>
 
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
