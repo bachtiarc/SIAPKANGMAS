@@ -109,52 +109,25 @@ class SubmissionController extends Controller
      * - Bucket: submissions (public)
      * - Path: submissions/12/xxx
      */
-    public function downloadDocument($id)
-    {
+    public function downloadDocument($id) {
         try {
             $document = SubmissionDocument::findOrFail($id);
-
-            Log::info('Attempting to download from Supabase:', [
-                'document_id' => $id,
-                'file_path' => $document->file_path,
-            ]);
-
-            // Ambil konfigurasi dari .env
+            
             $supabaseUrl = env('SUPABASE_URL');
             $bucket = env('SUPABASE_BUCKET', 'submissions');
             $filePath = $document->file_path;
-
-            // Construct public URL Supabase
-            // Format: https://PROJECT_REF.supabase.co/storage/v1/object/public/BUCKET/PATH
-            $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
-
-            Log::info('Supabase public URL:', ['url' => $publicUrl]);
-
-            // OPSI 1: Redirect langsung ke URL Supabase (RECOMMENDED)
-            // File akan dibuka/download langsung dari Supabase
-            return redirect($publicUrl);
-
-            // OPSI 2: Download via Storage Facade (jika perlu custom headers)
-            // Uncomment jika perlu force download dengan nama custom
-            /*
-            if (Storage::disk('supabase')->exists($filePath)) {
-                return Storage::disk('supabase')->download($filePath, $document->original_name);
-            } else {
-                throw new \Exception('File tidak ditemukan di Supabase Storage');
+            
+            // TAMBAHKAN INI: Clean path jika ada prefix 'submissions/'
+            if (str_starts_with($filePath, 'submissions/')) {
+                $filePath = substr($filePath, 12); // Hapus 'submissions/' (12 karakter)
             }
-            */
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Document not found in database:', ['id' => $id]);
-            return redirect()->back()->with('error', 'Dokumen tidak ditemukan.');
+            
+            $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
+            
+            return redirect($publicUrl);
             
         } catch (\Exception $e) {
-            Log::error('Error downloading from Supabase:', [
-                'id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return redirect()->back()->with('error', 'Gagal mengunduh dokumen: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengunduh dokumen.');
         }
     }
 }
