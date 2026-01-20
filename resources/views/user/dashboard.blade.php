@@ -107,7 +107,7 @@
             <h2 class="font-montserrat text-lg font-bold text-gray-900 mb-4">Layanan Cepat</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Permohonan Informasi -->
-                <a href="#" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
+                <a href="{{ route('user.submissions.create') }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">
                             <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition">
@@ -172,10 +172,10 @@
         <div class="bg-white rounded-xl shadow-sm p-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="font-montserrat text-lg font-bold text-gray-900">Aktivitas Terkini</h2>
-                <a href="#" class="font-montserrat text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua →</a>
+                <a href="{{ route('user.submissions.index') }}" class="font-montserrat text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua →</a>
             </div>
 
-            @if($recentActivities->count() > 0)
+            @if($recentActivities && count($recentActivities) > 0)
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead>
@@ -190,27 +190,44 @@
                         <tbody class="divide-y divide-gray-200">
                             @foreach($recentActivities as $activity)
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-4 whitespace-nowrap font-lato text-sm text-gray-900 font-medium">{{ $activity['id'] }}</td>
-                                    <td class="px-4 py-4 font-lato text-sm text-gray-900">{{ $activity['title'] }}</td>
-                                    <td class="px-4 py-4 whitespace-nowrap font-lato text-sm text-gray-600">{{ $activity['date'] }}</td>
+                                    {{-- CHANGED: Arrow -> to Array [] --}}
+                                    <td class="px-4 py-4 whitespace-nowrap font-lato text-sm text-gray-900 font-medium">
+                                        {{ is_array($activity) ? ($activity['ticket_id'] ?? $activity['id'] ?? '-') : ($activity->ticket_id ?? $activity->id ?? '-') }}
+                                    </td>
+                                    <td class="px-4 py-4 font-lato text-sm text-gray-900">
+                                        {{ is_array($activity) ? ($activity['title'] ?? $activity['type'] ?? '-') : ($activity->title ?? $activity->subject ?? '-') }}
+                                    </td>
+                                    <td class="px-4 py-4 whitespace-nowrap font-lato text-sm text-gray-600">
+                                        @if(is_array($activity))
+                                            {{ $activity['date'] ?? '-' }}
+                                        @else
+                                            {{ $activity->created_at ? $activity->created_at->format('d/m/Y') : '-' }}
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-4 whitespace-nowrap">
-                                        @if($activity['status'] == 'completed')
+                                        @php 
+                                            $status = is_array($activity) ? ($activity['status'] ?? 'pending') : ($activity->status ?? 'pending'); 
+                                        @endphp
+                                        @if($status == 'completed' || $status == 'selesai')
                                             <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-green-100 text-green-800">Selesai</span>
-                                        @elseif($activity['status'] == 'on_progress')
+                                        @elseif(in_array($status, ['in_progress', 'on_progress', 'diproses']))
                                             <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-yellow-100 text-yellow-800">Diproses</span>
-                                        @elseif($activity['status'] == 'pending')
+                                        @elseif($status == 'pending')
                                             <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-gray-100 text-gray-800">Pending</span>
                                         @else
                                             <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-red-100 text-red-800">Ditolak</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap">
-                                        <button class="text-gray-600 hover:text-blue-600">
+                                        @php
+                                            $activityId = is_array($activity) ? ($activity['id'] ?? '#') : ($activity->id ?? '#');
+                                        @endphp
+                                        <a href="{{ $activityId != '#' ? route('user.submissions.show', $activityId) : '#' }}" class="text-gray-600 hover:text-blue-600">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                             </svg>
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                             @endforeach
@@ -223,7 +240,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     <p class="font-lato text-gray-500">Belum ada aktivitas pengajuan</p>
-                    <a href="#" class="mt-4 inline-block font-montserrat text-sm text-blue-600 hover:text-blue-700 font-medium">Buat Pengajuan Pertama →</a>
+                    <a href="{{ route('user.submissions.create') }}" class="mt-4 inline-block font-montserrat text-sm text-blue-600 hover:text-blue-700 font-medium">Buat Pengajuan Pertama →</a>
                 </div>
             @endif
         </div>

@@ -8,6 +8,9 @@ use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
+use App\Http\Controllers\User\SubmissionController as UserSubmissionController;
+use App\Http\Controllers\User\SubmissionPdfController as UserSubmissionPdfController;
+use App\Http\Controllers\Masyarakat\SubmissionController as MasyarakatSubmissionController;
 use App\Http\Controllers\User\ProfileController as UserProfileController;
 use App\Http\Controllers\Masyarakat\DashboardController as MasyarakatDashboardController;
 use App\Http\Controllers\Masyarakat\ProfileController as MasyarakatProfileController;
@@ -59,6 +62,15 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
     Route::get('/profile', [UserProfileController::class, 'index'])->name('profile');
     Route::put('/password', [UserProfileController::class, 'updatePassword'])->name('password.update');
     Route::put('/profile/photo', [UserProfileController::class, 'updatePhoto'])->name('profile.photo.update');
+    
+    // PERMOHONAN INFORMASI (SUBMISSIONS)
+    Route::get('/permohonan-informasi', [UserSubmissionController::class, 'index'])->name('submissions.index');
+    Route::get('/permohonan-informasi/create', [UserSubmissionController::class, 'create'])->name('submissions.create');
+    Route::post('/permohonan-informasi', [UserSubmissionController::class, 'store'])->name('submissions.store');
+    Route::get('/permohonan-informasi/{submission}', [UserSubmissionController::class, 'show'])->name('submissions.show');
+    
+    // PDF DOWNLOAD
+    Route::get('/permohonan-informasi/{submission}/pdf', [UserSubmissionPdfController::class, 'download'])->name('submissions.download');
 });
 
 // User Masyarakat Dashboard 
@@ -67,6 +79,11 @@ Route::middleware(['auth', 'verified', 'role:user,masyarakat_umum'])->prefix('ma
     Route::get('/profile', [MasyarakatProfileController::class, 'index'])->name('profile');
     Route::put('/password', [MasyarakatProfileController::class, 'updatePassword'])->name('password.update');
     Route::put('/profile/photo', [MasyarakatProfileController::class, 'updatePhoto'])->name('profile.photo.update');
+    // PERMOHONAN INFORMASI (SUBMISSIONS)
+    Route::get('/permohonan-informasi', [MasyarakatSubmissionController::class, 'index'])->name('submissions.index');
+    Route::get('/permohonan-informasi/create', [MasyarakatSubmissionController::class, 'create'])->name('submissions.create');
+    Route::post('/permohonan-informasi', [MasyarakatSubmissionController::class, 'store'])->name('submissions.store');
+    Route::get('/permohonan-informasi/{submission}', [MasyarakatSubmissionController::class, 'show'])->name('submissions.show');
 });
 
 // Admin Routes (Role: admin)
