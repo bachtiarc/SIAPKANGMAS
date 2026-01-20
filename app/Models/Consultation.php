@@ -10,67 +10,74 @@ class Consultation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'ticket_number',
+        'ticket_number', 
         'user_id',
         'category_id',
         'consultation_type',
         'subject',
         'description',
         'attachment',
+        'document_path',
         'status',
-        'admin_response',
+        'admin_notes',
         'handled_by',
         'completed_at',
+        'submitted_at',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
+        'submitted_at' => 'datetime',
     ];
 
-    /**
-     * Boot the model
-     */
-    protected static function boot()
+    // Status badge colors
+    public function getStatusBadgeAttribute()
     {
-        parent::boot();
-
-        // Auto-generate ticket number
-        static::creating(function ($consultation) {
-            if (!$consultation->ticket_number) {
-                $consultation->ticket_number = 'CONS-' . date('YmdHis') . '-' . rand(1000, 9999);
-            }
-        });
+        return match($this->status) {
+            'pending' => 'bg-yellow-100 text-yellow-800',
+            'diproses' => 'bg-blue-100 text-blue-800',
+            'selesai' => 'bg-green-100 text-green-800',
+            'ditolak' => 'bg-red-100 text-red-800',
+            default => 'bg-gray-100 text-gray-800',
+        };
     }
 
-    /**
-     * Get the user who created this consultation
-     */
+    // Status label
+    public function getStatusLabelAttribute()
+    {
+        return match($this->status) {
+            'pending' => 'Menunggu',
+            'diproses' => 'Diproses',
+            'selesai' => 'Selesai',
+            'ditolak' => 'Ditolak',
+            default => ucfirst($this->status),
+        };
+    }
+
+    // Relationships
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the category
-     */
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    /**
-     * Get the admin handling this consultation
-     */
     public function handler()
     {
         return $this->belongsTo(User::class, 'handled_by');
     }
 
-    /**
-     * Get status histories
-     */
     public function statusHistories()
     {
         return $this->morphMany(StatusHistory::class, 'trackable')->orderBy('created_at', 'desc');
+    }
+
+    // Jika punya table consultation_documents
+    public function documents()
+    {
+        return $this->hasMany(ConsultationDocument::class);
     }
 }

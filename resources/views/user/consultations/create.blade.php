@@ -1,8 +1,8 @@
-<!-- resources/views/user/submissions/create.blade.php -->
+<!-- resources/views/user/consultations/create.blade.php -->
 
 @extends('layouts.dashboard')
 
-@section('title', 'Formulir Permohonan Informasi')
+@section('title', 'Formulir Pengajuan Konsultasi')
 
 @section('content')
 <div class="p-6">
@@ -11,52 +11,52 @@
         <ol class="flex items-center space-x-2">
             <li><a href="{{ route('user.dashboard') }}" class="text-blue-600 hover:text-blue-800">Beranda</a></li>
             <li class="text-gray-400">/</li>
-            <li><a href="{{ route('user.submissions.index') }}" class="text-blue-600 hover:text-blue-800">Permohonan Informasi</a></li>
+            <li><a href="{{ route('user.consultations.index') }}" class="text-blue-600 hover:text-blue-800">Konsultasi</a></li>
             <li class="text-gray-400">/</li>
-            <li class="text-gray-600">Formulir Permohonan Informasi</li>
+            <li class="text-gray-600">Formulir Pengajuan Konsultasi</li>
         </ol>
     </nav>
 
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h1 class="font-montserrat text-3xl font-bold text-gray-900 mb-2">Formulir Permohonan Informasi</h1>
-        <p class="text-gray-600">Silahkan lengkapi formulir di bawah ini untuk mengajukan permohonan informasi publik terkait perindustrian dan perdagangan. Estimasi respon waktu ada 1 kali 24 jam.</p>
+        <h1 class="font-montserrat text-3xl font-bold text-gray-900 mb-2">Formulir Pengajuan Konsultasi</h1>
+        <p class="text-gray-600">Silakan lengkapi formulir di bawah ini untuk mengajukan konsultasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Estimasi respon waktu 1x24 jam.</p>
     </div>
 
     <!-- Form -->
-    <form action="{{ route('user.submissions.store') }}" method="POST" enctype="multipart/form-data" id="submissionForm">
+    <form action="{{ route('user.consultations.store') }}" method="POST" enctype="multipart/form-data" id="consultationForm">
         @csrf
         
         <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
             <div class="flex items-center mb-6">
                 <svg class="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
                 </svg>
-                <h2 class="font-montserrat text-xl font-bold text-gray-900">Detail Permohonan</h2>
+                <h2 class="font-montserrat text-xl font-bold text-gray-900">Detail Konsultasi</h2>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Judul Permohonan -->
+                <!-- Subjek Konsultasi -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Judul Permohonan <span class="text-red-500">*</span>
+                        Subjek Konsultasi <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" name="title" value="{{ old('title') }}" required
+                    <input type="text" name="subject" value="{{ old('subject') }}" required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                        placeholder="Contoh: Data Ekspor Rempah Semarang Tahun xxxx">
-                    @error('title')
+                        placeholder="Contoh: Konsultasi Kepegawaian - Kenaikan Pangkat">
+                    @error('subject')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Kategori Informasi -->
+                <!-- Kategori Konsultasi -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Kategori Informasi <span class="text-red-500">*</span>
+                        Kategori Konsultasi <span class="text-red-500">*</span>
                     </label>
                     <select name="category_id" required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Pilih Kategori Informasi</option>
+                        <option value="">Pilih Kategori Konsultasi</option>
                         @foreach($categories as $category)
                             <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
                                 {{ $category->name }}
@@ -75,7 +75,7 @@
                     </label>
                     <textarea name="description" rows="6" required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                        placeholder="Jelaskan secara spesifik informasi yang Anda butuhkan. Sertakan detail waktu, lokasi, atau konteks relevan lainnya.">{{ old('description') }}</textarea>
+                        placeholder="Jelaskan secara spesifik permasalahan atau topik yang ingin dikonsultasikan. Sertakan detail atau konteks yang relevan.">{{ old('description') }}</textarea>
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -97,7 +97,7 @@
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 1 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 15MB)</p>
                                     <p id="fileName1" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(1)" id="clearBtn1" class="hidden text-red-500 hover:text-red-700">
@@ -119,7 +119,7 @@
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 2 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 15MB)</p>
                                     <p id="fileName2" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(2)" id="clearBtn2" class="hidden text-red-500 hover:text-red-700">
@@ -141,7 +141,7 @@
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 3 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 15MB)</p>
                                     <p id="fileName3" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(3)" id="clearBtn3" class="hidden text-red-500 hover:text-red-700">
@@ -164,7 +164,7 @@
 
         <!-- Action Buttons -->
         <div class="flex items-center justify-between">
-            <a href="{{ route('user.submissions.index') }}" 
+            <a href="{{ route('user.consultations.index') }}" 
                 class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
                 Kembali
             </a>
@@ -191,7 +191,7 @@
             <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Formulir Anda Berhasil Terkirim</h3>
             <div class="mt-4 px-7 py-3">
                 <p class="text-sm text-gray-600 mb-4">
-                    Terima kasih telah mengirimkan permohonan informasi. Pengajuan Anda akan segera ditinjau. Silakan cek Email untuk melihat bukti konfirmasi formulir telah terkirim.
+                    Terima kasih telah mengirimkan konsultasi. Pengajuan Anda akan segera ditinjau. Silakan cek Email untuk melihat bukti konfirmasi formulir telah terkirim.
                 </p>
                 <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
                     <p class="text-xs text-gray-600 mb-1">Nomor Tiket Anda</p>
@@ -206,15 +206,15 @@
                 </div>
             </div>
             <div class="items-center px-4 py-3 space-y-2">
-                @if(session('submission_id'))
-                <button onclick="window.location.href='{{ route('user.submissions.show', session('submission_id')) }}'" 
+                @if(session('consultation_id'))
+                <button onclick="window.location.href='{{ route('user.consultations.show', session('consultation_id')) }}'" 
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
                     Lacak Status
                 </button>
                 @endif
-                <button onclick="window.location.href='{{ route('user.submissions.index') }}'" 
+                <button onclick="window.location.href='{{ route('user.consultations.index') }}'" 
                     class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
-                    Lihat Daftar Permohonan
+                    Lihat Daftar Konsultasi
                 </button>
                 <button onclick="window.location.href='{{ route('user.dashboard') }}'" 
                     class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
@@ -264,8 +264,8 @@ function displayFileName(index, input) {
         const file = input.files[0];
         const fileSize = (file.size / 1024 / 1024).toFixed(2); // Convert to MB
         
-        if (fileSize > 5) {
-            alert('Ukuran file maksimal 5MB!');
+        if (fileSize > 15) {
+            alert('Ukuran file maksimal 15MB!');
             input.value = '';
             fileNameDisplay.classList.add('hidden');
             clearBtn.classList.add('hidden');

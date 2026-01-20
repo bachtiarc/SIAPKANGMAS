@@ -29,19 +29,19 @@ class SubmissionController extends Controller
         $query = Submission::where('user_id', $user->id)
             ->with(['category', 'handler']);
 
-        // Filter by status
-        if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
-            $query->where('status', $request->status);
-        }
-
-        // Search by ticket_id or title
+        // Search by ticket_id or title (case-insensitive menggunakan ILIKE untuk PostgreSQL)
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('ticket_id', 'ilike', "%{$search}%")
-                  ->orWhere('ticket_id', 'ilike', "%{$search}%")
-                  ->orWhere('title', 'ilike', "%{$search}%");
+                  ->orWhere('title', 'ilike', "%{$search}%")
+                  ->orWhere('subject', 'ilike', "%{$search}%");
             });
+        }
+
+        // Filter by status
+        if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
+            $query->where('status', $request->status);
         }
 
         // Penambahan withQueryString() agar pagination tetap membawa filter search/status

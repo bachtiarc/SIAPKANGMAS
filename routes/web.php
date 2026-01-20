@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
 use App\Http\Controllers\User\SubmissionController as UserSubmissionController;
+use App\Http\Controllers\User\ConsultationController;
 use App\Http\Controllers\User\SubmissionPdfController as UserSubmissionPdfController;
 use App\Http\Controllers\Masyarakat\SubmissionController as MasyarakatSubmissionController;
 use App\Http\Controllers\User\ProfileController as UserProfileController;
@@ -58,6 +59,7 @@ Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'
 
 // User Pegawai Dashboard 
 Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')->name('user.')->group(function () {
+    // DASHBOARD & PROFILE
     Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
     Route::get('/profile', [UserProfileController::class, 'index'])->name('profile');
     Route::put('/password', [UserProfileController::class, 'updatePassword'])->name('password.update');
@@ -69,12 +71,12 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
     Route::post('/permohonan-informasi', [UserSubmissionController::class, 'store'])->name('submissions.store');
     Route::get('/permohonan-informasi/{submission}', [UserSubmissionController::class, 'show'])->name('submissions.show');
     
-    // PDF DOWNLOAD
+    // PDF & VIEW DOCUMENT (FITUR TETAP ADA)
     Route::get('/permohonan-informasi/{submission}/pdf', [UserSubmissionPdfController::class, 'download'])->name('submissions.download');
+    Route::get('/permohonan-informasi/document/{document}', [UserSubmissionController::class, 'viewDocument'])->name('submissions.view-document');
 
-    // VIEW DOCUMENT
-    Route::get('/permohonan-informasi/document/{document}', [UserSubmissionController::class, 'viewDocument'])
-    ->name('submissions.view-document');
+    // KONSULTASI (DITAMBAHKAN DISINI)
+    Route::resource('consultations', ConsultationController::class);
 });
 
 // User Masyarakat Dashboard 
