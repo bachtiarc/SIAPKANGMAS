@@ -60,6 +60,19 @@ return [
             'report' => false,
         ],
 
+        // SUPABASE STORAGE DISK
+        'supabase' => [
+            'driver' => 's3',
+            'key' => env('SUPABASE_ACCESS_KEY_ID'),
+            'secret' => env('SUPABASE_SECRET_ACCESS_KEY'),
+            'region' => env('SUPABASE_DEFAULT_REGION', 'ap-southeast-1'),
+            'bucket' => env('SUPABASE_BUCKET', 'submissions'),
+            'url' => env('SUPABASE_URL'),
+            'endpoint' => env('SUPABASE_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw' => true,
+        ],
+
     ],
 
     /*
@@ -76,36 +89,5 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
     ],
-
-    'disks' => [
-
-    'local' => [
-        'driver' => 'local',
-        'root' => storage_path('app'),
-        'throw' => false,
-    ],
-
-    'public' => [
-        'driver' => 'local',
-        'root' => storage_path('app/public'),
-        'url' => env('APP_URL').'/storage',
-        'visibility' => 'public',
-        'throw' => false,
-    ],
-
-    // TAMBAHKAN DISK SUPABASE DI BAWAH INI
-    'supabase' => [
-        'driver' => 's3',
-        'key' => env('SUPABASE_ACCESS_KEY_ID'),
-        'secret' => env('SUPABASE_SECRET_ACCESS_KEY'),
-        'region' => env('SUPABASE_DEFAULT_REGION', 'ap-southeast-1'),
-        'bucket' => env('SUPABASE_BUCKET', 'submissions'),
-        'url' => env('SUPABASE_URL'),
-        'endpoint' => env('SUPABASE_ENDPOINT'),
-        'use_path_style_endpoint' => false,
-        'throw' => false,
-    ],
-
-],
 
 ];

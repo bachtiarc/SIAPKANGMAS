@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Submission;
 use App\Models\Category;
 use App\Models\SubmissionDocument;
+use App\Support\SupabasePath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class SubmissionController extends Controller
 {
@@ -101,33 +104,29 @@ class SubmissionController extends Controller
         return redirect()->back()->with('success', 'Status pengajuan berhasil diperbarui.');
     }
 
-    /**
-     * Download dokumen dari SUPABASE STORAGE
-     * 
-     * Setelah setup Supabase selesai:
-     * - File tersimpan di Supabase Storage
-     * - Bucket: submissions (public)
-     * - Path: submissions/12/xxx
-     */
-    public function downloadDocument($id) {
-        try {
-            $document = SubmissionDocument::findOrFail($id);
-            
-            $supabaseUrl = env('SUPABASE_URL');
-            $bucket = env('SUPABASE_BUCKET', 'submissions');
-            $filePath = $document->file_path;
-            
-            // TAMBAHKAN INI: Clean path jika ada prefix 'submissions/'
-            if (str_starts_with($filePath, 'submissions/')) {
-                $filePath = substr($filePath, 12); // Hapus 'submissions/' (12 karakter)
-            }
-            
-            $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
-            
-            return redirect($publicUrl);
-            
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal mengunduh dokumen.');
-        }
+    public function downloadDocument($id)
+    {
+        $doc = SubmissionDocument::findOrFail($id);
+
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $bucket = env('SUPABASE_BUCKET', 'submissions');
+
+        // Ambil path asli dari DB
+        $rawPath = ltrim($doc->file_path, '/');
+
+        // Normal path (tanpa prefix submissions/)
+        $path = SupabasePath::normalize($rawPath);
+
+        // URL normal
+        $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
+
+        // URL legacy (kalau file memang terlanjur disimpan di folder "submissions/" di dalam bucket)
+        $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/submissions/{$path}";
+
+        // Cek dulu object ada di mana (HEAD lebih ringan dari GET)
+        $existsNormal = Http::head($urlNormal)->successful();
+        $finalUrl = $existsNormal ? $urlNormal : $urlLegacy;
+
+        return redirect()->away($finalUrl . '?download=' . urlencode($doc->original_name));
     }
 }

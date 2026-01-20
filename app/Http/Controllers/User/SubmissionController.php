@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Mail\SubmissionCreated;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class SubmissionController extends Controller
 {
@@ -101,17 +102,20 @@ class SubmissionController extends Controller
         ]);
 
         if ($request->hasFile('documents')) {
-            $documents = $request->file('documents');
-            $documents = array_slice($documents, 0, 3);
-            
+            $documents = array_slice($request->file('documents'), 0, 3);
+
             foreach ($documents as $document) {
                 if ($document && $document->isValid()) {
+
+                    $bucket = env('SUPABASE_BUCKET', 'submissions');
+                    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+                    $token = env('SUPABASE_SERVICE_ROLE_KEY'); // WAJIB
+
                     $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
-                    
-                    // UPLOAD KE SUPABASE (bukan local storage)
-                    // Path: submission_id/filename (TANPA prefix 'submissions/')
+
+                    // Simpan dengan format yang kamu pakai di DB sekarang: submissions/{id}/{filename}
                     $path = $document->storeAs($submission->id, $filename, 'supabase');
-                    
+
                     SubmissionDocument::create([
                         'submission_id' => $submission->id,
                         'original_name' => $document->getClientOriginalName(),
@@ -164,15 +168,12 @@ class SubmissionController extends Controller
         // Redirect ke URL Supabase
         $supabaseUrl = env('SUPABASE_URL');
         $bucket = env('SUPABASE_BUCKET', 'submissions');
-        $filePath = $document->file_path;
-        
-        // Clean path jika ada prefix 'submissions/'
-        if (str_starts_with($filePath, 'submissions/')) {
-            $filePath = substr($filePath, 12);
+        $filePath = ltrim($document->file_path, '/');
+        if (Str::startsWith($filePath, 'submissions/')) {
+            $filePath = Str::after($filePath, 'submissions/');
         }
-        
+
         $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
-        
-        return redirect($publicUrl);
+        return redirect()->away($publicUrl);
     }
 }
