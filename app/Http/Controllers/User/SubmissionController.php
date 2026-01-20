@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use App\Mail\SubmissionCreated;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class SubmissionController extends Controller
 {
@@ -106,7 +107,10 @@ class SubmissionController extends Controller
             foreach ($documents as $document) {
                 if ($document && $document->isValid()) {
                     $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
-                    $path = $document->storeAs('submissions/' . $submission->id, $filename, 'public');
+                    
+                    // UPLOAD KE SUPABASE (bukan local storage)
+                    // Path: submission_id/filename (TANPA prefix 'submissions/')
+                    $path = $document->storeAs($submission->id, $filename, 'supabase');
                     
                     SubmissionDocument::create([
                         'submission_id' => $submission->id,
@@ -122,7 +126,7 @@ class SubmissionController extends Controller
         try {
             Mail::to($user->email)->send(new SubmissionCreated($submission));
         } catch (\Exception $e) {
-            \Log::error('Failed to send submission email: ' . $e->getMessage());
+            Log::error('Failed to send submission email: ' . $e->getMessage());
         }
 
         return redirect()->route('user.submissions.create')
@@ -150,20 +154,25 @@ class SubmissionController extends Controller
     /**
      * View document in browser
      */
-    public function viewDocument(SubmissionDocument $document)
-    {
+    public function viewDocument(SubmissionDocument $document){
         $user = auth()->user();
         
         if ($document->submission->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
         
-        $path = storage_path('app/public/' . $document->file_path);
+        // Redirect ke URL Supabase
+        $supabaseUrl = env('SUPABASE_URL');
+        $bucket = env('SUPABASE_BUCKET', 'submissions');
+        $filePath = $document->file_path;
         
-        if (!file_exists($path)) {
-            abort(404, 'File not found.');
+        // Clean path jika ada prefix 'submissions/'
+        if (str_starts_with($filePath, 'submissions/')) {
+            $filePath = substr($filePath, 12);
         }
         
-        return response()->file($path);
+        $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
+        
+        return redirect($publicUrl);
     }
 }
