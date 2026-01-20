@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'supabase' => [
+        'url' => env('SUPABASE_URL'),
+        'bucket' => env('SUPABASE_BUCKET', 'submissions'),
+    ],
+
+
 ];

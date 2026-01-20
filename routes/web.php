@@ -99,4 +99,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // Route Manajemen Pengajuan
     Route::get('/manajemen-pengajuan/permohonan', [App\Http\Controllers\Admin\SubmissionController::class, 'index'])
         ->name('submissions.permohonan');
+
+    // Route Detail & Update
+    Route::get('/manajemen-pengajuan/permohonan/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'show'])
+        ->name('submissions.show');
+        
+    Route::put('/manajemen-pengajuan/permohonan/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'update'])
+        ->name('submissions.update');
+
+    Route::get('/manajemen-pengajuan/dokumen/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'downloadDocument'])
+        ->name('submissions.document');
 });
