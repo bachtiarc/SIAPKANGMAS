@@ -1,5 +1,3 @@
-<!-- resources/views/layouts/admin.blade.php -->
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -38,9 +36,7 @@
 <body class="bg-gray-50">
     <div class="flex h-screen overflow-hidden">
         
-        <!-- Sidebar -->
         <aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0">
-            <!-- Admin Profile -->
             <div class="p-6 border-b border-gray-200">
                 <div class="flex items-center space-x-3">
                     <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
@@ -53,16 +49,15 @@
                 </div>
             </div>
 
-            <!-- Navigation -->
             <nav class="p-4">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center px-4 py-3 mb-2 text-white bg-blue-600 rounded-lg {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <a href="{{ route('admin.dashboard') }}" class="flex items-center px-4 py-3 mb-2 rounded-lg transition-colors {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                     </svg>
                     <span class="font-montserrat font-medium">Dashboard</span>
                 </a>
 
-                <a href="#" class="flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg hover:bg-gray-100">
+                <a href="{{ route('admin.submissions.permohonan') }}" class="flex items-center px-4 py-3 mb-2 rounded-lg transition-colors {{ request()->routeIs('admin.submissions.*') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
@@ -77,7 +72,6 @@
                 </a>
             </nav>
 
-            <!-- Logout Button -->
             <div class="absolute bottom-0 w-64 p-4">
                 <button onclick="showLogoutModal()" class="flex items-center w-full px-4 py-3 text-red-600 rounded-lg hover:bg-red-50">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,20 +80,19 @@
                     <span class="font-montserrat font-medium">Keluar</span>
                 </button>
                 
-                <!-- Hidden logout form -->
                 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
                     @csrf
                 </form>
             </div>
         </aside>
 
-        <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             
-            <!-- Header -->
             <header class="bg-white border-b border-gray-200 px-8 py-4">
                 <div class="flex items-center justify-between">
-                    <h1 class="font-montserrat text-2xl font-bold text-blue-600">Dashboard Admin</h1>
+                    <h1 class="font-montserrat text-2xl font-bold text-blue-600">
+                        @yield('header_title', 'Dashboard Admin')
+                    </h1>
                     
                     <div class="flex items-center space-x-4">
                         <img src="{{ asset('images/logo.png') }}" alt="SIAPKANGMAS" class="h-12">
@@ -107,7 +100,6 @@
                 </div>
             </header>
 
-            <!-- Main Content Area -->
             <main class="flex-1 overflow-y-auto bg-gray-50 p-8">
                 @yield('content')
             </main>
@@ -116,10 +108,8 @@
 
     </div>
 
-    <!-- Logout Confirmation Modal -->
     <div id="logoutModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="display: none; z-index: 100;">
         <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
-            <!-- Icon -->
             <div class="flex justify-center mb-6">
                 <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
                     <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,17 +118,14 @@
                 </div>
             </div>
 
-            <!-- Title -->
             <h2 class="font-montserrat text-2xl font-bold text-gray-900 text-center mb-3">
                 Konfirmasi Logout
             </h2>
 
-            <!-- Message -->
             <p class="font-lato text-gray-600 text-center mb-8">
                 Anda yakin ingin keluar dari akun Anda?
             </p>
 
-            <!-- Buttons -->
             <div class="flex gap-3">
                 <button type="button" onclick="hideLogoutModal()" class="flex-1 font-montserrat px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
                     Batal

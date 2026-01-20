@@ -8,6 +8,7 @@ use App\Models\Submission;
 use App\Models\Consultation;
 use App\Models\Complaint;
 use App\Models\User;
+use Illuminate\Support\Facades\DB; // Tambahkan ini untuk query chart
 
 class DashboardController extends Controller
 {
@@ -16,26 +17,16 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // Calculate statistics
-        // $totalTickets = $this->getTotalTickets();
-        // $inProgressTickets = $this->getInProgressTickets();
-        // $completedTickets = $this->getCompletedTickets();
-        // $pendingTickets = $this->getPendingTickets();
-        $totalTickets = 1240; // Fixed dummy number
-        $inProgressTickets = 45;
-        $completedTickets = 1150;
-        $pendingTickets = 12;
-
-        $recentTickets = [
-            ['name' => 'Budi Santoso', 'ticket_id' => 'PI0001_12012026'],
-            ['name' => 'Siti Nurhaliza', 'ticket_id' => 'KL0002_12012026'],
-            ['name' => 'Ahmad Fauzi', 'ticket_id' => 'PD0003_12012026'],
-        ];
+        // Calculate statistics (Menggunakan data real dari database)
+        $totalTickets = $this->getTotalTickets();
+        $inProgressTickets = $this->getInProgressTickets();
+        $completedTickets = $this->getCompletedTickets();
+        $pendingTickets = $this->getPendingTickets();
         
-        // Get recent tickets (last 3)
-        // $recentTickets = $this->getRecentTickets();
+        // Get recent tickets (last 5)
+        $recentTickets = $this->getRecentTickets();
         
-        // Chart data (monthly statistics)
+        // Chart data (monthly statistics real)
         $chartData = $this->getMonthlyChartData();
 
         return view('admin.dashboard', compact(
@@ -76,17 +67,18 @@ class DashboardController extends Controller
     private function getInProgressTickets()
     {
         $total = 0;
+        $statuses = ['in_progress', 'diproses'];
         
         if (class_exists('App\Models\Submission')) {
-            $total += Submission::whereIn('status', ['in_progress', 'diproses'])->count();
+            $total += Submission::whereIn('status', $statuses)->count();
         }
         
         if (class_exists('App\Models\Consultation')) {
-            $total += Consultation::whereIn('status', ['in_progress', 'diproses'])->count();
+            $total += Consultation::whereIn('status', $statuses)->count();
         }
         
         if (class_exists('App\Models\Complaint')) {
-            $total += Complaint::whereIn('status', ['in_progress', 'diproses'])->count();
+            $total += Complaint::whereIn('status', $statuses)->count();
         }
         
         return $total;
@@ -98,17 +90,18 @@ class DashboardController extends Controller
     private function getCompletedTickets()
     {
         $total = 0;
+        $statuses = ['completed', 'selesai', 'approved'];
         
         if (class_exists('App\Models\Submission')) {
-            $total += Submission::whereIn('status', ['completed', 'selesai', 'approved'])->count();
+            $total += Submission::whereIn('status', $statuses)->count();
         }
         
         if (class_exists('App\Models\Consultation')) {
-            $total += Consultation::whereIn('status', ['completed', 'selesai', 'approved'])->count();
+            $total += Consultation::whereIn('status', $statuses)->count();
         }
         
         if (class_exists('App\Models\Complaint')) {
-            $total += Complaint::whereIn('status', ['completed', 'selesai', 'approved'])->count();
+            $total += Complaint::whereIn('status', $statuses)->count();
         }
         
         return $total;
@@ -137,7 +130,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get recent tickets (last 3)
+     * Get recent tickets (last 5 mixed)
      */
     private function getRecentTickets()
     {
@@ -146,13 +139,13 @@ class DashboardController extends Controller
         // Get submissions
         if (class_exists('App\Models\Submission')) {
             $submissions = Submission::with('user')
-                ->orderBy('created_at', 'desc')
-                ->take(3)
+                ->latest()
+                ->take(5)
                 ->get()
                 ->map(function($item) {
                     return [
                         'name' => $item->user->name ?? 'Unknown',
-                        'ticket_id' => $item->ticket_id ?? 'PI' . str_pad($item->id, 4, '0', STR_PAD_LEFT),
+                        'ticket_id' => $item->ticket_id,
                         'type' => 'Permohonan Informasi',
                         'date' => $item->created_at
                     ];
@@ -163,8 +156,8 @@ class DashboardController extends Controller
         // Get consultations
         if (class_exists('App\Models\Consultation')) {
             $consultations = Consultation::with('user')
-                ->orderBy('created_at', 'desc')
-                ->take(3)
+                ->latest()
+                ->take(5)
                 ->get()
                 ->map(function($item) {
                     return [
@@ -180,8 +173,8 @@ class DashboardController extends Controller
         // Get complaints
         if (class_exists('App\Models\Complaint')) {
             $complaints = Complaint::with('user')
-                ->orderBy('created_at', 'desc')
-                ->take(3)
+                ->latest()
+                ->take(5)
                 ->get()
                 ->map(function($item) {
                     return [
@@ -194,21 +187,54 @@ class DashboardController extends Controller
             $tickets = $tickets->merge($complaints);
         }
         
-        // Sort by date and take latest 3
-        return $tickets->sortByDesc('date')->take(3)->values();
+        // Sort by date and take latest 5
+        return $tickets->sortByDesc('date')->take(5)->values();
     }
 
-    /**
-     * Get monthly chart data
+/**
+     * Get monthly chart data (PostgreSQL Compatible)
      */
     private function getMonthlyChartData()
     {
-        // Default data for demonstration
-        // In production, calculate from actual database records
-        return [
-            'completed' => [120, 150, 180, 140, 200, 170, 190, 210, 180, 220, 240, 200],
-            'processing' => [30, 40, 35, 45, 50, 40, 48, 52, 45, 55, 60, 50],
-            'pending' => [10, 15, 12, 18, 20, 15, 17, 20, 18, 22, 25, 20],
+        // Inisialisasi array 0 untuk 12 bulan
+        $data = [
+            'completed' => array_fill(0, 12, 0),
+            'processing' => array_fill(0, 12, 0),
+            'pending' => array_fill(0, 12, 0),
         ];
+
+        // Daftar Model yang akan dicek
+        $models = [
+            'App\Models\Submission', 
+            'App\Models\Consultation', 
+            'App\Models\Complaint'
+        ];
+
+        foreach ($models as $modelClass) {
+            if (!class_exists($modelClass)) continue;
+
+            // FIX: Gunakan EXTRACT(MONTH FROM ...) untuk PostgreSQL
+            $query = $modelClass::selectRaw('EXTRACT(MONTH FROM created_at) as month, status, COUNT(*) as total')
+                ->whereYear('created_at', date('Y'))
+                ->groupBy('month', 'status')
+                ->get();
+
+            foreach ($query as $row) {
+                // Index array dimulai dari 0 (Januari = 0)
+                // Pastikan casting ke integer karena EXTRACT mengembalikan float/numeric
+                $monthIndex = (int)$row->month - 1;
+                
+                // Masukkan ke kategori yang sesuai
+                if (in_array($row->status, ['completed', 'selesai', 'approved'])) {
+                    $data['completed'][$monthIndex] += $row->total;
+                } elseif (in_array($row->status, ['in_progress', 'diproses'])) {
+                    $data['processing'][$monthIndex] += $row->total;
+                } elseif ($row->status == 'pending') {
+                    $data['pending'][$monthIndex] += $row->total;
+                }
+            }
+        }
+
+        return $data;
     }
 }

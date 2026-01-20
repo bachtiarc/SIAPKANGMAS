@@ -89,4 +89,8 @@ Route::middleware(['auth', 'verified', 'role:user,masyarakat_umum'])->prefix('ma
 // Admin Routes (Role: admin)
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    // Route Manajemen Pengajuan
+    Route::get('/manajemen-pengajuan/permohonan', [App\Http\Controllers\Admin\SubmissionController::class, 'index'])
+        ->name('submissions.permohonan');
 });

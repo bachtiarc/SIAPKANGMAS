@@ -138,93 +138,113 @@
 
 @push('scripts')
 <script>
-// Chart.js Configuration with Dummy Data
-const ctx = document.getElementById('monthlyChart');
+    // Ambil data dari Controller
+    const chartData = @json($chartData);
 
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
-        datasets: [
-            {
-                label: 'Selesai',
-                data: [120, 150, 180, 140, 200, 170, 190, 210, 180, 220, 240, 200],
-                backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                borderColor: 'rgb(34, 197, 94)',
-                borderWidth: 1
-            },
-            {
-                label: 'Diproses',
-                data: [30, 40, 35, 45, 50, 40, 48, 52, 45, 55, 60, 50],
-                backgroundColor: 'rgba(234, 179, 8, 0.8)',
-                borderColor: 'rgb(234, 179, 8)',
-                borderWidth: 1
-            },
-            {
-                label: 'Pending',
-                data: [10, 15, 12, 18, 20, 15, 17, 20, 18, 22, 25, 20],
-                backgroundColor: 'rgba(239, 68, 68, 0.8)',
-                borderColor: 'rgb(239, 68, 68)',
-                borderWidth: 1
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    font: {
+    // Chart.js Configuration
+    const ctx = document.getElementById('monthlyChart');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
+            datasets: [
+                {
+                    label: 'Selesai',
+                    // Gunakan data real dari controller
+                    data: chartData.completed, 
+                    backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                    borderColor: 'rgb(34, 197, 94)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Diproses',
+                    // Gunakan data real dari controller
+                    data: chartData.processing,
+                    backgroundColor: 'rgba(234, 179, 8, 0.8)',
+                    borderColor: 'rgb(234, 179, 8)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Pending',
+                    // Gunakan data real dari controller
+                    data: chartData.pending,
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                    borderColor: 'rgb(239, 68, 68)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: {
+                            family: 'Montserrat',
+                            size: 12
+                        },
+                        padding: 15,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: {
                         family: 'Montserrat',
+                        size: 13,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        family: 'Lato',
                         size: 12
                     },
-                    padding: 15,
-                    usePointStyle: true
-                }
-            },
-            tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                padding: 12,
-                titleFont: {
-                    family: 'Montserrat',
-                    size: 13,
-                    weight: 'bold'
-                },
-                bodyFont: {
-                    family: 'Lato',
-                    size: 12
-                },
-                cornerRadius: 8
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(0, 0, 0, 0.05)'
-                },
-                ticks: {
-                    font: {
-                        family: 'Lato',
-                        size: 11
+                    cornerRadius: 8,
+                    callbacks: {
+                        // Tambahkan ini agar tooltip tidak menampilkan 0 jika data kosong (opsional)
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y;
+                            }
+                            return label;
+                        }
                     }
                 }
             },
-            x: {
-                grid: {
-                    display: false
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        stepSize: 1, // Agar sumbu Y bilangan bulat (tidak pecahan)
+                        font: {
+                            family: 'Lato',
+                            size: 11
+                        }
+                    }
                 },
-                ticks: {
-                    font: {
-                        family: 'Lato',
-                        size: 11
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            family: 'Lato',
+                            size: 11
+                        }
                     }
                 }
             }
         }
-    }
-});
+    });
 </script>
 @endpush
