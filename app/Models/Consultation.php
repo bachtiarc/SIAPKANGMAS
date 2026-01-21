@@ -45,13 +45,12 @@ class Consultation extends Model
     // Status label
     public function getStatusLabelAttribute()
     {
-        return match($this->status) {
-            'pending' => 'Menunggu',
-            'diproses' => 'Diproses',
-            'selesai' => 'Selesai',
-            'ditolak' => 'Ditolak',
-            default => ucfirst($this->status),
-        };
+        return [
+            'pending'     => 'Diproses', 
+            'in_progress' => 'Diproses',
+            'completed'   => 'Selesai',
+            'rejected'    => 'Ditolak',
+        ][$this->status] ?? 'Unknown';
     }
 
     // Relationships
@@ -76,8 +75,44 @@ class Consultation extends Model
     }
 
     // Jika punya table consultation_documents
-    public function documents()
+    public function hasAttachment()
     {
-        return $this->hasMany(ConsultationDocument::class);
+        return !empty($this->attachment);
+    }
+
+    public function getAttachmentUrlAttribute()
+    {
+        return $this->attachment ? asset('storage/' . $this->attachment) : null;
+    }
+    
+    public function getTicketIdAttribute()
+    {
+        return $this->ticket_number;
+    }
+
+    public function getTitleAttribute()
+    {
+        return $this->subject;
+    }
+
+    public function getDocumentsAttribute()
+    {
+        if ($this->attachment) {
+            return collect([
+                (object)[
+                    'file_path' => $this->attachment,
+                    'original_name' => basename($this->attachment),
+                    'file_size' => file_exists(storage_path('app/public/' . $this->attachment)) 
+                        ? filesize(storage_path('app/public/' . $this->attachment)) 
+                        : 0,
+                ]
+            ]);
+        }
+        return collect([]);
+    }
+
+    public function getAdminNotesAttribute()
+    {
+        return $this->attributes['admin_response'] ?? $this->attributes['admin_notes'] ?? null;
     }
 }

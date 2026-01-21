@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\User\DashboardController as UserDashboardController;
 use App\Http\Controllers\User\SubmissionController as UserSubmissionController;
 use App\Http\Controllers\User\ConsultationController;
+use App\Http\Controllers\User\ConsultationPdfController;
 use App\Http\Controllers\User\SubmissionPdfController as UserSubmissionPdfController;
 use App\Http\Controllers\Masyarakat\SubmissionController as MasyarakatSubmissionController;
 use App\Http\Controllers\User\ProfileController as UserProfileController;
@@ -77,6 +78,11 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
 
     // KONSULTASI (DITAMBAHKAN DISINI)
     Route::resource('consultations', ConsultationController::class);
+    Route::get('/consultations', [ConsultationController::class, 'index'])->name('consultations.index');
+    Route::get('/consultations/create', [ConsultationController::class, 'create'])->name('consultations.create');
+    Route::post('/consultations', [ConsultationController::class, 'store'])->name('consultations.store');
+    Route::get('/consultations/{consultation}', [ConsultationController::class, 'show'])->name('consultations.show');
+    Route::get('/consultations/{consultation}/pdf', [ConsultationPdfController::class, 'download'])->name('consultations.download');
 });
 
 // User Masyarakat Dashboard 
