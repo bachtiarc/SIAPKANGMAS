@@ -1,12 +1,9 @@
-<!-- resources/views/user/consultations/show.blade.php -->
-
 @extends('layouts.dashboard')
 
 @section('title', 'Detail Konsultasi - ' . $consultation->ticket_number)
 
 @section('content')
 <div class="p-6 bg-gray-50 min-h-screen">
-    <!-- Header dengan tombol back dan download -->
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center space-x-4">
             <a href="{{ route('user.consultations.index') }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
@@ -28,7 +25,6 @@
         </div>
     </div>
 
-    <!-- Progress Tracker -->
     <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
         <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
             <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,14 +34,11 @@
         </h2>
 
         <div class="relative">
-            <!-- Progress bar background -->
             <div class="absolute top-6 left-0 w-full h-0.5 bg-gray-200"></div>
-            <!-- Progress bar active -->
             <div class="absolute top-6 left-0 h-0.5 bg-green-500 transition-all duration-500" 
                 style="width: {{ $consultation->status == 'pending' ? '15%' : ($consultation->status == 'diproses' ? '50%' : '100%') }};"></div>
 
             <div class="relative flex justify-between">
-                <!-- Step 1: Pengajuan -->
                 <div class="flex flex-col items-center" style="width: 33%;">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-green-500 text-white shadow-lg z-10">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +51,6 @@
                     </div>
                 </div>
 
-                <!-- Step 2: Diproses -->
                 <div class="flex flex-col items-center" style="width: 33%;">
                     @php
                         $isProcessing = in_array($consultation->status, ['pending', 'diproses']);
@@ -87,7 +79,6 @@
                     </div>
                 </div>
 
-                <!-- Step 3: Selesai -->
                 <div class="flex flex-col items-center" style="width: 33%;">
                     @php
                         $finalBg = 'bg-gray-300';
@@ -122,7 +113,6 @@
         </div>
     </div>
 
-    <!-- Detail Konsultasi -->
     <div class="bg-white rounded-lg shadow-sm p-8">
         <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
             <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +122,6 @@
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Kolom Kiri -->
             <div>
                 <div class="mb-6">
                     <label class="block text-sm font-semibold text-gray-600 mb-2">Subjek Konsultasi</label>
@@ -150,70 +139,66 @@
                 </div>
             </div>
 
-            <!-- Kolom Kanan -->
             <div>
-                <!-- Dokumen Pendukung -->
-                @if($consultation->attachment)
                 <div class="mb-6">
                     <label class="block text-sm font-semibold text-gray-600 mb-3">Dokumen Pendukung</label>
-                    <div class="space-y-2">
-                        @php
-                            $ext = strtolower(pathinfo($consultation->attachment, PATHINFO_EXTENSION));
-                            $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
-                            $isPdf = $ext === 'pdf';
-                            $fileName = basename($consultation->attachment);
-                        @endphp
-                        
-                        <div class="flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition group">
-                            <div class="flex items-center space-x-3">
-                                @if($isPdf)
-                                    <svg class="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
-                                    </svg>
-                                @elseif($isImage)
-                                    <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
-                                    </svg>
-                                @else
-                                    <svg class="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
-                                    </svg>
-                                @endif
+                    
+                    {{-- PERBAIKAN: Membaca dari relasi documents (multiple) --}}
+                    @if($consultation->documents && $consultation->documents->count() > 0)
+                        <div class="space-y-2">
+                            @foreach($consultation->documents as $doc)
+                                @php
+                                    $ext = strtolower(pathinfo($doc->file_path, PATHINFO_EXTENSION));
+                                    $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                                    $isPdf = $ext === 'pdf';
+                                    $fileName = $doc->original_name;
+                                @endphp
                                 
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">Dokumen Lampiran</p>
-                                    <p class="text-xs text-gray-500">{{ $fileName }}</p>
+                                <div class="flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition group">
+                                    <div class="flex items-center space-x-3">
+                                        @if($isPdf)
+                                            <svg class="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        @elseif($isImage)
+                                            <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        @else
+                                            <svg class="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        @endif
+                                        
+                                        <div class="overflow-hidden">
+                                            <p class="text-sm font-medium text-gray-900 truncate max-w-[150px] md:max-w-[200px]">{{ $fileName }}</p>
+                                            <p class="text-xs text-gray-500">{{ number_format($doc->file_size / 1024, 2) }} KB</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs text-gray-500 group-hover:text-blue-600">.{{ strtoupper($ext) }}</span>
+                                        
+                                        <a href="{{ asset('storage/' . $doc->file_path) }}" download="{{ $fileName }}" class="text-blue-600 hover:text-blue-800" title="Download">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                            </svg>
+                                        </a>
+                                        
+                                        <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Lihat">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                            </svg>
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-500 group-hover:text-blue-600">.{{ strtoupper($ext) }}</span>
-                                
-                                <!-- Download button -->
-                                <a href="{{ asset('storage/' . $consultation->attachment) }}" download="{{ $fileName }}" class="text-blue-600 hover:text-blue-800" title="Download">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                    </svg>
-                                </a>
-                                
-                                <!-- View button -->
-                                <a href="{{ asset('storage/' . $consultation->attachment) }}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Lihat">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                    </svg>
-                                </a>
-                            </div>
+                            @endforeach
                         </div>
-                    </div>
+                    @else
+                        <p class="text-sm text-gray-500 italic">Tidak ada dokumen pendukung</p>
+                    @endif
                 </div>
-                @else
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Dokumen Pendukung</label>
-                    <p class="text-sm text-gray-500 italic">Tidak ada dokumen pendukung</p>
-                </div>
-                @endif
 
-                <!-- Respon Admin -->
                 @if($consultation->admin_response)
                 <div class="mb-6">
                     <label class="block text-sm font-semibold text-gray-600 mb-2">Respon dari Admin</label>
@@ -236,7 +221,6 @@
                 </div>
                 @endif
 
-                <!-- Admin Notes (jika ada) -->
                 @if($consultation->admin_notes && $consultation->admin_notes != $consultation->admin_response)
                 <div class="mb-6">
                     <label class="block text-sm font-semibold text-gray-600 mb-2">Catatan Admin</label>
@@ -246,7 +230,6 @@
                 </div>
                 @endif
 
-                <!-- Handler Info -->
                 @if($consultation->handler && !$consultation->admin_response)
                 <div class="mb-6">
                     <label class="block text-sm font-semibold text-gray-600 mb-2">Ditangani Oleh</label>
@@ -267,7 +250,6 @@
         </div>
     </div>
 
-    <!-- Timeline / Activity Log -->
     @if(isset($consultation->statusHistories) && $consultation->statusHistories->count() > 0)
     <div class="bg-white rounded-lg shadow-sm p-8 mt-6">
         <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
@@ -289,11 +271,14 @@
                 </div>
                 <div class="flex-1 bg-gray-50 rounded-lg p-4">
                     <div class="flex items-center justify-between mb-1">
-                        <p class="text-sm font-bold text-gray-900">{{ strtoupper($history->status) }}</p>
+                        <p class="text-sm font-bold text-gray-900">
+                            {{-- Menggunakan kolom new_status sesuai tabel status_histories --}}
+                            {{ strtoupper($history->new_status ?? $history->status) }}
+                        </p>
                         <p class="text-xs text-gray-500">{{ $history->created_at->format('d/m/Y H:i') }} WIB</p>
                     </div>
-                    @if($history->description)
-                        <p class="text-sm text-gray-700">{{ $history->description }}</p>
+                    @if($history->notes || $history->description)
+                        <p class="text-sm text-gray-700">{{ $history->notes ?? $history->description }}</p>
                     @endif
                 </div>
             </div>

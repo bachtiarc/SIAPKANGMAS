@@ -9,25 +9,26 @@ class ConsultationStatusHistory extends Model
 {
     use HasFactory;
 
+    // Nama tabel di Supabase Anda
+    protected $table = 'status_histories'; 
+
     protected $fillable = [
-        'consultation_id',
-        'changed_by',
+        'trackable_type',
+        'trackable_id',
         'old_status',
         'new_status',
         'notes',
+        'changed_by',
     ];
 
     /**
-     * Get the consultation that owns the status history.
+     * Relasi Polymorphic ke Consultation
      */
-    public function consultation()
+    public function trackable()
     {
-        return $this->belongsTo(Consultation::class);
+        return $this->morphTo();
     }
 
-    /**
-     * Get the user who changed the status.
-     */
     public function changedBy()
     {
         return $this->belongsTo(User::class, 'changed_by');

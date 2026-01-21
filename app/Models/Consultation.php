@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\StatusHistory;
 
 class Consultation extends Model
 {
@@ -30,7 +29,24 @@ class Consultation extends Model
         'submitted_at' => 'datetime',
     ];
 
-    // Status badge colors
+    /**
+     * Relasi ke tabel dokumen baru (Multiple Files)
+     */
+    public function documents()
+    {
+        return $this->hasMany(ConsultationDocument::class, 'consultation_id');
+    }
+
+    /**
+     * PERBAIKAN: Menggunakan morphMany karena tabel status_histories 
+     * menggunakan trackable_type dan trackable_id
+     */
+    public function statusHistories()
+    {
+        return $this->morphMany(ConsultationStatusHistory::class, 'trackable')->latest();
+    }
+
+    // --- Accessor Status Badge ---
     public function getStatusBadgeAttribute()
     {
         return match($this->status) {
@@ -42,7 +58,7 @@ class Consultation extends Model
         };
     }
 
-    // Status label
+    // --- Accessor Status Label ---
     public function getStatusLabelAttribute()
     {
         return match($this->status) {
@@ -54,40 +70,20 @@ class Consultation extends Model
         };
     }
 
-    // Relationships
+    // --- Relationships ---
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the category of the consultation.
-     */
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    /**
-     * Get the handler (admin) of the consultation.
-     */
     public function handler()
     {
         return $this->belongsTo(User::class, 'handled_by');
-    }
-
-    /**
-     * Get all status histories for the consultation.
-     */
-    public function statusHistories()
-    {
-        return $this->morphMany(ConsultationStatusHistory::class)->latest();
-    }
-
-    // Jika punya table consultation_documents
-    public function documents()
-    {
-        return $this->attachment ? asset('storage/' . $this->attachment) : null;
     }
     
     public function getTicketIdAttribute()
@@ -100,38 +96,17 @@ class Consultation extends Model
         return $this->subject;
     }
 
-    public function getDocumentsAttribute()
-    {
-        if ($this->attachment) {
-            return collect([
-                (object)[
-                    'file_path' => $this->attachment,
-                    'original_name' => basename($this->attachment),
-                    'file_size' => file_exists(storage_path('app/public/' . $this->attachment)) 
-                        ? filesize(storage_path('app/public/' . $this->attachment)) 
-                        : 0,
-                ]
-            ]);
-        }
-        return collect([]);
-    }
-
     public function getAdminNotesAttribute()
     {
         return $this->attributes['admin_response'] ?? $this->attributes['admin_notes'] ?? null;
     }
 
-    /**
-     * Scope to filter consultations by status.
-     */
+    // --- Scopes ---
     public function scopeStatus($query, $status)
     {
         return $query->where('status', $status);
     }
 
-    /**
-     * Scope to filter consultations by user type.
-     */
     public function scopeUserType($query, $type)
     {
         return $query->whereHas('user', function($q) use ($type) {
