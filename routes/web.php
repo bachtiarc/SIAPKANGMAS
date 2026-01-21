@@ -13,6 +13,8 @@ use App\Http\Controllers\User\ConsultationController;
 use App\Http\Controllers\User\ConsultationPdfController;
 use App\Http\Controllers\User\SubmissionPdfController as UserSubmissionPdfController;
 use App\Http\Controllers\Masyarakat\SubmissionController as MasyarakatSubmissionController;
+use App\Http\Controllers\User\ComplaintController;
+use App\Http\Controllers\User\ComplaintPdfController;
 use App\Http\Controllers\User\ProfileController as UserProfileController;
 use App\Http\Controllers\Masyarakat\DashboardController as MasyarakatDashboardController;
 use App\Http\Controllers\Masyarakat\ProfileController as MasyarakatProfileController;
@@ -74,17 +76,25 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
     Route::post('/permohonan-informasi', [UserSubmissionController::class, 'store'])->name('submissions.store');
     Route::get('/permohonan-informasi/{submission}', [UserSubmissionController::class, 'show'])->name('submissions.show');
     
-    // PDF & VIEW DOCUMENT (FITUR TETAP ADA)
+    // PDF & VIEW DOCUMENT 
     Route::get('/permohonan-informasi/{submission}/pdf', [UserSubmissionPdfController::class, 'download'])->name('submissions.download');
     Route::get('/permohonan-informasi/document/{document}', [UserSubmissionController::class, 'viewDocument'])->name('submissions.view-document');
 
-    // KONSULTASI (DITAMBAHKAN DISINI)
+    // KONSULTASI 
     Route::resource('consultations', ConsultationController::class);
     Route::get('/consultations', [ConsultationController::class, 'index'])->name('consultations.index');
     Route::get('/consultations/create', [ConsultationController::class, 'create'])->name('consultations.create');
     Route::post('/consultations', [ConsultationController::class, 'store'])->name('consultations.store');
     Route::get('/consultations/{consultation}', [ConsultationController::class, 'show'])->name('consultations.show');
     Route::get('/consultations/{consultation}/pdf', [ConsultationPdfController::class, 'download'])->name('consultations.download');
+
+    // PENGADUAN (COMPLAINTS)
+    Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
+    Route::get('/complaints/create', [ComplaintController::class, 'create'])->name('complaints.create');
+    Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
+    Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('complaints.show');
+    Route::get('/complaints/{complaint}/pdf', [ComplaintPdfController::class, 'download'])->name('complaints.download');
+    Route::get('/complaints/document/{document}', [ComplaintController::class, 'viewDocument'])->name('complaints.documents.view');
 });
 
 // User Masyarakat Dashboard 

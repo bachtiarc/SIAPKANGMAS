@@ -71,19 +71,28 @@ class ConsultationController extends Controller
                 'status' => 'pending',
                 'attachment' => null, 
             ]);
-
+            
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $file) {
-                    $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                    $path = $file->storeAs($consultation->id, $filename, 'supabase_consultations');
+                    if ($file->isValid()) {
+                        $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
+                        
+                        // Store file in consultations folder using public disk
+                        $path = $consultation->id . '/' . $filename;
 
-                    ConsultationDocument::create([
-                        'consultation_id' => $consultation->id,
-                        'original_name' => $file->getClientOriginalName(),
-                        'file_path' => $path,
-                        'file_type' => $file->getClientMimeType(),
-                        'file_size' => $file->getSize(),
-                    ]);
+                        Storage::disk('supabase_consultations')->put(
+                            $path,
+                            file_get_contents($file)
+                        );
+
+                        ConsultationDocument::create([
+                            'consultation_id' => $consultation->id,
+                            'original_name' => $file->getClientOriginalName(),
+                            'file_path' => $path,
+                            'file_type' => $file->getClientOriginalExtension(),
+                            'file_size' => $file->getSize(),
+                        ]);
+                    }
                 }
             }
             return $consultation;
@@ -96,7 +105,9 @@ class ConsultationController extends Controller
         }
 
         return redirect()->route('user.consultations.create')
-            ->with('success', true)->with('ticket_id', $consultation->ticket_number)->with('consultation_id', $consultation->id);
+            ->with('success', true)
+            ->with('ticket_id', $consultation->ticket_number)
+            ->with('consultation_id', $consultation->id);
     }
 
     public function show(Consultation $consultation)

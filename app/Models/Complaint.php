@@ -16,7 +16,6 @@ class Complaint extends Model
         'subject',
         'description',
         'attachment',
-        'priority',
         'status',
         'admin_response',
         'handled_by',
@@ -50,32 +49,6 @@ class Complaint extends Model
             'diproses' => 'Diproses',
             'selesai' => 'Selesai',
             default => ucfirst($this->status),
-        };
-    }
-
-    /**
-     * Get priority badge color classes
-     */
-    public function getPriorityBadgeAttribute()
-    {
-        return match($this->priority) {
-            'low' => 'bg-gray-100 text-gray-800',
-            'medium' => 'bg-yellow-100 text-yellow-800',
-            'high' => 'bg-red-100 text-red-800',
-            default => 'bg-gray-100 text-gray-800',
-        };
-    }
-
-    /**
-     * Get formatted priority label
-     */
-    public function getPriorityLabelAttribute()
-    {
-        return match($this->priority) {
-            'low' => 'Rendah',
-            'medium' => 'Sedang',
-            'high' => 'Tinggi',
-            default => ucfirst($this->priority),
         };
     }
 
@@ -170,6 +143,13 @@ class Complaint extends Model
         return strtolower($this->attachment_extension) === 'pdf';
     }
 
+    /**
+     * ========================================
+     * ACCESSOR UNTUK KOMPATIBILITAS PDF VIEW
+     * ========================================
+     * Agar complaint bisa pakai view PDF yang sama dengan submission
+     */
+    
     /**
      * Accessor: ticket_id -> ticket_number
      */

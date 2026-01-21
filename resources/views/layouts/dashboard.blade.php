@@ -143,7 +143,7 @@
                         <span class="sidebar-text ml-4 font-semibold">Konsultasi</span>
                     </a>
 
-                    <a href="#" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all text-gray-600 hover:bg-gray-100" title="Buat Pengaduan">
+                    <a href="{{ route('user.complaints.index') }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs('user.complaints.*') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Buat Pengaduan">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                         </svg>

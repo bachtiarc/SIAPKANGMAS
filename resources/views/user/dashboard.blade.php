@@ -1,3 +1,5 @@
+<!-- resources/views/user/dashboard.blade.php -->
+
 @extends('layouts.dashboard')
 
 @section('title', 'Dashboard Pengguna')
@@ -148,7 +150,7 @@
             </a>
 
             <!-- Buat Pengaduan -->
-            <a href="#" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
+            <a href="{{ route('user.complaints.create') }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition">
