@@ -186,7 +186,7 @@
                         <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b">Jenis Pelapor</th>
                         <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b">Kategori</th>
                         <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b">Subjek</th>
-                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center">Status</th>
+                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center min-w-[130px]">Status</th>
                         <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -202,7 +202,7 @@
                         </td>
                         <td class="p-4 text-sm text-gray-600">{{ $item->category->name ?? '-' }}</td>
                         <td class="p-4 text-sm text-gray-900 font-medium">{{ Str::limit($item->title, 20) }}</td>
-                        <td class="p-4 text-center">
+                        <td class="p-4 text-center min-w-[130px]">
                             @php
                                 $statusClass = match($item->status) {
                                     'completed' => 'bg-green-100 text-green-700',
@@ -217,7 +217,7 @@
                                     default => 'Pending',
                                 };
                             @endphp
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $statusClass }}">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap {{ $statusClass }}">
                                 {{ $statusLabel }}
                             </span>
                         </td>

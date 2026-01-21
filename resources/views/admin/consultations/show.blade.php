@@ -8,7 +8,7 @@
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
             {{-- Pastikan route ini mengarah ke halaman list konsultasi Anda --}}
-            <a href="{{ url()->previous() }}" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+            <a href="{{ route('admin.consultations.konsultasi') }}" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
                 <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             </a>
             <div>
@@ -19,14 +19,14 @@
                     @php
                         $badgeColor = match($consultation->status) {
                             'pending' => 'bg-gray-100 text-gray-700',
-                            'in_progress' => 'bg-blue-100 text-blue-800',
+                            'on_progress' => 'bg-blue-100 text-blue-800',
                             'completed', 'selesai' => 'bg-green-100 text-green-800',
                             'rejected' => 'bg-red-100 text-red-800',
                             default => 'bg-gray-100 text-gray-800'
                         };
                         $statusLabel = match($consultation->status) {
                             'pending' => 'Belum Diproses',
-                            'in_progress' => 'Sedang Diproses',
+                            'on_progress' => 'Sedang Diproses',
                             'completed', 'selesai' => 'Selesai',
                             'rejected' => 'Ditolak',
                             default => ucfirst($consultation->status)
@@ -80,7 +80,7 @@
                         @if($consultation->documents->count() > 0)
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 @foreach($consultation->documents as $doc)
-                                <a href="{{ Storage::url($doc->file_path) }}" target="_blank" class="flex items-center p-3 border border-blue-100 bg-blue-50 rounded-lg hover:bg-blue-100 transition group">
+                                <a href="{{ route('admin.consultations.document', $doc->id) }}" target="_blank" class="flex items-center p-3 border border-blue-100 bg-blue-50 rounded-lg hover:bg-blue-100 transition group">
                                     <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-sm mr-3 shrink-0">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                     </div>
@@ -161,7 +161,7 @@
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Update Status</label>
                             <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
                                 <option value="pending" {{ $consultation->status == 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="in_progress" {{ $consultation->status == 'in_progress' ? 'selected' : '' }}>Sedang Diproses</option>
+                                <option value="on_progress" {{ $consultation->status == 'on_progress' ? 'selected' : '' }}>Sedang Diproses</option>
                                 <option value="completed" {{ $consultation->status == 'completed' ? 'selected' : '' }}>Selesai</option>
                                 <option value="rejected" {{ $consultation->status == 'rejected' ? 'selected' : '' }}>Ditolak</option>
                             </select>
@@ -199,7 +199,7 @@
                                 <h3 class="font-bold text-gray-900 text-sm">
                                     Status: {{ match($history->new_status) {
                                         'pending' => 'Pending',
-                                        'in_progress' => 'Sedang Diproses',
+                                        'on_progress' => 'Sedang Diproses',
                                         'completed' => 'Selesai',
                                         'rejected' => 'Ditolak',
                                         default => ucfirst($history->new_status)

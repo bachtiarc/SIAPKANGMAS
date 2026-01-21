@@ -75,7 +75,7 @@ class ConsultationController extends Controller
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $file) {
                     $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                    $path = $file->storeAs('consultations', $filename, 'public');
+                    $path = $file->storeAs($consultation->id, $filename, 'supabase_consultations');
 
                     ConsultationDocument::create([
                         'consultation_id' => $consultation->id,

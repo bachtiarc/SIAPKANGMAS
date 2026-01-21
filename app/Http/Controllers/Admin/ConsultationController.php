@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Consultation;
 use App\Models\Category;
 use App\Models\ConsultationDocument;
+use App\Mail\ConsultationStatusUpdated;
+use App\Support\SupabasePath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class ConsultationController extends Controller
 {
@@ -18,10 +21,10 @@ class ConsultationController extends Controller
     {
         // Statistik
         $stats = [
-            'total' => Consultation::count(),
-            'proses' => Consultation::whereIn('status', ['pending', 'diproses'])->count(),
-            'selesai' => Consultation::whereIn('status', ['completed', 'selesai'])->count(),
-            'belum' => Consultation::where('status', 'pending')->count(),
+            'total'   => Consultation::count(),
+            'proses'  => Consultation::where('status', 'on_progress')->count(),
+            'selesai' => Consultation::whereIn('status', ['completed', 'rejected'])->count(),
+            'belum'   => Consultation::where('status', 'pending')->count(),
         ];
 
         // Query konsultasi
@@ -51,7 +54,11 @@ class ConsultationController extends Controller
 
         // Filter status
         if ($request->filled('status') && $request->status != 'Semua') {
-            $query->where('status', $request->status);
+            if ($request->status === 'completed') {
+                $query->whereIn('status', ['completed', 'rejected']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         $consultations = $query->latest()->paginate(10)->withQueryString();
@@ -73,7 +80,7 @@ class ConsultationController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,in_progress,completed,rejected',
+            'status' => 'required|in:pending,on_progress,completed,rejected',
             'admin_notes' => 'nullable|string',
             'notify_user' => 'nullable'
         ]);
@@ -84,7 +91,7 @@ class ConsultationController extends Controller
         // Update Consultation
         $consultation->update([
             'status' => $request->status,
-            'admin_notes' => $request->admin_notes,
+            'admin_response' => $request->admin_notes,
             'handled_by' => Auth::id(),
             'completed_at' => $request->status == 'completed' ? now() : null
         ]);
@@ -114,16 +121,29 @@ class ConsultationController extends Controller
     }
 
     public function downloadDocument($id)
-    {
-        $document = ConsultationDocument::findOrFail($id);
+{
+    $doc = ConsultationDocument::findOrFail($id);
 
-        // Gunakan storage_path untuk path absolut agar tidak 404
-        $filePath = storage_path('app/public/' . $document->file_path);
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $bucket = env('SUPABASE_CONSULTATIONS_BUCKET', 'consultations');
 
-        if (!file_exists($filePath)) {
-            abort(404, 'File fisik tidak ditemukan di server.');
-        }
+    $path = ltrim($doc->file_path, '/');
 
-        return response()->download($filePath, $document->original_name);
+    // buang prefix yang keburu kesimpen di DB
+    if (Str::startsWith($path, 'consultations/')) {
+        $path = Str::after($path, 'consultations/');
     }
+    if (Str::startsWith($path, 'submissions/')) {
+        $path = Str::after($path, 'submissions/');
+    }
+
+    $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
+    $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/consultations/{$path}";
+
+    // coba normal dulu, kalau 404 baru fallback legacy
+    $res = Http::get($urlNormal);
+    $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
+
+    return redirect()->away($finalUrl . '?download=' . urlencode($doc->original_name));
+}
 }

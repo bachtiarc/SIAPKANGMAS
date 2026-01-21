@@ -60,14 +60,25 @@ return [
             'report' => false,
         ],
 
-        // SUPABASE STORAGE DISK
+        // SUPABASE STORAGE DISK (untuk submissions)
         'supabase' => [
             'driver' => 's3',
             'key' => env('SUPABASE_ACCESS_KEY_ID'),
             'secret' => env('SUPABASE_SECRET_ACCESS_KEY'),
             'region' => env('SUPABASE_DEFAULT_REGION', 'ap-southeast-1'),
-            'bucket' => env('SUPABASE_BUCKET', 'submissions'),
-            'url' => env('SUPABASE_URL'),
+            'bucket' => env('SUPABASE_SUBMISSIONS_BUCKET', 'submissions'),
+            'endpoint' => env('SUPABASE_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw' => true,
+        ],
+
+        // SUPABASE STORAGE DISK (untuk consultations)
+        'supabase_consultations' => [
+            'driver' => 's3',
+            'key' => env('SUPABASE_ACCESS_KEY_ID'),
+            'secret' => env('SUPABASE_SECRET_ACCESS_KEY'),
+            'region' => env('SUPABASE_DEFAULT_REGION', 'ap-southeast-1'),
+            'bucket' => env('SUPABASE_CONSULTATIONS_BUCKET', 'consultations'),
             'endpoint' => env('SUPABASE_ENDPOINT'),
             'use_path_style_endpoint' => true,
             'throw' => true,

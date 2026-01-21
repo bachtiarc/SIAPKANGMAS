@@ -21,9 +21,9 @@ class SubmissionController extends Controller
     {
         $stats = [
             'total' => Submission::count(),
-            'proses' => Submission::whereIn('status', ['pending', 'in_progress', 'diproses'])->count(),
-            'selesai' => Submission::whereIn('status', ['completed', 'selesai', 'approved'])->count(),
-            'belum' => Submission::where('status', 'pending')->count(),
+            'proses' => Submission::where('status', 'in_progress')->count(),
+            'selesai' => Submission::whereIn('status', ['completed', 'rejected'])->count(),
+            'belum' => Submission::where('status', 'pending')->count()
         ];
 
         $query = Submission::with(['user', 'category']);
@@ -47,7 +47,11 @@ class SubmissionController extends Controller
         }
 
         if ($request->filled('status') && $request->status != 'Semua') {
-            $query->where('status', $request->status);
+            if ($request->status === 'completed') {
+                $query->whereIn('status', ['completed', 'rejected']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         $submissions = $query->latest()->paginate(10)->withQueryString();
@@ -105,28 +109,32 @@ class SubmissionController extends Controller
     }
 
     public function downloadDocument($id)
-    {
-        $doc = SubmissionDocument::findOrFail($id);
+{
+    $doc = SubmissionDocument::findOrFail($id);
 
-        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-        $bucket = env('SUPABASE_BUCKET', 'submissions');
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', env('SUPABASE_BUCKET', 'submissions'));
 
-        // Ambil path asli dari DB
-        $rawPath = ltrim($doc->file_path, '/');
+    $path = ltrim($doc->file_path, '/');
 
-        // Normal path (tanpa prefix submissions/)
-        $path = SupabasePath::normalize($rawPath);
-
-        // URL normal
-        $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
-
-        // URL legacy (kalau file memang terlanjur disimpan di folder "submissions/" di dalam bucket)
-        $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/submissions/{$path}";
-
-        // Cek dulu object ada di mana (HEAD lebih ringan dari GET)
-        $existsNormal = Http::head($urlNormal)->successful();
-        $finalUrl = $existsNormal ? $urlNormal : $urlLegacy;
-
-        return redirect()->away($finalUrl . '?download=' . urlencode($doc->original_name));
+    // Bersihin prefix yang keburu kesimpen di DB
+    if (Str::startsWith($path, 'submissions/')) {
+        $path = Str::after($path, 'submissions/');
     }
+    if (Str::startsWith($path, 'consultations/')) {
+        $path = Str::after($path, 'consultations/');
+    }
+
+    // Normal: bucket/submissionId/filename
+    $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
+
+    // Legacy: bucket/submissions/submissionId/filename (karena terlanjur ada folder "submissions" di dalam bucket)
+    $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/submissions/{$path}";
+
+    // Lebih reliable dari HEAD (kadang HEAD misleading)
+    $res = Http::get($urlNormal);
+    $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
+
+    return redirect()->away($finalUrl . '?download=' . urlencode($doc->original_name));
+}
 }

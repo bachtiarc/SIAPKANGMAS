@@ -142,8 +142,8 @@
                                     class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-600">
                                     <option value="Semua">Semua</option>
                                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                                    <option value="diproses" {{ request('status') == 'diproses' ? 'selected' : '' }}>Sedang diproses</option>
-                                    <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
+                                    <option value="on_progress" {{ request('status') == 'on_progress' ? 'selected' : '' }}>Sedang diproses</option>
+                                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Selesai</option>
                                 </select>
                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,19 +210,20 @@
                         <td class="p-4 text-center">
                             @php
                                 $statusClass = match($item->status) {
-                                    'selesai' => 'bg-green-100 text-green-700',
-                                    'diproses' => 'bg-yellow-100 text-yellow-700',
-                                    'ditolak' => 'bg-red-100 text-red-700',
-                                    default => 'bg-gray-100 text-gray-700',
+                                    'completed'   => 'bg-green-100 text-green-700',
+                                    'on_progress' => 'bg-yellow-100 text-yellow-700',
+                                    'rejected'    => 'bg-red-100 text-red-700',
+                                    default       => 'bg-gray-100 text-gray-700',
                                 };
+
                                 $statusLabel = match($item->status) {
-                                    'selesai' => 'Selesai',
-                                    'diproses' => 'Sedang diproses',
-                                    'ditolak' => 'Ditolak',
-                                    default => 'Pending',
+                                    'completed'   => 'Selesai',
+                                    'on_progress' => 'Sedang diproses',
+                                    'rejected'    => 'Ditolak',
+                                    default       => 'Pending',
                                 };
                             @endphp
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $statusClass }}">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap {{ $statusClass }}">
                                 {{ $statusLabel }}
                             </span>
                         </td>
