@@ -17,6 +17,8 @@ use App\Http\Controllers\User\ProfileController as UserProfileController;
 use App\Http\Controllers\Masyarakat\DashboardController as MasyarakatDashboardController;
 use App\Http\Controllers\Masyarakat\ProfileController as MasyarakatProfileController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController;
+use App\Http\Controllers\Admin\ConsultationController as AdminConsultationController;
 
 // Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -106,7 +108,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('/manajemen-pengajuan/permohonan', [App\Http\Controllers\Admin\SubmissionController::class, 'index'])
         ->name('submissions.permohonan');
 
-    // Route Detail & Update
     Route::get('/manajemen-pengajuan/permohonan/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'show'])
         ->name('submissions.show');
         
@@ -115,6 +116,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     Route::get('/manajemen-pengajuan/dokumen/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'downloadDocument'])
         ->name('submissions.document');
+
+    Route::get('/manajemen-pengajuan/permohonan/{id}/pdf', [AdminSubmissionController::class, 'downloadPdf'])
+        ->name('submissions.pdf');
+
 
     // Route Manajemen Konsultasi
     Route::get('/manajemen-pengajuan/konsultasi', [App\Http\Controllers\Admin\ConsultationController::class, 'index'])
@@ -128,4 +133,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     Route::get('/manajemen-pengajuan/konsultasi/dokumen/{id}', [App\Http\Controllers\Admin\ConsultationController::class, 'downloadDocument'])
         ->name('consultations.document');
+    
+    Route::get('/manajemen-pengajuan/konsultasi/{id}/pdf', [AdminConsultationController::class, 'downloadPdf'])
+        ->name('consultations.pdf');
 });

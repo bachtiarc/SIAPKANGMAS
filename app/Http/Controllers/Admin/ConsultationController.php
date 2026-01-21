@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ConsultationController extends Controller
 {
@@ -146,4 +147,18 @@ class ConsultationController extends Controller
 
     return redirect()->away($finalUrl . '?download=' . urlencode($doc->original_name));
 }
+    public function downloadPdf($id)
+    {
+        $consultation = Consultation::with([
+            'user',
+            'category',
+            'documents',
+            'statusHistories.changedBy', // sesuaikan relasi user di history
+        ])->findOrFail($id);
+
+        $pdf = Pdf::loadView('admin.consultations.pdf', compact('consultation'))
+            ->setPaper('A4', 'portrait');
+
+        return $pdf->download('Konsultasi-' . $consultation->ticket_id . '.pdf');
+    }
 }
