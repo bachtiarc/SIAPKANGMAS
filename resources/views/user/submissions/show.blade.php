@@ -1,18 +1,11 @@
+<!-- resources/views/user/submissions/show.blade.php -->
+ 
 @extends('layouts.dashboard')
 
 @section('title', 'Detail Tiket - ' . $submission->ticket_id)
 
 @section('content')
 <div class="p-6 bg-gray-50 min-h-screen">
-    <nav class="mb-6 text-sm">
-        <ol class="flex items-center space-x-2">
-            <li><a href="{{ route('user.dashboard') }}" class="text-blue-600 hover:text-blue-800">Beranda</a></li>
-            <li class="text-gray-400">></li>
-            <li><a href="{{ route('user.submissions.index') }}" class="text-blue-600 hover:text-blue-800">Riwayat Pengajuan</a></li>
-            <li class="text-gray-400">></li>
-            <li class="text-gray-600">Detail Tiket {{ $submission->ticket_id }}</li>
-        </ol>
-    </nav>
 
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center space-x-4">

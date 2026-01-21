@@ -150,67 +150,75 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get recent activities
+     * Get recent activities - UPDATED VERSION
      */
     private function getRecentActivities($user)
     {
         $activities = collect();
         
-        // Get submissions
         if (class_exists('App\Models\Submission')) {
             $submissions = Submission::where('user_id', $user->id)
+                ->with('category')
                 ->orderBy('created_at', 'desc')
-                ->take(5)
+                ->take(10)
                 ->get()
                 ->map(function($item) {
                     return [
-                        'ticket_id' => $item->ticket_id ?? 'PI' . str_pad($item->id, 2, '0', STR_PAD_LEFT) . '_' . date('dMY', strtotime($item->created_at)),
-                        'type' => 'Permohonan Informasi',
-                        'date' => $item->created_at->format('d M Y'),
+                        'id' => $item->id,
+                        'ticket_id' => $item->ticket_id,
+                        'title' => $item->title,
+                        'type' => 'submission',
+                        'type_label' => 'Permohonan Informasi',
                         'status' => $item->status,
-                        'route' => '#' // TODO: Add route when submission detail page is created
+                        'created_at' => $item->created_at,
+                        'route' => route('user.submissions.show', $item->id) 
                     ];
                 });
             $activities = $activities->merge($submissions);
         }
-        
-        // Get consultations
+
         if (class_exists('App\Models\Consultation')) {
             $consultations = Consultation::where('user_id', $user->id)
+                ->with('category')
                 ->orderBy('created_at', 'desc')
-                ->take(5)
+                ->take(10)
                 ->get()
                 ->map(function($item) {
                     return [
-                        'ticket_id' => $item->ticket_id ?? 'KL' . str_pad($item->id, 2, '0', STR_PAD_LEFT) . '_' . date('dMY', strtotime($item->created_at)),
-                        'type' => 'Konsultasi',
-                        'date' => $item->created_at->format('d M Y'),
+                        'id' => $item->id,
+                        'ticket_id' => $item->ticket_number, 
+                        'title' => $item->subject, 
+                        'type' => 'consultation',
+                        'type_label' => 'Konsultasi',
                         'status' => $item->status,
-                        'route' => '#'
+                        'created_at' => $item->created_at,
+                        'route' => route('user.consultations.show', $item->id) 
                     ];
                 });
             $activities = $activities->merge($consultations);
         }
-        
-        // Get complaints
+
         if (class_exists('App\Models\Complaint')) {
             $complaints = Complaint::where('user_id', $user->id)
                 ->orderBy('created_at', 'desc')
-                ->take(5)
+                ->take(10)
                 ->get()
                 ->map(function($item) {
                     return [
-                        'ticket_id' => $item->ticket_id ?? 'PD' . str_pad($item->id, 2, '0', STR_PAD_LEFT) . '_' . date('dMY', strtotime($item->created_at)),
-                        'type' => 'Pengaduan',
-                        'date' => $item->created_at->format('d M Y'),
+                        'id' => $item->id,
+                        'ticket_id' => $item->ticket_number ?? $item->ticket_id ?? 'PD' . str_pad($item->id, 3, '0', STR_PAD_LEFT),
+                        'title' => $item->subject ?? $item->title ?? 'Pengaduan',
+                        'type' => 'complaint',
+                        'type_label' => 'Pengaduan',
                         'status' => $item->status,
-                        'route' => '#'
+                        'created_at' => $item->created_at,
+                        'route' => route('user.complaints.show', $item->id) // ✅ Route complaint (jika ada)
                     ];
                 });
             $activities = $activities->merge($complaints);
         }
         
-        // Sort by date and take latest 5
-        return $activities->sortByDesc('date')->take(5);
+        // ✅ Sort by created_at (Carbon instance) dan ambil 5 terbaru
+        return $activities->sortByDesc('created_at')->take(5)->values();
     }
 }

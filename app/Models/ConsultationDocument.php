@@ -17,6 +17,9 @@ class ConsultationDocument extends Model
         'file_size',
     ];
 
+    /**
+     * Get the consultation that owns the document
+     */
     public function consultation()
     {
         return $this->belongsTo(Consultation::class);

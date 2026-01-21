@@ -85,55 +85,40 @@ class ConsultationController extends Controller
             'subject.required' => 'Subjek konsultasi wajib diisi.',
             'description.required' => 'Deskripsi lengkap wajib diisi.',
             'documents.*.mimes' => 'Format dokumen harus PDF, JPG, JPEG, atau PNG.',
-            'documents.*.max' => 'Ukuran setiap dokumen maksimal 15MB.',
+            'documents.*.max' => 'Ukuran setiap dokumen maksimal 5MB.',
         ]);
 
-        // Generate ticket number dengan format: KL.XX.YY.DDMMYYYY_***
-        $kodeLayanan = "KL"; // Konsultasi
-        $kodeBalai = $user->bidang_code ?? "01"; // Default Sekretariat
-        $kodeSubBagian = $user->sub_bagian_code ?? "106"; // Default Subbag Umum dan Kepegawaian
+        $kodeLayanan = "KL"; 
+        $kodeBalai = $user->bidang_code ?? "01"; 
+        $kodeSubBagian = $user->sub_bagian_code ?? "106"; 
         
-        $tanggal = now()->format('dmY'); // Format: DDMMYYYY
-        
-        // Hitung urutan konsultasi bulan ini
+        $tanggal = now()->format('dmY'); 
+
         $count = Consultation::whereMonth('created_at', now()->month)
                     ->whereYear('created_at', now()->year)
                     ->count() + 1;
         
-        $urutan = str_pad($count, 3, '0', STR_PAD_LEFT); // Format: _001, _002, dst
+        $urutan = str_pad($count, 3, '0', STR_PAD_LEFT); 
         
         $ticketNumber = "{$kodeLayanan}.{$kodeBalai}.{$kodeSubBagian}.{$tanggal}_{$urutan}";
 
-        // ✅ PERBAIKAN: Ubah 'Konsultasi' (huruf besar) menjadi 'konsultasi' (huruf kecil)
         $consultation = Consultation::create([
             'user_id' => $user->id,
             'category_id' => $validated['category_id'],
-            'consultation_type' => 'konsultasi', // ✅ PERBAIKAN DI SINI
+            'consultation_type' => 'konsultasi', 
             'subject' => $validated['subject'],
             'description' => $validated['description'],
             'ticket_number' => $ticketNumber,
             'status' => 'pending',
         ]);
 
-        // ✅ OPSI SINGLE FILE - Simpan 1 file saja di kolom 'attachment'
         if ($request->hasFile('documents')) {
-            $documents = $request->file('documents');
-            
-            // Ambil file pertama saja
-            if (isset($documents[0]) && $documents[0]->isValid()) {
-                $document = $documents[0];
-                
-                // Generate random filename
-                $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
-                
-                // Store file
-                $path = $document->storeAs('consultations', $filename, 'public');
-                
-                // Update consultation dengan path file
-                $consultation->attachment = $path;
-                $consultation->save();
-            }
+            $document = $documents[0]; 
+            $path = $document->storeAs('consultations', $filename, 'public');
+            $consultation->attachment = $path;
+            $consultation->save();
         }
+
 
         // Send email notification
         try {

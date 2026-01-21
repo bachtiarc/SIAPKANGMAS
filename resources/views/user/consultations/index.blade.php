@@ -65,15 +65,15 @@
             </a>
             <a href="{{ route('user.consultations.index', array_filter(['status' => 'pending', 'search' => request('search')])) }}" 
                class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                Menunggu
-            </a>
-            <a href="{{ route('user.consultations.index', array_filter(['status' => 'diproses', 'search' => request('search')])) }}" 
-               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'diproses' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 Diproses
             </a>
-            <a href="{{ route('user.consultations.index', array_filter(['status' => 'selesai', 'search' => request('search')])) }}" 
-               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'selesai' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+            <a href="{{ route('user.consultations.index', array_filter(['status' => 'completed', 'search' => request('search')])) }}" 
+               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'completed' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 Selesai
+            </a>
+            <a href="{{ route('user.consultations.index', array_filter(['status' => 'rejected', 'search' => request('search')])) }}" 
+               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'rejected' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                Ditolak
             </a>
         </div>
     </div>

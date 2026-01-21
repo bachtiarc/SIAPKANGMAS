@@ -27,13 +27,34 @@ class Consultation extends Model
 
     protected $casts = [
         'completed_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'submitted_at' => 'datetime',
     ];
 
-    /**
-     * Get the user that owns the consultation.
-     */
+    // Status badge colors
+    public function getStatusBadgeAttribute()
+    {
+        return match($this->status) {
+            'pending' => 'bg-yellow-100 text-yellow-800',
+            'diproses' => 'bg-blue-100 text-blue-800',
+            'selesai' => 'bg-green-100 text-green-800',
+            'ditolak' => 'bg-red-100 text-red-800',
+            default => 'bg-gray-100 text-gray-800',
+        };
+    }
+
+    // Status label
+    public function getStatusLabelAttribute()
+    {
+        return match($this->status) {
+            'pending' => 'Menunggu',
+            'diproses' => 'Diproses',
+            'selesai' => 'Selesai',
+            'ditolak' => 'Ditolak',
+            default => ucfirst($this->status),
+        };
+    }
+
+    // Relationships
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -63,12 +84,41 @@ class Consultation extends Model
         return $this->morphMany(ConsultationStatusHistory::class)->latest();
     }
 
-    /**
-     * Get the documents for the consultation.
-     */
+    // Jika punya table consultation_documents
     public function documents()
     {
-        return $this->hasMany(ConsultationDocument::class);
+        return $this->attachment ? asset('storage/' . $this->attachment) : null;
+    }
+    
+    public function getTicketIdAttribute()
+    {
+        return $this->ticket_number;
+    }
+
+    public function getTitleAttribute()
+    {
+        return $this->subject;
+    }
+
+    public function getDocumentsAttribute()
+    {
+        if ($this->attachment) {
+            return collect([
+                (object)[
+                    'file_path' => $this->attachment,
+                    'original_name' => basename($this->attachment),
+                    'file_size' => file_exists(storage_path('app/public/' . $this->attachment)) 
+                        ? filesize(storage_path('app/public/' . $this->attachment)) 
+                        : 0,
+                ]
+            ]);
+        }
+        return collect([]);
+    }
+
+    public function getAdminNotesAttribute()
+    {
+        return $this->attributes['admin_response'] ?? $this->attributes['admin_notes'] ?? null;
     }
 
     /**
