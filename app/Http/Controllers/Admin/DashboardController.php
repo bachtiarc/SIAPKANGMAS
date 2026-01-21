@@ -67,7 +67,7 @@ class DashboardController extends Controller
     private function getInProgressTickets()
     {
         $total = 0;
-        $statuses = ['in_progress', 'diproses'];
+        $statuses = ['in_progress', 'diproses', 'on_progress'];
         
         if (class_exists('App\Models\Submission')) {
             $total += Submission::whereIn('status', $statuses)->count();
@@ -90,7 +90,7 @@ class DashboardController extends Controller
     private function getCompletedTickets()
     {
         $total = 0;
-        $statuses = ['completed', 'selesai', 'approved'];
+        $statuses = ['completed', 'selesai', 'approved', 'rejected'];
         
         if (class_exists('App\Models\Submission')) {
             $total += Submission::whereIn('status', $statuses)->count();
