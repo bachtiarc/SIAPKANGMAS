@@ -4,6 +4,29 @@
 @section('title', 'Detail Pengajuan #' . $submission->ticket_id)
 
 @section('content')
+@php
+    // =========================
+    // WhatsApp link generator
+    // =========================
+    $rawPhone = $submission->user->phone ?? '';
+    $phoneDigits = preg_replace('/\D+/', '', $rawPhone);
+
+    if (str_starts_with($phoneDigits, '0')) {
+        $waPhone = '62' . substr($phoneDigits, 1);
+    } elseif (str_starts_with($phoneDigits, '62')) {
+        $waPhone = $phoneDigits;
+    } elseif (str_starts_with($phoneDigits, '8')) {
+        $waPhone = '62' . $phoneDigits;
+    } else {
+        $waPhone = $phoneDigits;
+    }
+
+    $waPhone = (strlen($waPhone) >= 10) ? $waPhone : null;
+
+    $waText = rawurlencode("Halo {$submission->user->name}, kami dari Admin SIAPKANGMAS terkait Pengajuan #{$submission->ticket_id}.");
+    $waLink = $waPhone ? "https://wa.me/{$waPhone}?text={$waText}" : null;
+@endphp
+
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
@@ -45,9 +68,25 @@
             </div>
         </div>
         
-        <button type="button" class="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition flex items-center gap-2">
-            Unduh PDF
-        </button>
+        <div class="flex items-center gap-2">
+            @if($waLink)
+                <a href="{{ $waLink }}"
+                target="_blank"
+                rel="noopener"
+                class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+                    <svg class="w-5 h-5" viewBox="0 0 32 32" fill="currentColor">
+                        <path d="M19.11 17.22c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.61.14-.18.27-.7.88-.86 1.06-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.17-1.34-.8-.71-1.34-1.59-1.5-1.86-.16-.27-.02-.42.12-.56.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.52-.45-.45-.61-.46h-.52c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.99 2.66 1.12 2.84.14.18 1.95 2.98 4.73 4.18.66.29 1.18.46 1.58.59.66.21 1.26.18 1.74.11.53-.08 1.6-.65 1.83-1.28.23-.63.23-1.17.16-1.28-.07-.11-.25-.18-.52-.32z"/>
+                        <path d="M16.02 3C8.86 3 3.05 8.81 3.05 15.97c0 2.28.6 4.51 1.75 6.48L3 29l6.73-1.76a12.9 12.9 0 0 0 6.29 1.61h.01c7.16 0 12.97-5.81 12.97-12.97C28.99 8.81 23.18 3 16.02 3zm0 23.33h-.01c-2.02 0-4-.54-5.74-1.55l-.41-.24-3.99 1.04 1.07-3.89-.26-.4a10.77 10.77 0 0 1-1.67-5.75c0-5.96 4.85-10.81 10.81-10.81 5.96 0 10.81 4.85 10.81 10.81 0 5.96-4.85 10.81-10.81 10.81z"/>
+                    </svg>
+                    Chat WA
+                </a>
+            @endif
+
+            <a href="{{ route('admin.submissions.pdf', $submission->id) }}"
+            class="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition flex items-center gap-2">
+                Unduh PDF
+            </a>
+        </div>
     </div>
 
     @if(session('success'))

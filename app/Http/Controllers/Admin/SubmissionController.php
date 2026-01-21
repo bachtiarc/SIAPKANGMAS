@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SubmissionController extends Controller
 {
@@ -136,5 +137,20 @@ class SubmissionController extends Controller
     $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
 
     return redirect()->away($finalUrl . '?download=' . urlencode($doc->original_name));
-}
+    }
+
+    public function downloadPdf($id)
+    {
+        $submission = Submission::with([
+            'user',
+            'category',
+            'documents',
+            'statusHistories.changedBy', // sesuaikan relasi user di history
+        ])->findOrFail($id);
+
+        $pdf = Pdf::loadView('admin.submissions.pdf', compact('submission'))
+            ->setPaper('A4', 'portrait');
+
+        return $pdf->download('Pengajuan-' . $submission->ticket_id . '.pdf');
+    }
 }
