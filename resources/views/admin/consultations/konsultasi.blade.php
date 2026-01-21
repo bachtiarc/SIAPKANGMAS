@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
-@section('header_title', 'Manajemen Pengajuan') @section('title', 'Manajemen Pengajuan')
+@section('header_title', 'Manajemen Pengajuan')
+@section('title', 'Manajemen Pengajuan')
 
 @section('content')
 <div class="space-y-6">
@@ -8,6 +9,7 @@
         <p class="font-lato text-gray-600">Kelola dan unduh laporan pengajuan layanan bantuan Dinas Perindustrian dan Perdagangan Jawa Tengah.</p>
     </div>
 
+    <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mb-4">
@@ -44,26 +46,28 @@
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-200">
         
+        <!-- Tab Navigation -->
         <div class="flex border-b border-gray-200 p-4 pb-0 gap-2">
-            <a href="{{ route('admin.consultations.konsultasi') }}" class="px-6 py-3 font-montserrat font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-t-lg transition">
+            <a href="{{ route('admin.consultations.konsultasi') }}" class="px-6 py-3 font-montserrat font-medium text-sm text-white bg-blue-700 rounded-t-lg shadow-sm">
                 Konsultasi
             </a>
             <a href="#" class="px-6 py-3 font-montserrat font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-t-lg transition">
                 Pengaduan
             </a>
-            <a href="{{ route('admin.submissions.permohonan') }}" class="px-6 py-3 font-montserrat font-medium text-sm text-white bg-blue-700 rounded-t-lg shadow-sm">
+            <a href="{{ route('admin.submissions.permohonan') }}" class="px-6 py-3 font-montserrat font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-t-lg transition">
                 Permohonan Informasi
             </a>
         </div>
 
-        <form action="{{ route('admin.submissions.permohonan') }}" method="GET" class="w-full">
+        <!-- Filter Form -->
+        <form action="{{ route('admin.consultations.konsultasi') }}" method="GET" class="w-full">
             <div class="p-4 border-b border-gray-200">
                 <div class="overflow-x-auto">
                     <div class="min-w-max flex items-end gap-4">
 
-                        {{-- Rentang tanggal --}}
+                        <!-- Rentang Tanggal -->
                         <div class="shrink-0">
-                            <label class="block text-xs font-semibold text-gray-600 mb-2">Rentang Tanggal :</label>
+                            <label class="block text-xs font-semibold text-gray-600 mb-2">Tgl Pengajuan :</label>
                             <div class="flex items-center gap-2">
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -91,7 +95,7 @@
                             </div>
                         </div>
 
-                        {{-- Pelapor --}}
+                        <!-- Pelapor -->
                         <div class="shrink-0 w-44">
                             <label class="block text-xs font-semibold text-gray-600 mb-2">Pelapor :</label>
                             <div class="relative">
@@ -109,7 +113,7 @@
                             </div>
                         </div>
 
-                        {{-- Kategori --}}
+                        <!-- Kategori -->
                         <div class="shrink-0 w-64">
                             <label class="block text-xs font-semibold text-gray-600 mb-2">Kategori :</label>
                             <div class="relative">
@@ -130,7 +134,7 @@
                             </div>
                         </div>
 
-                        {{-- Status --}}
+                        <!-- Status -->
                         <div class="shrink-0 w-44">
                             <label class="block text-xs font-semibold text-gray-600 mb-2">Status :</label>
                             <div class="relative">
@@ -138,8 +142,8 @@
                                     class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-600">
                                     <option value="Semua">Semua</option>
                                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                                    <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>Diproses</option>
-                                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Selesai</option>
+                                    <option value="diproses" {{ request('status') == 'diproses' ? 'selected' : '' }}>Sedang diproses</option>
+                                    <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
                                 </select>
                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,14 +153,14 @@
                             </div>
                         </div>
 
-                        {{-- Tombol --}}
+                        <!-- Tombol -->
                         <div class="shrink-0 flex items-center gap-2 ml-2">
                             <button type="submit"
                                 class="px-4 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition shadow-sm whitespace-nowrap">
                                 Terapkan
                             </button>
 
-                            <a href="{{ route('admin.submissions.permohonan') }}"
+                            <a href="{{ route('admin.consultations.konsultasi') }}"
                                 class="px-4 py-2 border border-blue-600 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-50 transition shadow-sm bg-white whitespace-nowrap">
                                 Reset
                             </a>
@@ -175,6 +179,7 @@
             </div>
         </form>
 
+        <!-- Table -->
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead class="bg-gray-50">
@@ -191,9 +196,9 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    @forelse($submissions as $item)
+                    @forelse($consultations as $item)
                     <tr class="hover:bg-gray-50 transition">
-                        <td class="p-4 text-sm font-semibold text-gray-900">{{ $item->ticket_id }}</td>
+                        <td class="p-4 text-sm font-semibold text-gray-900">{{ $item->ticket_number }}</td>
                         <td class="p-4 text-sm text-gray-600">{{ $item->created_at->format('d F Y') }}</td>
                         <td class="p-4 text-sm font-medium text-gray-900">{{ $item->user->name ?? '-' }}</td>
                         <td class="p-4 text-sm text-gray-600">{{ $item->user->email ?? '-' }}</td>
@@ -201,19 +206,19 @@
                             {{ ucfirst($item->user->user_type ?? 'Masyarakat') }}
                         </td>
                         <td class="p-4 text-sm text-gray-600">{{ $item->category->name ?? '-' }}</td>
-                        <td class="p-4 text-sm text-gray-900 font-medium">{{ Str::limit($item->title, 20) }}</td>
+                        <td class="p-4 text-sm text-gray-900 font-medium">{{ Str::limit($item->subject, 30) }}</td>
                         <td class="p-4 text-center">
                             @php
                                 $statusClass = match($item->status) {
-                                    'completed' => 'bg-green-100 text-green-700',
-                                    'in_progress' => 'bg-yellow-100 text-yellow-700',
-                                    'rejected' => 'bg-red-100 text-red-700',
+                                    'selesai' => 'bg-green-100 text-green-700',
+                                    'diproses' => 'bg-yellow-100 text-yellow-700',
+                                    'ditolak' => 'bg-red-100 text-red-700',
                                     default => 'bg-gray-100 text-gray-700',
                                 };
                                 $statusLabel = match($item->status) {
-                                    'completed' => 'Selesai',
-                                    'in_progress' => 'Sedang diproses',
-                                    'rejected' => 'Ditolak',
+                                    'selesai' => 'Selesai',
+                                    'diproses' => 'Sedang diproses',
+                                    'ditolak' => 'Ditolak',
                                     default => 'Pending',
                                 };
                             @endphp
@@ -222,7 +227,7 @@
                             </span>
                         </td>
                         <td class="p-4 text-center">
-                            <a href="{{ route('admin.submissions.show', $item->id) }}" 
+                            <a href="{{ route('admin.consultations.show', $item->id) }}" 
                                class="inline-flex p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition" 
                                title="Lihat Detail">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -235,7 +240,7 @@
                     @empty
                     <tr>
                         <td colspan="9" class="p-8 text-center text-gray-500">
-                            Data permohonan informasi tidak ditemukan.
+                            Tampilkan .... dari .... data
                         </td>
                     </tr>
                     @endforelse
@@ -243,8 +248,9 @@
             </table>
         </div>
 
+        <!-- Pagination -->
         <div class="p-4 border-t border-gray-200">
-            {{ $submissions->links() }}
+            {{ $consultations->links() }}
         </div>
     </div>
 </div>

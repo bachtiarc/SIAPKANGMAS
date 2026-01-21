@@ -115,4 +115,17 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     Route::get('/manajemen-pengajuan/dokumen/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'downloadDocument'])
         ->name('submissions.document');
+
+    // Route Manajemen Konsultasi
+    Route::get('/manajemen-pengajuan/konsultasi', [App\Http\Controllers\Admin\ConsultationController::class, 'index'])
+        ->name('consultations.konsultasi');
+
+    Route::get('/manajemen-pengajuan/konsultasi/{id}', [App\Http\Controllers\Admin\ConsultationController::class, 'show'])
+        ->name('consultations.show');
+
+    Route::put('/manajemen-pengajuan/konsultasi/{id}', [App\Http\Controllers\Admin\ConsultationController::class, 'update'])
+        ->name('consultations.update');
+
+    Route::get('/manajemen-pengajuan/konsultasi/dokumen/{id}', [App\Http\Controllers\Admin\ConsultationController::class, 'downloadDocument'])
+        ->name('consultations.document');
 });

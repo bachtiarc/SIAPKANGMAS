@@ -50,20 +50,25 @@
             </div>
 
             <nav class="p-4">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center px-4 py-3 mb-2 rounded-lg transition-colors {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <!-- Dashboard -->
+                <a href="{{ route('admin.dashboard') }}" 
+                   class="flex items-center px-4 py-3 mb-2 rounded-lg transition-colors {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                     </svg>
                     <span class="font-montserrat font-medium">Dashboard</span>
                 </a>
 
-                <a href="{{ route('admin.submissions.permohonan') }}" class="flex items-center px-4 py-3 mb-2 rounded-lg transition-colors {{ request()->routeIs('admin.submissions.*') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <!-- Manajemen Pengajuan - Link ke Konsultasi (default) dengan active state untuk KEDUA halaman -->
+                <a href="{{ route('admin.consultations.konsultasi') }}" 
+                   class="flex items-center px-4 py-3 mb-2 rounded-lg transition-colors {{ request()->routeIs('admin.consultations.*') || request()->routeIs('admin.submissions.*') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     <span class="font-montserrat font-medium">Manajemen Pengajuan</span>
                 </a>
 
+                <!-- Manajemen Kategori -->
                 <a href="#" class="flex items-center px-4 py-3 mb-2 text-gray-700 rounded-lg hover:bg-gray-100">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>

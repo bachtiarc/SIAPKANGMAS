@@ -4,25 +4,25 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\StatusHistory;
 
 class Consultation extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'ticket_number', 
+        'ticket_number',
         'user_id',
         'category_id',
         'consultation_type',
         'subject',
         'description',
         'attachment',
-        'document_path',
         'status',
+        'admin_response',
         'admin_notes',
         'handled_by',
         'completed_at',
-        'submitted_at',
     ];
 
     protected $casts = [
@@ -45,12 +45,13 @@ class Consultation extends Model
     // Status label
     public function getStatusLabelAttribute()
     {
-        return [
-            'pending'     => 'Diproses', 
-            'in_progress' => 'Diproses',
-            'completed'   => 'Selesai',
-            'rejected'    => 'Ditolak',
-        ][$this->status] ?? 'Unknown';
+        return match($this->status) {
+            'pending' => 'Menunggu',
+            'diproses' => 'Diproses',
+            'selesai' => 'Selesai',
+            'ditolak' => 'Ditolak',
+            default => ucfirst($this->status),
+        };
     }
 
     // Relationships
@@ -59,28 +60,32 @@ class Consultation extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Get the category of the consultation.
+     */
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
+    /**
+     * Get the handler (admin) of the consultation.
+     */
     public function handler()
     {
         return $this->belongsTo(User::class, 'handled_by');
     }
 
+    /**
+     * Get all status histories for the consultation.
+     */
     public function statusHistories()
     {
-        return $this->morphMany(StatusHistory::class, 'trackable')->orderBy('created_at', 'desc');
+        return $this->morphMany(ConsultationStatusHistory::class)->latest();
     }
 
     // Jika punya table consultation_documents
-    public function hasAttachment()
-    {
-        return !empty($this->attachment);
-    }
-
-    public function getAttachmentUrlAttribute()
+    public function documents()
     {
         return $this->attachment ? asset('storage/' . $this->attachment) : null;
     }
@@ -114,5 +119,23 @@ class Consultation extends Model
     public function getAdminNotesAttribute()
     {
         return $this->attributes['admin_response'] ?? $this->attributes['admin_notes'] ?? null;
+    }
+
+    /**
+     * Scope to filter consultations by status.
+     */
+    public function scopeStatus($query, $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    /**
+     * Scope to filter consultations by user type.
+     */
+    public function scopeUserType($query, $type)
+    {
+        return $query->whereHas('user', function($q) use ($type) {
+            $q->where('user_type', $type);
+        });
     }
 }
