@@ -48,7 +48,7 @@
             <a href="{{ route('admin.consultations.konsultasi') }}" class="px-6 py-3 font-montserrat font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-t-lg transition">
                 Konsultasi
             </a>
-            <a href="#" class="px-6 py-3 font-montserrat font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-t-lg transition">
+            <a href="{{ route('admin.complaints.pengaduan') }}" class="px-6 py-3 font-montserrat font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-t-lg transition">
                 Pengaduan
             </a>
             <a href="{{ route('admin.submissions.permohonan') }}" class="px-6 py-3 font-montserrat font-medium text-sm text-white bg-blue-700 rounded-t-lg shadow-sm">

@@ -21,6 +21,7 @@ use App\Http\Controllers\Masyarakat\ProfileController as MasyarakatProfileContro
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController;
 use App\Http\Controllers\Admin\ConsultationController as AdminConsultationController;
+use App\Http\Controllers\Admin\ComplaintController as AdminComplaintController;
 
 // Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -146,4 +147,20 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     
     Route::get('/manajemen-pengajuan/konsultasi/{id}/pdf', [AdminConsultationController::class, 'downloadPdf'])
         ->name('consultations.pdf');
+
+    // Route Manajemen Pengaduan
+    Route::get('/manajemen-pengajuan/pengaduan', [AdminComplaintController::class, 'index'])
+        ->name('complaints.pengaduan');
+    
+    Route::get('/manajemen-pengajuan/pengaduan/{id}', [AdminComplaintController::class, 'show'])
+        ->name('complaints.show');
+
+    Route::put('/manajemen-pengajuan/pengaduan/{id}', [AdminComplaintController::class, 'update'])
+        ->name('complaints.update');
+
+    Route::get('/manajemen-pengajuan/pengaduan/dokumen/{id}', [AdminComplaintController::class, 'downloadDocument'])
+        ->name('complaints.document');
+
+    Route::get('/manajemen-pengajuan/pengaduan/{id}/pdf', [AdminComplaintController::class, 'downloadPdf'])
+        ->name('complaints.pdf');
 });
