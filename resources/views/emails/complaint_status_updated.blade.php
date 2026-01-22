@@ -4,7 +4,7 @@
     <title>Update Status Pengaduan</title>
 </head>
 <body style="font-family: Arial, sans-serif; padding: 20px;">
-    <h2>Halo, {{ $complaint->user->name }}</h2>
+    <h2>Halo, {{ $complaint->user->name ?? 'Pemohon' }}</h2>
 
     <p>
         Ada pembaruan pada tiket pengaduan Anda
@@ -13,20 +13,20 @@
 
     @php
         $statusLabel = match($complaint->status) {
-            'pending' => 'Pending',
+            'pending'  => 'Pending',
             'diproses' => 'Sedang Diproses',
-            'selesai' => 'Selesai',
-            'rejected' => 'Ditolak',
-            default => ucfirst($complaint->status)
+            'selesai'  => 'Selesai',
+            'ditolak'  => 'Ditolak',
+            default    => ucfirst($complaint->status),
         };
     @endphp
 
     <p>Status Terbaru: <strong>{{ $statusLabel }}</strong></p>
 
-    @if($note)
+    @if(!empty($notes))
         <div style="background-color: #f3f4f6; padding: 15px; border-left: 4px solid #3b82f6; margin: 20px 0;">
             <p style="margin: 0; font-weight: bold;">Tanggapan / Catatan Admin:</p>
-            <p style="margin-top: 5px;">{{ $note }}</p>
+            <p style="margin-top: 5px;">{{ $notes }}</p>
         </div>
     @endif
 

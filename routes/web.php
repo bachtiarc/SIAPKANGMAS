@@ -23,6 +23,8 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController;
 use App\Http\Controllers\Admin\ConsultationController as AdminConsultationController;
 use App\Http\Controllers\Admin\ComplaintController as AdminComplaintController;
+use App\Http\Controllers\Admin\AllSubmissionsController;
+use App\Http\Controllers\Admin\ReportExportController;
 
 // Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -118,6 +120,12 @@ Route::middleware(['auth', 'verified', 'role:user,masyarakat_umum'])->prefix('ma
 // Admin Routes (Role: admin)
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/manajemen-pengajuan', [App\Http\Controllers\Admin\AllSubmissionsController::class, 'index'])
+        ->name('management.semua');
+
+    Route::get('/manajemen-pengajuan/export/{tab}', [App\Http\Controllers\Admin\ReportExportController::class, 'export'])
+        ->name('management.export');
 
     // Route Manajemen Pengajuan
     Route::get('/manajemen-pengajuan/permohonan', [App\Http\Controllers\Admin\SubmissionController::class, 'index'])

@@ -90,7 +90,7 @@ class DashboardController extends Controller
     private function getCompletedTickets()
     {
         $total = 0;
-        $statuses = ['completed', 'selesai', 'approved', 'rejected'];
+        $statuses = ['completed', 'selesai', 'approved', 'rejected', 'ditolak'];
         
         if (class_exists('App\Models\Submission')) {
             $total += Submission::whereIn('status', $statuses)->count();

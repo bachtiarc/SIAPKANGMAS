@@ -50,7 +50,7 @@
                             'pending' => 'Belum Diproses',
                             'in_progress' => 'Sedang Diproses',
                             'completed', 'selesai', 'approved' => 'Selesai',
-                            'rejected' => 'Ditolak',
+                            'rejected', 'ditolak' => 'Ditolak',
                             default => ucfirst($submission->status)
                         };
                     @endphp

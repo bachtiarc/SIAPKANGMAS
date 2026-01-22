@@ -3,19 +3,15 @@
 @section('title', 'Dashboard Admin')
 
 @section('content')
+@php
+    $user = auth()->user();
+    $initial = $user?->name ? strtoupper(substr($user->name, 0, 1)) : 'A';
+@endphp
+
 <!-- Welcome Banner -->
 <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl shadow-lg p-8 mb-8 text-white">
-    <h2 class="font-montserrat text-3xl font-bold mb-2">Selamat Datang, Admin!</h2>
+    <h2 class="font-montserrat text-3xl font-bold mb-2">Selamat Datang, {{ $user->name ?? 'Admin' }}!</h2>
     <p class="font-lato text-blue-100 mb-6">Berikut adalah ringkasan aktivitas helpdesk hari ini.</p>
-    
-    <div class="flex gap-4">
-        <a href="#" class="font-montserrat px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition">
-            Lihat Pengajuan
-        </a>
-        <a href="#" class="font-montserrat px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 transition">
-            Lihat Laporan
-        </a>
-    </div>
 </div>
 
 <!-- Statistics Cards -->
@@ -126,7 +122,7 @@
 
         @if(count($recentTickets) > 0)
         <div class="mt-6">
-            <a href="#" class="font-montserrat block text-center text-blue-600 hover:text-blue-700 font-medium text-sm">
+            <a href="{{ route('admin.management.semua') }}" class="font-montserrat block text-center text-blue-600 hover:text-blue-700 font-medium text-sm">
                 Lihat Semua →
             </a>
         </div>
@@ -158,7 +154,7 @@
                     borderWidth: 1
                 },
                 {
-                    label: 'Diproses',
+                    label: 'Sedang Diproses',
                     // Gunakan data real dari controller
                     data: chartData.processing,
                     backgroundColor: 'rgba(234, 179, 8, 0.8)',
@@ -166,7 +162,7 @@
                     borderWidth: 1
                 },
                 {
-                    label: 'Pending',
+                    label: 'Belum Diproses',
                     // Gunakan data real dari controller
                     data: chartData.pending,
                     backgroundColor: 'rgba(239, 68, 68, 0.8)',

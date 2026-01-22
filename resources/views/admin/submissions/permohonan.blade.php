@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
-@section('header_title', 'Manajemen Pengajuan') @section('title', 'Manajemen Pengajuan')
+@section('header_title', 'Manajemen Pengajuan')
+@section('title', 'Manajemen Pengajuan')
 
 @section('content')
 <div class="space-y-6">
@@ -43,25 +44,40 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-        
-        <div class="flex border-b border-gray-200 p-4 pb-0 gap-2">
-            <a href="{{ route('admin.consultations.konsultasi') }}" class="px-6 py-3 font-montserrat font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-t-lg transition">
-                Konsultasi
-            </a>
-            <a href="{{ route('admin.complaints.pengaduan') }}" class="px-6 py-3 font-montserrat font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-t-lg transition">
-                Pengaduan
-            </a>
-            <a href="{{ route('admin.submissions.permohonan') }}" class="px-6 py-3 font-montserrat font-medium text-sm text-white bg-blue-700 rounded-t-lg shadow-sm">
-                Permohonan Informasi
-            </a>
+        <div class="p-4 pb-0 border-b border-gray-200">
+            <div class="flex w-full gap-3">
+                @php
+                    $tabBase = 'flex-1 text-center px-6 py-3 font-montserrat font-semibold text-sm transition rounded-2xl';
+                    $tabOff  = 'text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-blue-600';
+                    $tabOn   = 'text-white bg-blue-700 shadow-sm';
+                @endphp
+
+                <a href="{{ route('admin.management.semua') }}"
+                class="{{ $tabBase }} {{ request()->routeIs('admin.management.semua') ? $tabOn : $tabOff }}">
+                    Semua
+                </a>
+
+                <a href="{{ route('admin.consultations.konsultasi') }}"
+                class="{{ $tabBase }} {{ request()->routeIs('admin.consultations.konsultasi') ? $tabOn : $tabOff }}">
+                    Konsultasi
+                </a>
+
+                <a href="{{ route('admin.complaints.pengaduan') }}"
+                class="{{ $tabBase }} {{ request()->routeIs('admin.complaints.pengaduan') ? $tabOn : $tabOff }}">
+                    Pengaduan
+                </a>
+
+                <a href="{{ route('admin.submissions.permohonan') }}"
+                class="{{ $tabBase }} {{ request()->routeIs('admin.submissions.permohonan') ? $tabOn : $tabOff }}">
+                    Permohonan Informasi
+                </a>
+            </div>
         </div>
 
         <form action="{{ route('admin.submissions.permohonan') }}" method="GET" class="w-full">
             <div class="p-4 border-b border-gray-200">
                 <div class="overflow-x-auto">
                     <div class="min-w-max flex items-end gap-4">
-
-                        {{-- Rentang tanggal --}}
                         <div class="shrink-0">
                             <label class="block text-xs font-semibold text-gray-600 mb-2">Rentang Tanggal :</label>
                             <div class="flex items-center gap-2">
@@ -91,7 +107,6 @@
                             </div>
                         </div>
 
-                        {{-- Pelapor --}}
                         <div class="shrink-0 w-44">
                             <label class="block text-xs font-semibold text-gray-600 mb-2">Pelapor :</label>
                             <div class="relative">
@@ -109,7 +124,6 @@
                             </div>
                         </div>
 
-                        {{-- Kategori --}}
                         <div class="shrink-0 w-64">
                             <label class="block text-xs font-semibold text-gray-600 mb-2">Kategori :</label>
                             <div class="relative">
@@ -130,14 +144,13 @@
                             </div>
                         </div>
 
-                        {{-- Status --}}
                         <div class="shrink-0 w-44">
                             <label class="block text-xs font-semibold text-gray-600 mb-2">Status :</label>
                             <div class="relative">
                                 <select name="status"
                                     class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-600">
                                     <option value="Semua">Semua</option>
-                                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Belum Diproses</option>
                                     <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>Diproses</option>
                                     <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Selesai</option>
                                 </select>
@@ -149,7 +162,6 @@
                             </div>
                         </div>
 
-                        {{-- Tombol --}}
                         <div class="shrink-0 flex items-center gap-2 ml-2">
                             <button type="submit"
                                 class="px-4 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition shadow-sm whitespace-nowrap">
@@ -160,14 +172,14 @@
                                 class="px-4 py-2 border border-blue-600 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-50 transition shadow-sm bg-white whitespace-nowrap">
                                 Reset
                             </a>
-
-                            <button type="button"
-                                class="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition shadow-sm flex items-center justify-center">
+                            <a href="{{ route('admin.management.export', ['tab' => 'permohonan'] + request()->query()) }}"
+                                class="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition shadow-sm flex items-center justify-center"
+                                title="Unduh Excel">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
-                            </button>
+                            </a>
                         </div>
 
                     </div>
@@ -175,72 +187,104 @@
             </div>
         </form>
 
+        {{-- TABLE (RAPI + SCROLL) --}}
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b">ID Tiket</th>
-                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b">Tanggal Pengajuan</th>
-                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b">Nama Pelapor</th>
-                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b">Email Pelapor</th>
-                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b">Jenis Pelapor</th>
-                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b">Kategori</th>
-                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b">Subjek</th>
-                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center min-w-[130px]">Status</th>
-                        <th class="p-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @forelse($submissions as $item)
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="p-4 text-sm font-semibold text-gray-900">{{ $item->ticket_id }}</td>
-                        <td class="p-4 text-sm text-gray-600">{{ $item->created_at->format('d F Y') }}</td>
-                        <td class="p-4 text-sm font-medium text-gray-900">{{ $item->user->name ?? '-' }}</td>
-                        <td class="p-4 text-sm text-gray-600">{{ $item->user->email ?? '-' }}</td>
-                        <td class="p-4 text-sm text-gray-600">
-                            {{ ucfirst($item->user->user_type ?? 'Masyarakat') }}
-                        </td>
-                        <td class="p-4 text-sm text-gray-600">{{ $item->category->name ?? '-' }}</td>
-                        <td class="p-4 text-sm text-gray-900 font-medium">{{ Str::limit($item->title, 20) }}</td>
-                        <td class="p-4 text-center min-w-[130px]">
-                            @php
-                                $statusClass = match($item->status) {
-                                    'completed' => 'bg-green-100 text-green-700',
-                                    'in_progress' => 'bg-yellow-100 text-yellow-700',
-                                    'rejected' => 'bg-red-100 text-red-700',
-                                    default => 'bg-gray-100 text-gray-700',
-                                };
-                                $statusLabel = match($item->status) {
-                                    'completed' => 'Selesai',
-                                    'in_progress' => 'Sedang diproses',
-                                    'rejected' => 'Ditolak',
-                                    default => 'Pending',
-                                };
-                            @endphp
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap {{ $statusClass }}">
-                                {{ $statusLabel }}
-                            </span>
-                        </td>
-                        <td class="p-4 text-center">
-                            <a href="{{ route('admin.submissions.show', $item->id) }}" 
-                               class="inline-flex p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition" 
-                               title="Lihat Detail">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                            </a>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="9" class="p-8 text-center text-gray-500">
-                            Data permohonan informasi tidak ditemukan.
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+            <div class="min-w-[1200px]">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 sticky top-0 z-10">
+                        <tr>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center whitespace-nowrap min-w-[160px]">ID Tiket</th>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center whitespace-nowrap min-w-[160px]">Tanggal Pengajuan</th>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center whitespace-nowrap min-w-[190px]">Nama Pelapor</th>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center whitespace-nowrap min-w-[240px]">Email Pelapor</th>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center whitespace-nowrap min-w-[140px]">Jenis Pelapor</th>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center whitespace-nowrap min-w-[190px]">Kategori</th>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center whitespace-nowrap min-w-[260px]">Subjek</th>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center whitespace-nowrap min-w-[150px]">Status</th>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b text-center whitespace-nowrap min-w-[90px]">Aksi</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-gray-100">
+                        @forelse($submissions as $item)
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-4 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">
+                                {{ $item->ticket_id }}
+                            </td>
+
+                            <td class="px-4 py-4 text-sm text-gray-600 whitespace-nowrap text-center">
+                                {{ $item->created_at->format('d F Y') }}
+                            </td>
+
+                            <td class="px-4 py-4 text-sm font-medium text-gray-900">
+                                <div class="max-w-[220px] truncate">
+                                    {{ $item->user->name ?? '-' }}
+                                </div>
+                            </td>
+
+                            <td class="px-4 py-4 text-sm text-gray-600">
+                                <div class="max-w-[260px] truncate">
+                                    {{ $item->user->email ?? '-' }}
+                                </div>
+                            </td>
+
+                            <td class="px-4 py-4 text-sm text-gray-600 whitespace-nowrap text-center">
+                                {{ ucfirst($item->user->user_type ?? 'Masyarakat') }}
+                            </td>
+
+                            <td class="px-4 py-4 text-sm text-gray-600">
+                                <div class="max-w-[240px] truncate">
+                                    {{ $item->category->name ?? '-' }}
+                                </div>
+                            </td>
+
+                            <td class="px-4 py-4 text-sm text-gray-900 font-medium">
+                                <div class="max-w-[320px] truncate">
+                                    {{ $item->title ?? '-' }}
+                                </div>
+                            </td>
+
+                            <td class="px-4 py-4 text-center whitespace-nowrap">
+                                @php
+                                    $statusClass = match($item->status) {
+                                        'completed' => 'bg-green-100 text-green-700',
+                                        'in_progress' => 'bg-yellow-100 text-yellow-700',
+                                        'rejected' => 'bg-red-100 text-red-700',
+                                        default => 'bg-gray-100 text-gray-700',
+                                    };
+                                    $statusLabel = match($item->status) {
+                                        'completed' => 'Selesai',
+                                        'in_progress' => 'Sedang diproses',
+                                        'rejected' => 'Ditolak',
+                                        default => 'Belum Diproses',
+                                    };
+                                @endphp
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold {{ $statusClass }}">
+                                    {{ $statusLabel }}
+                                </span>
+                            </td>
+
+                            <td class="px-4 py-4 text-center whitespace-nowrap">
+                                <a href="{{ route('admin.submissions.show', $item->id) }}"
+                                   class="inline-flex p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition"
+                                   title="Lihat Detail">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </a>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="9" class="p-10 text-center text-gray-500">
+                                Data permohonan informasi tidak ditemukan.
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class="p-4 border-t border-gray-200">

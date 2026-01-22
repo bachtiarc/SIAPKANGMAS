@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use App\Mail\ComplaintCreated;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Http;
 
 class ComplaintController extends Controller
 {
@@ -128,7 +129,8 @@ class ComplaintController extends Controller
                     $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
                     
                     // Store file in complaints folder
-                    $path = $document->storeAs('complaints/' . $complaint->id, $filename, 'public');
+                    $path = Storage::disk('supabase_complaints')
+                        ->putFileAs("{$complaint->id}", $document, $filename);
                     
                     // Save document info to database
                     ComplaintDocument::create([
@@ -179,18 +181,32 @@ class ComplaintController extends Controller
     public function viewDocument(ComplaintDocument $document)
     {
         $user = auth()->user();
-        
+
         // Authorization check
         if ($document->complaint->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
 
-        $filePath = storage_path('app/public/' . $document->file_path);
-        
-        if (!file_exists($filePath)) {
-            abort(404, 'File not found.');
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
+
+        $path = ltrim($document->file_path, '/');
+
+        // buang prefix "complaints/" kalau keburu kesimpen (biar konsisten)
+        if (Str::startsWith($path, 'complaints/')) {
+            $path = Str::after($path, 'complaints/');
         }
 
-        return response()->file($filePath);
+        // normal: bucket/{path}
+        $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
+
+        // legacy fallback: bucket/complaints/{path}
+        $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/complaints/{$path}";
+
+        $res = Http::get($urlNormal);
+        $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
+
+        // tampilkan di browser (tanpa download)
+        return redirect()->away($finalUrl);
     }
 }

@@ -126,6 +126,10 @@ class SubmissionController extends Controller
         $path = Str::after($path, 'consultations/');
     }
 
+    if (Str::startsWith($path, 'submission/')) {
+        $path = Str::after($path, 'submission/');
+    }
+
     // Normal: bucket/submissionId/filename
     $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
 

@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class ComplaintController extends Controller
 {
@@ -19,7 +21,7 @@ class ComplaintController extends Controller
         $stats = [
             'total'   => Complaint::count(),
             'proses'  => Complaint::where('status', 'diproses')->count(),
-            'selesai' => Complaint::where('status', 'selesai')->count(),
+            'selesai' => Complaint::whereIn('status', ['selesai', 'ditolak'])->count(),
             'belum'   => Complaint::where('status', 'pending')->count(),
         ];
 
@@ -67,7 +69,7 @@ class ComplaintController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'status'      => 'required|in:pending,diproses,selesai',
+            'status'      => 'required|in:pending,diproses,selesai,ditolak',
             'admin_notes' => 'nullable|string',
             'notify_user' => 'nullable',
         ]);
@@ -114,12 +116,30 @@ class ComplaintController extends Controller
     {
         $doc = ComplaintDocument::findOrFail($id);
 
-        $filePath = storage_path('app/public/' . ltrim($doc->file_path, '/'));
-        if (!file_exists($filePath)) {
-            abort(404, 'File tidak ditemukan.');
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
+
+        // file_path contoh: "8/xxxx.pdf"
+        $path = ltrim($doc->file_path, '/');
+
+        // safety: kalau ada legacy "complaints/" di DB
+        if (Str::startsWith($path, 'complaints/')) {
+            $path = Str::after($path, 'complaints/');
         }
 
-        return response()->download($filePath, $doc->original_name);
+        // URL NORMAL (yang kita mau)
+        $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
+
+        // URL LEGACY (kalau dulu sempat double folder)
+        $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/complaints/{$path}";
+
+        // cek mana yang ada
+        $res = Http::get($urlNormal);
+        $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
+
+        return redirect()->away(
+            $finalUrl . '?download=' . urlencode($doc->original_name)
+        );
     }
 
     public function downloadPdf($id)
