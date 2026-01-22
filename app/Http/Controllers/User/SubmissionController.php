@@ -43,7 +43,26 @@ class SubmissionController extends Controller
 
         // Filter by status
         if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
-            $query->where('status', $request->status);
+            $statusFilter = strtolower($request->status);
+            
+            $query->where(function($q) use ($statusFilter) {
+                // MENUNGGU PROSES
+                if ($statusFilter === 'pending') {
+                    $q->whereIn('status', ['pending', 'belum diproses']);
+                }
+                // DIPROSES  
+                elseif ($statusFilter === 'diproses') {
+                    $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
+                }
+                // SELESAI
+                elseif ($statusFilter === 'selesai') {
+                    $q->whereIn('status', ['completed', 'selesai']);
+                }
+                // DITOLAK
+                elseif ($statusFilter === 'ditolak') {
+                    $q->whereIn('status', ['rejected', 'ditolak']);
+                }
+            });
         }
 
         // Penambahan withQueryString() agar pagination tetap membawa filter search/status
@@ -165,7 +184,6 @@ class SubmissionController extends Controller
             abort(403, 'Unauthorized access.');
         }
         
-        // Redirect ke URL Supabase
         $supabaseUrl = env('SUPABASE_URL');
         $bucket = env('SUPABASE_BUCKET', 'submissions');
         $filePath = ltrim($document->file_path, '/');
@@ -175,5 +193,45 @@ class SubmissionController extends Controller
 
         $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
         return redirect()->away($publicUrl);
+    }
+
+    /**
+     * Download document file
+     */
+    public function downloadDocument(SubmissionDocument $document)
+    {
+        $user = auth()->user();
+        
+        if ($document->submission->user_id !== $user->id) {
+            abort(403, 'Unauthorized access.');
+        }
+        
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $bucket = env('SUPABASE_BUCKET', 'submissions');
+        $filePath = ltrim($document->file_path, '/');
+        
+        if (Str::startsWith($filePath, 'submissions/')) {
+            $filePath = Str::after($filePath, 'submissions/');
+        }
+
+        $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
+        
+        // Fetch file dari Supabase
+        try {
+            $response = Http::get($publicUrl);
+            
+            if ($response->successful()) {
+                $fileName = $document->original_name ?? basename($document->file_path);
+                
+                return response($response->body(), 200)
+                    ->header('Content-Type', $document->file_type)
+                    ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+            }
+            
+            abort(404, 'File not found');
+        } catch (\Exception $e) {
+            Log::error('Download error: ' . $e->getMessage());
+            abort(500, 'Failed to download file');
+        }
     }
 }

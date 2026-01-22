@@ -26,21 +26,27 @@ class Complaint extends Model
         'completed_at' => 'datetime',
     ];
 
-    /**
-     * Get status badge color classes
-     */
+    // Status Badge
     public function getStatusBadgeAttribute()
     {
         $status = strtolower($this->status);
 
+        // SELESAI = HIJAU
         if (in_array($status, ['completed', 'selesai'])) {
             return 'bg-green-100 text-green-800';
         }
 
-        if (in_array($status, ['pending', 'in_progress', 'on_progress', 'diproses'])) {
+        // DIPROSES = BIRU
+        if (in_array($status, ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])) {
+            return 'bg-blue-100 text-blue-800';
+        }
+
+        // MENUNGGU PROSES = KUNING
+        if (in_array($status, ['pending', 'belum diproses'])) {
             return 'bg-yellow-100 text-yellow-800';
         }
 
+        // DITOLAK = MERAH
         if (in_array($status, ['rejected', 'ditolak'])) {
             return 'bg-red-100 text-red-800';
         }
@@ -48,29 +54,27 @@ class Complaint extends Model
         return 'bg-gray-100 text-gray-800';
     }
 
-    /**
-     * Get formatted status label
-     */
+    // Status Label  
     public function getStatusLabelAttribute()
     {
         $status = strtolower($this->status);
 
-        // SELESAI
         if (in_array($status, ['completed', 'selesai'])) {
             return 'Selesai';
         }
 
-        // DIPROSES
-        if (in_array($status, ['pending', 'in_progress', 'on_progress', 'diproses'])) {
+        if (in_array($status, ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])) {
             return 'Diproses';
         }
 
-        // DITOLAK
+        if (in_array($status, ['pending', 'belum diproses'])) {
+            return 'Menunggu Proses';
+        }
+
         if (in_array($status, ['rejected', 'ditolak'])) {
             return 'Ditolak';
         }
 
-        // Default
         return ucfirst($status);
     }
 

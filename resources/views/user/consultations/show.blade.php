@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="p-6 bg-gray-50 min-h-screen">
+    <!-- Header dengan tombol kembali yang smart -->
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center space-x-4">
             @php
@@ -37,6 +38,7 @@
         </div>
     </div>
 
+    <!-- Progress Bar dengan 4 Tahap -->
     <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
         <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
             <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,21 +48,39 @@
         </h2>
 
         <div class="relative">
+            <!-- Background Line -->
             <div class="absolute top-6 left-0 w-full h-0.5 bg-gray-200"></div>
+            
             @php
-                // Menghitung progress berdasarkan status
-                $progressWidth = '15%'; // default: pending
-                if (in_array($consultation->status, ['on_progress', 'diproses'])) {
-                    $progressWidth = '50%';
-                } elseif (in_array($consultation->status, ['completed', 'selesai', 'rejected', 'ditolak'])) {
+                $statusLower = strtolower($consultation->status);
+                
+                // Progress width calculation
+                if (in_array($statusLower, ['pending', 'belum diproses'])) {
+                    $progressWidth = '25%';
+                } elseif (in_array($statusLower, ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])) {
+                    $progressWidth = '58%';
+                } elseif (in_array($statusLower, ['completed', 'selesai', 'rejected', 'ditolak'])) {
                     $progressWidth = '100%';
+                } else {
+                    $progressWidth = '0%';
                 }
+                
+                // Check states
+                $isPending = in_array($statusLower, ['pending', 'belum diproses']);
+                $isProcessing = in_array($statusLower, ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
+                $isCompleted = in_array($statusLower, ['completed', 'selesai']);
+                $isRejected = in_array($statusLower, ['rejected', 'ditolak']);
+                $isFinished = $isCompleted || $isRejected;
             @endphp
+            
+            <!-- Progress Line -->
             <div class="absolute top-6 left-0 h-0.5 bg-green-500 transition-all duration-500" 
                 style="width: {{ $progressWidth }};"></div>
 
+            <!-- Steps -->
             <div class="relative flex justify-between">
-                <div class="flex flex-col items-center" style="width: 33%;">
+                <!-- Step 1: Terkirim -->
+                <div class="flex flex-col items-center" style="width: 25%;">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-green-500 text-white shadow-lg z-10">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -72,13 +92,41 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col items-center" style="width: 33%;">
+                <!-- Step 2: Menunggu Proses -->
+                <div class="flex flex-col items-center" style="width: 25%;">
                     @php
-                        $isProcessing = in_array($consultation->status, ['pending', 'on_progress', 'diproses']);
-                        $isFinished = in_array($consultation->status, ['completed', 'selesai', 'rejected', 'ditolak']);
+                        $step2Active = !$isPending;
+                        $step2Current = $isPending;
                     @endphp
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 {{ $isFinished ? 'bg-green-500' : ($isProcessing ? 'bg-yellow-400' : 'bg-gray-300') }} text-white shadow-lg z-10">
-                        @if($isFinished)
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 {{ $step2Active ? 'bg-green-500' : ($step2Current ? 'bg-yellow-400' : 'bg-gray-300') }} text-white shadow-lg z-10">
+                        @if($step2Active)
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        @else
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        @endif
+                    </div>
+                    <div class="text-center">
+                        <p class="font-semibold text-gray-900 text-sm">Menunggu Proses</p>
+                        @if($step2Current)
+                            <p class="text-xs text-yellow-600 mt-1 font-semibold italic">Admin belum melihat...</p>
+                        @elseif($step2Active)
+                            <p class="text-xs text-gray-400 mt-1">Sudah dilihat admin</p>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Step 3: Sedang Diproses -->
+                <div class="flex flex-col items-center" style="width: 25%;">
+                    @php
+                        $step3Active = $isFinished;
+                        $step3Current = $isProcessing;
+                    @endphp
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 {{ $step3Active ? 'bg-green-500' : ($step3Current ? 'bg-blue-500' : 'bg-gray-300') }} text-white shadow-lg z-10">
+                        @if($step3Active)
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
@@ -90,48 +138,49 @@
                     </div>
                     <div class="text-center">
                         <p class="font-semibold text-gray-900 text-sm">Sedang Diproses</p>
-                        @if(in_array($consultation->status, ['pending']))
-                            <p class="text-xs text-yellow-600 mt-1 font-semibold italic">Tahap: Menunggu Respon...</p>
-                        @elseif(in_array($consultation->status, ['on_progress', 'diproses']))
-                            <p class="text-xs text-blue-600 mt-1 font-semibold italic">Tahap: Koordinasi Tim...</p>
-                        @elseif($isFinished)
+                        @if($step3Current)
+                            <p class="text-xs text-blue-600 mt-1 font-semibold italic">Koordinasi bidang...</p>
+                        @elseif($step3Active)
                             <p class="text-xs text-gray-400 mt-1">Selesai diproses</p>
                         @endif
                     </div>
                 </div>
 
-                <div class="flex flex-col items-center" style="width: 33%;">
+                <!-- Step 4: Selesai / Ditolak -->
+                <div class="flex flex-col items-center" style="width: 25%;">
                     @php
                         $finalBg = 'bg-gray-300';
-                        $finalLabel = 'Selesai';
+                        $finalLabel = 'Menunggu';
                         
-                        if (in_array($consultation->status, ['completed', 'selesai'])) {
+                        if ($isCompleted) {
                             $finalBg = 'bg-green-500';
                             $finalLabel = 'Selesai';
-                        } elseif (in_array($consultation->status, ['rejected', 'ditolak'])) {
+                        } elseif ($isRejected) {
                             $finalBg = 'bg-red-500';
                             $finalLabel = 'Ditolak';
                         }
                     @endphp
                     <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 {{ $finalBg }} text-white shadow-lg z-10">
-                        @if(in_array($consultation->status, ['completed', 'selesai']))
+                        @if($isCompleted)
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                        @elseif(in_array($consultation->status, ['rejected', 'ditolak']))
+                        @elseif($isRejected)
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
                         @else
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         @endif
                     </div>
                     <div class="text-center">
                         <p class="font-semibold text-gray-900 text-sm">{{ $finalLabel }}</p>
-                        @if($consultation->completed_at)
-                            <p class="text-xs text-gray-500 mt-1">{{ $consultation->completed_at->format('d M Y, H:i') }}</p>
+                        @if($isCompleted && $consultation->completed_at)
+                            <p class="text-xs text-green-600 mt-1">{{ $consultation->completed_at->format('d M Y, H:i') }}</p>
+                        @elseif($isRejected && $consultation->completed_at)
+                            <p class="text-xs text-red-600 mt-1">{{ $consultation->completed_at->format('d M Y, H:i') }}</p>
                         @endif
                     </div>
                 </div>
@@ -139,59 +188,81 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm p-8">
-        <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
-            <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
-            </svg>
-            Rincian Konsultasi
-        </h2>
+    <!-- Detail Konsultasi -->
+    <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column -->
+            <div class="space-y-6">
+                <div>
+                    <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
+                        <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                        </svg>
+                        Informasi Konsultasi
+                    </h2>
+                </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-                <div class="mb-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-2">Kategori Konsultasi</label>
+                    <p class="text-gray-900">{{ $consultation->category->name }}</p>
+                </div>
+
+                <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-2">Subjek Konsultasi</label>
                     <p class="text-gray-900">{{ $consultation->subject }}</p>
                 </div>
 
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Deskripsi Lengkap</label>
-                    <p class="text-gray-900 whitespace-pre-line">{{ $consultation->description }}</p>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-2">Status Konsultasi</label>
+                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full {{ $consultation->status_badge }}">
+                        {{ $consultation->status_label }}
+                    </span>
                 </div>
 
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Kategori</label>
-                    <p class="text-gray-900">{{ $consultation->category->name ?? '-' }}</p>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-2">Tanggal Pengajuan</label>
+                    <p class="text-gray-900">{{ $consultation->created_at->format('d F Y, H:i') }} WIB</p>
                 </div>
             </div>
 
-            <div>
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-600 mb-3">Dokumen Pendukung</label>
-                    
-                    {{-- PERBAIKAN: Membaca dari relasi documents (multiple) --}}
+            <!-- Right Column -->
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-2">Deskripsi Lengkap</label>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-gray-900 whitespace-pre-line">{{ $consultation->description }}</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-2">Dokumen Pendukung</label>
                     @if($consultation->documents && $consultation->documents->count() > 0)
                         <div class="space-y-2">
                             @foreach($consultation->documents as $doc)
                                 @php
-                                    $ext = strtolower(pathinfo($doc->file_path, PATHINFO_EXTENSION));
-                                    $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
-                                    $isPdf = $ext === 'pdf';
-                                    $fileName = $doc->original_name;
+                                    $fileName = $doc->original_name ?? basename($doc->file_path);
+                                    $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+                                    
+                                    // Build Supabase URL
+                                    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+                                    $bucket = env('SUPABASE_CONSULTATIONS_BUCKET', 'consultations');
+                                    $path = ltrim($doc->file_path, '/');
+                                    
+                                    // Remove bucket prefix if present
+                                    if (Str::startsWith($path, 'consultations/')) {
+                                        $path = Str::after($path, 'consultations/');
+                                    }
+                                    
+                                    $documentUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
                                 @endphp
-                                
-                                <div class="flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition group">
-                                    <div class="flex items-center space-x-3">
-                                        @if($isPdf)
-                                            <svg class="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
-                                            </svg>
-                                        @elseif($isImage)
-                                            <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition group">
+                                    <div class="flex items-center space-x-3 min-w-0 flex-1">
+                                        @if(in_array(strtolower($ext), ['jpg', 'jpeg', 'png', 'gif', 'webp']))
+                                            <svg class="w-8 h-8 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
                                             </svg>
                                         @else
-                                            <svg class="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg class="w-8 h-8 text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
                                             </svg>
                                         @endif
@@ -205,13 +276,15 @@
                                     <div class="flex items-center space-x-2">
                                         <span class="text-xs text-gray-500 group-hover:text-blue-600">.{{ strtoupper($ext) }}</span>
                                         
-                                        <a href="{{ asset('storage/' . $doc->file_path) }}" download="{{ $fileName }}" class="text-blue-600 hover:text-blue-800" title="Download">
+                                        <!-- Download Button -->
+                                        <a href="{{ route('user.consultations.document.download', $doc) }}" class="text-blue-600 hover:text-blue-800" title="Download">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                             </svg>
                                         </a>
                                         
-                                        <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Lihat">
+                                        <!-- View Button -->
+                                        <a href="{{ $documentUrl }}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Lihat">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                                             </svg>
@@ -225,8 +298,8 @@
                     @endif
                 </div>
 
-                @if($consultation->admin_response)
-                <div class="mb-6">
+                @if($consultation->admin_response || $consultation->admin_notes)
+                <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-2">Respon dari Admin</label>
                     <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
                         <div class="flex items-start">
@@ -234,7 +307,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
                             </svg>
                             <div class="flex-1">
-                                <p class="text-gray-900 whitespace-pre-line">{{ $consultation->admin_response }}</p>
+                                <p class="text-gray-900 whitespace-pre-line">{{ $consultation->admin_response ?? $consultation->admin_notes }}</p>
                                 @if($consultation->handler)
                                     <p class="text-xs text-blue-700 mt-3 font-semibold">Ditangani oleh: {{ $consultation->handler->name }}</p>
                                 @endif
@@ -247,17 +320,8 @@
                 </div>
                 @endif
 
-                @if($consultation->admin_notes && $consultation->admin_notes != $consultation->admin_response)
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Catatan Admin</label>
-                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
-                        <p class="text-gray-900">{{ $consultation->admin_notes }}</p>
-                    </div>
-                </div>
-                @endif
-
-                @if($consultation->handler && !$consultation->admin_response)
-                <div class="mb-6">
+                @if($consultation->handler && !$consultation->admin_response && !$consultation->admin_notes)
+                <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-2">Ditangani Oleh</label>
                     <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                         <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
@@ -276,6 +340,7 @@
         </div>
     </div>
 
+    <!-- Riwayat Aktivitas -->
     @if(isset($consultation->statusHistories) && $consultation->statusHistories->count() > 0)
     <div class="bg-white rounded-lg shadow-sm p-8 mt-6">
         <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
@@ -298,7 +363,6 @@
                 <div class="flex-1 bg-gray-50 rounded-lg p-4">
                     <div class="flex items-center justify-between mb-1">
                         <p class="text-sm font-bold text-gray-900">
-                            {{-- Menggunakan kolom new_status sesuai tabel status_histories --}}
                             {{ strtoupper($history->new_status ?? $history->status) }}
                         </p>
                         <p class="text-xs text-gray-500">{{ $history->created_at->format('d/m/Y H:i') }} WIB</p>

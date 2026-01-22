@@ -46,49 +46,55 @@ class Consultation extends Model
         return $this->morphMany(ConsultationStatusHistory::class, 'trackable')->latest();
     }
 
-    // --- Accessor Status Badge ---
     public function getStatusBadgeAttribute()
     {
-        // Normalisasi status ke lowercase untuk perbandingan yang case-insensitive
-        $statusLower = strtolower(trim($this->status));
-        
-        // Cek berdasarkan status yang ada di database
-        if (in_array($statusLower, ['pending', 'diproses', 'on_progress'])) {
-            return 'bg-yellow-100 text-yellow-800';
-        }
-        
-        if (in_array($statusLower, ['completed', 'selesai'])) {
+        $status = strtolower($this->status);
+
+        // SELESAI = HIJAU
+        if (in_array($status, ['completed', 'selesai'])) {
             return 'bg-green-100 text-green-800';
         }
-        
-        if (in_array($statusLower, ['rejected', 'ditolak'])) {
+
+        // DIPROSES = BIRU
+        if (in_array($status, ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])) {
+            return 'bg-blue-100 text-blue-800';
+        }
+
+        // MENUNGGU PROSES = KUNING
+        if (in_array($status, ['pending', 'belum diproses'])) {
+            return 'bg-yellow-100 text-yellow-800';
+        }
+
+        // DITOLAK = MERAH
+        if (in_array($status, ['rejected', 'ditolak'])) {
             return 'bg-red-100 text-red-800';
         }
-        
+
         return 'bg-gray-100 text-gray-800';
     }
 
-    // --- Accessor Status Label ---
+    // Status Label  
     public function getStatusLabelAttribute()
     {
-        // Normalisasi status ke lowercase untuk perbandingan
-        $statusLower = strtolower(trim($this->status));
-        
-        // Mapping status ke label Indonesia
-        if (in_array($statusLower, ['pending', 'diproses', 'on_progress'])) {
-            return 'Diproses';
-        }
-        
-        if (in_array($statusLower, ['completed', 'selesai'])) {
+        $status = strtolower($this->status);
+
+        if (in_array($status, ['completed', 'selesai'])) {
             return 'Selesai';
         }
-        
-        if (in_array($statusLower, ['rejected', 'ditolak'])) {
+
+        if (in_array($status, ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])) {
+            return 'Diproses';
+        }
+
+        if (in_array($status, ['pending', 'belum diproses'])) {
+            return 'Menunggu Proses';
+        }
+
+        if (in_array($status, ['rejected', 'ditolak'])) {
             return 'Ditolak';
         }
-        
-        // Fallback: capitalize first letter
-        return ucfirst($this->status);
+
+        return ucfirst($status);
     }
 
 

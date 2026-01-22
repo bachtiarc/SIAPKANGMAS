@@ -207,9 +207,9 @@
             </div>
             <div class="items-center px-4 py-3 space-y-2">
                 @if(session('consultation_id'))
-                <button onclick="window.location.href='{{ route('user.consultations.show', session('consultation_id')) }}'" 
+                <button onclick="window.location.href='{{ route('user.document.show', session('consultation_id')) }}'" 
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
-                    Lacak Status
+                    Lihat Detail Pengaduan
                 </button>
                 @endif
                 <button onclick="window.location.href='{{ route('user.consultations.index') }}'" 

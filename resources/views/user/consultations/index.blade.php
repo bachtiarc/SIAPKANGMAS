@@ -63,14 +63,18 @@
             </a>
             <a href="{{ route('user.consultations.index', array_filter(['status' => 'pending', 'search' => request('search')])) }}" 
                class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                Menunggu Proses
+            </a>
+            <a href="{{ route('user.consultations.index', array_filter(['status' => 'diproses', 'search' => request('search')])) }}" 
+               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'diproses' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 Diproses
             </a>
-            <a href="{{ route('user.consultations.index', array_filter(['status' => 'completed', 'search' => request('search')])) }}" 
-               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'completed' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+            <a href="{{ route('user.consultations.index', array_filter(['status' => 'selesai', 'search' => request('search')])) }}" 
+               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'selesai' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 Selesai
             </a>
-            <a href="{{ route('user.consultations.index', array_filter(['status' => 'rejected', 'search' => request('search')])) }}" 
-               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'rejected' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+            <a href="{{ route('user.consultations.index', array_filter(['status' => 'ditolak', 'search' => request('search')])) }}" 
+               class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'ditolak' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 Ditolak
             </a>
         </div>
@@ -110,7 +114,6 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                {{-- PERBAIKAN: Tambahkan ?from=index --}}
                                 <a href="{{ route('user.consultations.show', $consultation->id) }}?from=index" class="text-blue-600 hover:text-blue-800">
                                     <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>

@@ -38,11 +38,20 @@ class HistoryController extends Controller
                 ->when($statusFilter, function($query) use ($statusFilter) {
                     $status = strtolower($statusFilter);
                     $query->where(function($q) use ($status) {
+                        // MENUNGGU PROSES
                         if ($status === 'pending') {
-                            $q->whereIn('status', ['pending', 'in_progress', 'diproses', 'on_progress']);
-                        } elseif ($status === 'completed') {
+                            $q->whereIn('status', ['pending', 'belum diproses']);
+                        } 
+                        // DIPROSES
+                        elseif ($status === 'diproses') {
+                            $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
+                        } 
+                        // SELESAI
+                        elseif ($status === 'selesai') {
                             $q->whereIn('status', ['completed', 'selesai']);
-                        } elseif ($status === 'rejected') {
+                        } 
+                        // DITOLAK
+                        elseif ($status === 'ditolak') {
                             $q->whereIn('status', ['rejected', 'ditolak']);
                         }
                     });
@@ -60,7 +69,7 @@ class HistoryController extends Controller
                         'date' => $item->created_at,
                         'status' => strtolower($item->status),
                         // PERBAIKAN: Tambahkan parameter ?from=history
-                        'route' => route('user.submissions.show', $item->id)
+                        'route' => route('user.submissions.show', $item->id) . '?from=history'
                     ];
                 });
             
@@ -80,11 +89,20 @@ class HistoryController extends Controller
                 ->when($statusFilter, function($query) use ($statusFilter) {
                     $status = strtolower($statusFilter);
                     $query->where(function($q) use ($status) {
+                        // MENUNGGU PROSES
                         if ($status === 'pending') {
-                            $q->whereIn('status', ['pending', 'in_progress', 'diproses', 'on_progress']);
-                        } elseif ($status === 'completed') {
+                            $q->whereIn('status', ['pending', 'belum diproses']);
+                        } 
+                        // DIPROSES
+                        elseif ($status === 'diproses') {
+                            $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
+                        } 
+                        // SELESAI
+                        elseif ($status === 'selesai') {
                             $q->whereIn('status', ['completed', 'selesai']);
-                        } elseif ($status === 'rejected') {
+                        } 
+                        // DITOLAK
+                        elseif ($status === 'ditolak') {
                             $q->whereIn('status', ['rejected', 'ditolak']);
                         }
                     });
@@ -100,7 +118,7 @@ class HistoryController extends Controller
                         'date' => $item->created_at,
                         'status' => strtolower($item->status),
                         // PERBAIKAN: Tambahkan parameter ?from=history
-                        'route' => route('user.consultations.show', $item->id)
+                        'route' => route('user.consultations.show', $item->id) . '?from=history'
                     ];
                 });
             
@@ -121,11 +139,20 @@ class HistoryController extends Controller
                 ->when($statusFilter, function($query) use ($statusFilter) {
                     $status = strtolower($statusFilter);
                     $query->where(function($q) use ($status) {
+                        // MENUNGGU PROSES
                         if ($status === 'pending') {
-                            $q->whereIn('status', ['pending', 'in_progress', 'diproses', 'on_progress']);
-                        } elseif ($status === 'completed') {
+                            $q->whereIn('status', ['pending', 'belum diproses']);
+                        } 
+                        // DIPROSES
+                        elseif ($status === 'diproses') {
+                            $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
+                        } 
+                        // SELESAI
+                        elseif ($status === 'selesai') {
                             $q->whereIn('status', ['completed', 'selesai']);
-                        } elseif ($status === 'rejected') {
+                        } 
+                        // DITOLAK
+                        elseif ($status === 'ditolak') {
                             $q->whereIn('status', ['rejected', 'ditolak']);
                         }
                     });
@@ -142,7 +169,7 @@ class HistoryController extends Controller
                         'date' => $item->created_at,
                         'status' => strtolower($item->status),
                         // PERBAIKAN: Tambahkan parameter ?from=history
-                        'route' => route('user.complaints.show', $item->id)
+                        'route' => route('user.complaints.show', $item->id) . '?from=history'
                     ];
                 });
             
@@ -154,12 +181,23 @@ class HistoryController extends Controller
         
         // Calculate statistics
         $totalSubmissions = $allSubmissions->count();
+        
+        // MENUNGGU PROSES
         $totalPending = $allSubmissions->filter(function($item) {
-            return in_array($item['status'], ['pending', 'in_progress', 'diproses', 'on_progress']);
+            return in_array($item['status'], ['pending', 'belum diproses']);
         })->count();
+        
+        // DIPROSES
+        $totalProcessing = $allSubmissions->filter(function($item) {
+            return in_array($item['status'], ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
+        })->count();
+        
+        // SELESAI
         $totalCompleted = $allSubmissions->filter(function($item) {
             return in_array($item['status'], ['completed', 'selesai']);
         })->count();
+        
+        // DITOLAK
         $totalRejected = $allSubmissions->filter(function($item) {
             return in_array($item['status'], ['rejected', 'ditolak']);
         })->count();
@@ -184,6 +222,7 @@ class HistoryController extends Controller
             'submissions',
             'totalSubmissions',
             'totalPending',
+            'totalProcessing',
             'totalCompleted',
             'totalRejected'
         ));

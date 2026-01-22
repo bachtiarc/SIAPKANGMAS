@@ -80,9 +80,10 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
     Route::post('/permohonan-informasi', [UserSubmissionController::class, 'store'])->name('submissions.store');
     Route::get('/permohonan-informasi/{submission}', [UserSubmissionController::class, 'show'])->name('submissions.show');
     
-    // PDF & VIEW DOCUMENT 
+    // PDF & VIEW/DOWNLOAD DOCUMENT - DITAMBAHKAN ROUTE DOWNLOAD
     Route::get('/permohonan-informasi/{submission}/pdf', [UserSubmissionPdfController::class, 'download'])->name('submissions.download');
-    Route::get('/permohonan-informasi/document/{document}', [UserSubmissionController::class, 'viewDocument'])->name('submissions.view-document');
+    Route::get('/permohonan-informasi/document/{document}/view', [UserSubmissionController::class, 'viewDocument'])->name('submissions.view');
+    Route::get('/permohonan-informasi/document/{document}/download', [UserSubmissionController::class, 'downloadDocument'])->name('submissions.document.download');
 
     // KONSULTASI 
     Route::resource('consultations', ConsultationController::class);
@@ -91,6 +92,8 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
     Route::post('/consultations', [ConsultationController::class, 'store'])->name('consultations.store');
     Route::get('/consultations/{consultation}', [ConsultationController::class, 'show'])->name('consultations.show');
     Route::get('/consultations/{consultation}/pdf', [ConsultationPdfController::class, 'download'])->name('consultations.download');
+    Route::get('/consultations/document/{document}/download', [ConsultationController::class, 'downloadDocument'])
+    ->name('consultations.document.download');
 
     // PENGADUAN (COMPLAINTS)
     Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
@@ -99,6 +102,8 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
     Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('complaints.show');
     Route::get('/complaints/{complaint}/pdf', [ComplaintPdfController::class, 'download'])->name('complaints.download');
     Route::get('/complaints/document/{document}', [ComplaintController::class, 'viewDocument'])->name('complaints.documents.view');
+    Route::get('/complaints/document/{document}/download', [ComplaintController::class, 'downloadDocument'])
+    ->name('complaints.document.download');
 
     // RIWAYAT PENGAJUAN - PERBAIKAN: Menggunakan HistoryController yang sudah di-import di atas
     Route::get('/riwayat-pengajuan', [HistoryController::class, 'index'])->name('history.index');

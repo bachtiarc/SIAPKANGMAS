@@ -41,7 +41,26 @@ class ComplaintController extends Controller
 
         // Filter by status
         if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
-            $query->where('status', $request->status);
+            $statusFilter = strtolower($request->status);
+            
+            $query->where(function($q) use ($statusFilter) {
+                // MENUNGGU PROSES
+                if ($statusFilter === 'pending') {
+                    $q->whereIn('status', ['pending', 'belum diproses']);
+                }
+                // DIPROSES  
+                elseif ($statusFilter === 'diproses') {
+                    $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
+                }
+                // SELESAI
+                elseif ($statusFilter === 'selesai') {
+                    $q->whereIn('status', ['completed', 'selesai']);
+                }
+                // DITOLAK
+                elseif ($statusFilter === 'ditolak') {
+                    $q->whereIn('status', ['rejected', 'ditolak']);
+                }
+            });
         }
 
         $complaints = $query->latest()->paginate(10)->withQueryString();
@@ -191,8 +210,6 @@ class ComplaintController extends Controller
         $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
 
         $path = ltrim($document->file_path, '/');
-
-        // buang prefix "complaints/" kalau keburu kesimpen (biar konsisten)
         if (Str::startsWith($path, 'complaints/')) {
             $path = Str::after($path, 'complaints/');
         }
@@ -208,5 +225,45 @@ class ComplaintController extends Controller
 
         // tampilkan di browser (tanpa download)
         return redirect()->away($finalUrl);
+    }
+
+    /**
+     * Download complaint document
+     */
+    public function downloadDocument(ComplaintDocument $document)
+    {
+        $user = auth()->user();
+        
+        if ($document->complaint->user_id !== $user->id) {
+            abort(403, 'Unauthorized access.');
+        }
+        
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
+        $filePath = ltrim($document->file_path, '/');
+        
+        if (Str::startsWith($filePath, 'complaints/')) {
+            $filePath = Str::after($filePath, 'complaints/');
+        }
+
+        $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
+        
+        // Fetch file dari Supabase
+        try {
+            $response = Http::get($publicUrl);
+            
+            if ($response->successful()) {
+                $fileName = $document->original_name ?? basename($document->file_path);
+                
+                return response($response->body(), 200)
+                    ->header('Content-Type', $response->header('Content-Type') ?? 'application/octet-stream')
+                    ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+            }
+            
+            abort(404, 'File not found');
+        } catch (\Exception $e) {
+            \Log::error('Download error: ' . $e->getMessage());
+            abort(500, 'Failed to download file');
+        }
     }
 }
