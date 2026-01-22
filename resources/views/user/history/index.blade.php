@@ -155,19 +155,19 @@
                     </label>
                     <label class="inline-flex items-center">
                         <input type="radio" name="status" value="pending" {{ request('status') == 'pending' ? 'checked' : '' }} onchange="this.form.submit()" class="sr-only peer">
-                        <span class="px-4 py-2 rounded-lg text-sm font-montserrat font-medium cursor-pointer transition peer-checked:bg-blue-600 peer-checked:text-white bg-gray-100 text-gray-700 hover:bg-gray-200">
+                        <span class="px-4 py-2 rounded-lg text-sm font-montserrat font-medium cursor-pointer transition peer-checked:bg-yellow-100 peer-checked:text-yellow-800 peer-checked:font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
                             Diproses
                         </span>
                     </label>
                     <label class="inline-flex items-center">
                         <input type="radio" name="status" value="completed" {{ request('status') == 'completed' ? 'checked' : '' }} onchange="this.form.submit()" class="sr-only peer">
-                        <span class="px-4 py-2 rounded-lg text-sm font-montserrat font-medium cursor-pointer transition peer-checked:bg-blue-600 peer-checked:text-white bg-gray-100 text-gray-700 hover:bg-gray-200">
+                        <span class="px-4 py-2 rounded-lg text-sm font-montserrat font-medium cursor-pointer transition peer-checked:bg-green-100 peer-checked:text-green-800 peer-checked:font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
                             Selesai
                         </span>
                     </label>
                     <label class="inline-flex items-center">
                         <input type="radio" name="status" value="rejected" {{ request('status') == 'rejected' ? 'checked' : '' }} onchange="this.form.submit()" class="sr-only peer">
-                        <span class="px-4 py-2 rounded-lg text-sm font-montserrat font-medium cursor-pointer transition peer-checked:bg-blue-600 peer-checked:text-white bg-gray-100 text-gray-700 hover:bg-gray-200">
+                        <span class="px-4 py-2 rounded-lg text-sm font-montserrat font-medium cursor-pointer transition peer-checked:bg-red-100 peer-checked:text-red-800 peer-checked:font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
                             Ditolak
                         </span>
                     </label>

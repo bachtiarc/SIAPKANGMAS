@@ -1,5 +1,3 @@
-<!-- resources/views/user/submissions/index.blade.php -->
- 
 @extends('layouts.dashboard')
 
 @section('title', 'Permohonan Informasi')
@@ -31,9 +29,8 @@
                 Buat Pengajuan Formulir Baru
             </a>
 
-            <!-- Search - DIPERBAIKI: tambahkan action dan pertahankan parameter status -->
+            <!-- Search -->
             <form method="GET" action="{{ route('user.submissions.index') }}" class="flex space-x-2">
-                <!-- Hidden input untuk mempertahankan filter status saat search -->
                 @if(request('status'))
                     <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
@@ -46,7 +43,6 @@
                     </svg>
                 </button>
                 
-                <!-- Tombol Reset (muncul jika ada pencarian) -->
                 @if(request('search'))
                     <a href="{{ route('user.submissions.index', request('status') ? ['status' => request('status')] : []) }}" 
                        class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition flex items-center">
@@ -58,7 +54,7 @@
             </form>
         </div>
 
-        <!-- Filters - DIPERBAIKI: pertahankan parameter search saat ganti filter -->
+        <!-- Filters -->
         <div class="mt-4 flex items-center space-x-2">
             <span class="text-sm text-gray-600">Filter:</span>
             <a href="{{ route('user.submissions.index', request('search') ? ['search' => request('search')] : []) }}" 
@@ -114,7 +110,8 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <a href="{{ route('user.submissions.show', $submission->id) }}" class="text-blue-600 hover:text-blue-800">
+                                {{-- PERBAIKAN: Tambahkan ?from=index --}}
+                                <a href="{{ route('user.submissions.show', $submission->id) }}?from=index" class="text-blue-600 hover:text-blue-800">
                                     <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>

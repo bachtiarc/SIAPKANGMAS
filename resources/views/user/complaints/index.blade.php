@@ -1,5 +1,3 @@
-<!-- resources/views/user/complaints/index.blade.php -->
-
 @extends('layouts.dashboard')
 
 @section('title', 'Daftar Pengaduan')

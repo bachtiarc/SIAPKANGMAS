@@ -8,23 +8,14 @@
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center space-x-4">
             @php
-                // Deteksi dari mana user datang
-                $backUrl = session('previous_url', route('user.submissions.index'));
+                $from = request()->get('from', 'index');
                 
-                // Cek apakah dari dashboard
-                if (str_contains($backUrl, '/dashboard')) {
+                if ($from === 'dashboard') {
                     $backUrl = route('user.dashboard');
-                    $backLabel = 'Dashboard';
-                }
-                // Cek apakah dari riwayat
-                elseif (str_contains($backUrl, '/riwayat-pengajuan')) {
+                } elseif ($from === 'history') {
                     $backUrl = route('user.history.index');
-                    $backLabel = 'Riwayat Pengajuan';
-                }
-                // Default ke daftar permohonan
-                else {
+                } else {
                     $backUrl = route('user.submissions.index');
-                    $backLabel = 'Daftar Permohonan';
                 }
             @endphp
             
@@ -34,7 +25,7 @@
                 </svg>
                 Kembali
             </a>
-            <h1 class="text-2xl font-bold text-blue-700">Tiket {{ $submission->ticket_number }}</h1>
+            <h1 class="text-2xl font-bold text-blue-700">Tiket {{ $submission->ticket_id ?? $submission->ticket_number }}</h1>
         </div>
         
         <div class="flex items-center space-x-3">
