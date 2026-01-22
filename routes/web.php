@@ -12,6 +12,7 @@ use App\Http\Controllers\User\SubmissionController as UserSubmissionController;
 use App\Http\Controllers\User\ConsultationController;
 use App\Http\Controllers\User\ConsultationPdfController;
 use App\Http\Controllers\User\SubmissionPdfController as UserSubmissionPdfController;
+use App\Http\Controllers\User\HistoryController;
 use App\Http\Controllers\Masyarakat\SubmissionController as MasyarakatSubmissionController;
 use App\Http\Controllers\User\ComplaintController;
 use App\Http\Controllers\User\ComplaintPdfController;
@@ -95,6 +96,9 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
     Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('complaints.show');
     Route::get('/complaints/{complaint}/pdf', [ComplaintPdfController::class, 'download'])->name('complaints.download');
     Route::get('/complaints/document/{document}', [ComplaintController::class, 'viewDocument'])->name('complaints.documents.view');
+
+    // RIWAYAT PENGAJUAN - PERBAIKAN: Menggunakan HistoryController yang sudah di-import di atas
+    Route::get('/riwayat-pengajuan', [HistoryController::class, 'index'])->name('history.index');
 });
 
 // User Masyarakat Dashboard 
