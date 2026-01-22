@@ -175,7 +175,7 @@
     <div class="bg-white rounded-xl shadow-sm p-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="font-montserrat text-lg font-bold text-gray-900">Aktivitas Terkini</h2>
-            <a href="{{ route('user.submissions.index') }}" class="font-montserrat text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua →</a>
+            <a href="{{ route('user.history.index') }}" class="font-montserrat text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua →</a>
         </div>
 
         @if($recentActivities && count($recentActivities) > 0)
@@ -226,25 +226,25 @@
                                     {{ $activity['created_at']->format('d/m/Y') }}
                                 </td>
                                 
-                                {{-- Status --}}
+                                {{-- Status DIPERBAIKI: Warna sesuai (Kuning, Hijau, Merah) --}}
                                 <td class="px-4 py-4 whitespace-nowrap">
                                     @php 
-                                        $status = $activity['status'] ?? 'pending'; 
+                                        $status = strtolower($activity['status'] ?? 'pending');
                                     @endphp
                                     @if(in_array($status, ['completed', 'selesai']))
                                         <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-green-100 text-green-800">Selesai</span>
-                                    @elseif(in_array($status, ['in_progress', 'on_progress', 'diproses']))
+                                    @elseif(in_array($status, ['pending', 'in_progress', 'on_progress', 'diproses']))
                                         <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-yellow-100 text-yellow-800">Diproses</span>
-                                    @elseif($status == 'pending')
-                                        <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-gray-100 text-gray-800">Pending</span>
-                                    @else
+                                    @elseif(in_array($status, ['rejected', 'ditolak']))
                                         <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-red-100 text-red-800">Ditolak</span>
+                                    @else
+                                        <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-gray-100 text-gray-800">{{ ucfirst($status) }}</span>
                                     @endif
                                 </td>
                                 
-                                {{-- Aksi --}}
+                                {{-- Aksi - DIPERBAIKI: Tambah parameter ?from=dashboard --}}
                                 <td class="px-4 py-4 whitespace-nowrap">
-                                    <a href="{{ $activity['route'] }}" class="text-gray-600 hover:text-blue-600" title="Lihat Detail">
+                                    <a href="{{ $activity['route'] }}?from=dashboard" class="text-gray-600 hover:text-blue-600" title="Lihat Detail">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>

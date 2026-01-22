@@ -252,12 +252,25 @@ class Submission extends Model
      */
     public function getStatusBadgeAttribute()
     {
-        return [
-            'pending'     => 'bg-blue-100 text-blue-800',   
-            'in_progress' => 'bg-blue-100 text-blue-800',   
-            'completed'   => 'bg-green-100 text-green-800', 
-            'rejected'    => 'bg-red-100 text-red-800',  
-        ][$this->status] ?? 'bg-gray-100 text-gray-800';
+        $status = strtolower($this->status);
+
+        // SELESAI = HIJAU
+        if (in_array($status, ['completed', 'selesai'])) {
+            return 'bg-green-100 text-green-800';
+        }
+
+        // DIPROSES = KUNING (pending, in_progress, on_progress, diproses)
+        if (in_array($status, ['pending', 'in_progress', 'on_progress', 'diproses'])) {
+            return 'bg-yellow-100 text-yellow-800';
+        }
+
+        // DITOLAK = MERAH
+        if (in_array($status, ['rejected', 'ditolak'])) {
+            return 'bg-red-100 text-red-800';
+        }
+
+        // Default
+        return 'bg-gray-100 text-gray-800';
     }
 
     /**
@@ -265,12 +278,25 @@ class Submission extends Model
      */
     public function getStatusLabelAttribute()
     {
-        return [
-            'pending'     => 'Diproses', 
-            'in_progress' => 'Diproses',
-            'completed'   => 'Selesai',
-            'rejected'    => 'Ditolak',
-        ][$this->status] ?? 'Unknown';
+        $status = strtolower($this->status);
+
+        // SELESAI
+        if (in_array($status, ['completed', 'selesai'])) {
+            return 'Selesai';
+        }
+
+        // DIPROSES
+        if (in_array($status, ['pending', 'in_progress', 'on_progress', 'diproses'])) {
+            return 'Diproses';
+        }
+
+        // DITOLAK
+        if (in_array($status, ['rejected', 'ditolak'])) {
+            return 'Ditolak';
+        }
+
+        // Default
+        return ucfirst($status);
     }
 
     /**

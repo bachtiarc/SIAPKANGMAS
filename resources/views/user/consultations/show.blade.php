@@ -6,7 +6,19 @@
 <div class="p-6 bg-gray-50 min-h-screen">
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center space-x-4">
-            <a href="{{ route('user.consultations.index') }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            @php
+                $from = request()->get('from', 'index');
+                
+                if ($from === 'dashboard') {
+                    $backUrl = route('user.dashboard');
+                } elseif ($from === 'history') {
+                    $backUrl = route('user.history.index');
+                } else {
+                    $backUrl = route('user.consultations.index');
+                }
+            @endphp
+            
+            <a href="{{ $backUrl }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
@@ -35,8 +47,17 @@
 
         <div class="relative">
             <div class="absolute top-6 left-0 w-full h-0.5 bg-gray-200"></div>
+            @php
+                // Menghitung progress berdasarkan status
+                $progressWidth = '15%'; // default: pending
+                if (in_array($consultation->status, ['on_progress', 'diproses'])) {
+                    $progressWidth = '50%';
+                } elseif (in_array($consultation->status, ['completed', 'selesai', 'rejected', 'ditolak'])) {
+                    $progressWidth = '100%';
+                }
+            @endphp
             <div class="absolute top-6 left-0 h-0.5 bg-green-500 transition-all duration-500" 
-                style="width: {{ $consultation->status == 'pending' ? '15%' : ($consultation->status == 'diproses' ? '50%' : '100%') }};"></div>
+                style="width: {{ $progressWidth }};"></div>
 
             <div class="relative flex justify-between">
                 <div class="flex flex-col items-center" style="width: 33%;">
@@ -53,8 +74,8 @@
 
                 <div class="flex flex-col items-center" style="width: 33%;">
                     @php
-                        $isProcessing = in_array($consultation->status, ['pending', 'diproses']);
-                        $isFinished = in_array($consultation->status, ['selesai', 'ditolak']);
+                        $isProcessing = in_array($consultation->status, ['pending', 'on_progress', 'diproses']);
+                        $isFinished = in_array($consultation->status, ['completed', 'selesai', 'rejected', 'ditolak']);
                     @endphp
                     <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 {{ $isFinished ? 'bg-green-500' : ($isProcessing ? 'bg-yellow-400' : 'bg-gray-300') }} text-white shadow-lg z-10">
                         @if($isFinished)
@@ -69,9 +90,9 @@
                     </div>
                     <div class="text-center">
                         <p class="font-semibold text-gray-900 text-sm">Sedang Diproses</p>
-                        @if($consultation->status == 'pending')
+                        @if(in_array($consultation->status, ['pending']))
                             <p class="text-xs text-yellow-600 mt-1 font-semibold italic">Tahap: Menunggu Respon...</p>
-                        @elseif($consultation->status == 'diproses')
+                        @elseif(in_array($consultation->status, ['on_progress', 'diproses']))
                             <p class="text-xs text-blue-600 mt-1 font-semibold italic">Tahap: Koordinasi Tim...</p>
                         @elseif($isFinished)
                             <p class="text-xs text-gray-400 mt-1">Selesai diproses</p>
@@ -82,15 +103,22 @@
                 <div class="flex flex-col items-center" style="width: 33%;">
                     @php
                         $finalBg = 'bg-gray-300';
-                        if($consultation->status == 'selesai') $finalBg = 'bg-green-500';
-                        if($consultation->status == 'ditolak') $finalBg = 'bg-red-500';
+                        $finalLabel = 'Selesai';
+                        
+                        if (in_array($consultation->status, ['completed', 'selesai'])) {
+                            $finalBg = 'bg-green-500';
+                            $finalLabel = 'Selesai';
+                        } elseif (in_array($consultation->status, ['rejected', 'ditolak'])) {
+                            $finalBg = 'bg-red-500';
+                            $finalLabel = 'Ditolak';
+                        }
                     @endphp
                     <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 {{ $finalBg }} text-white shadow-lg z-10">
-                        @if($consultation->status == 'selesai')
+                        @if(in_array($consultation->status, ['completed', 'selesai']))
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                        @elseif($consultation->status == 'ditolak')
+                        @elseif(in_array($consultation->status, ['rejected', 'ditolak']))
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
@@ -101,9 +129,7 @@
                         @endif
                     </div>
                     <div class="text-center">
-                        <p class="font-semibold text-gray-900 text-sm">
-                            {{ $consultation->status == 'ditolak' ? 'Ditolak' : 'Selesai' }}
-                        </p>
+                        <p class="font-semibold text-gray-900 text-sm">{{ $finalLabel }}</p>
                         @if($consultation->completed_at)
                             <p class="text-xs text-gray-500 mt-1">{{ $consultation->completed_at->format('d M Y, H:i') }}</p>
                         @endif

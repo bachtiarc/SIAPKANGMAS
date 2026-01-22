@@ -31,12 +31,21 @@ class Complaint extends Model
      */
     public function getStatusBadgeAttribute()
     {
-        return match($this->status) {
-            'pending' => 'bg-yellow-100 text-yellow-800',
-            'diproses' => 'bg-blue-100 text-blue-800',
-            'selesai' => 'bg-green-100 text-green-800',
-            default => 'bg-gray-100 text-gray-800',
-        };
+        $status = strtolower($this->status);
+
+        if (in_array($status, ['completed', 'selesai'])) {
+            return 'bg-green-100 text-green-800';
+        }
+
+        if (in_array($status, ['pending', 'in_progress', 'on_progress', 'diproses'])) {
+            return 'bg-yellow-100 text-yellow-800';
+        }
+
+        if (in_array($status, ['rejected', 'ditolak'])) {
+            return 'bg-red-100 text-red-800';
+        }
+
+        return 'bg-gray-100 text-gray-800';
     }
 
     /**
@@ -44,13 +53,27 @@ class Complaint extends Model
      */
     public function getStatusLabelAttribute()
     {
-        return match($this->status) {
-            'pending' => 'Menunggu',
-            'diproses' => 'Diproses',
-            'selesai' => 'Selesai',
-            default => ucfirst($this->status),
-        };
+        $status = strtolower($this->status);
+
+        // SELESAI
+        if (in_array($status, ['completed', 'selesai'])) {
+            return 'Selesai';
+        }
+
+        // DIPROSES
+        if (in_array($status, ['pending', 'in_progress', 'on_progress', 'diproses'])) {
+            return 'Diproses';
+        }
+
+        // DITOLAK
+        if (in_array($status, ['rejected', 'ditolak'])) {
+            return 'Ditolak';
+        }
+
+        // Default
+        return ucfirst($status);
     }
+
 
     /**
      * Relationship to User (submitter)
