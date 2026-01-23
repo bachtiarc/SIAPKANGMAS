@@ -7,224 +7,150 @@ use App\Models\Submission;
 use App\Models\Consultation;
 use App\Models\Complaint;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class HistoryController extends Controller
 {
     public function index(Request $request)
     {
-        $user = Auth::user();
-        
-        // Get filter parameters
-        $search = $request->get('search');
-        $categoryFilter = $request->get('category');
-        $statusFilter = $request->get('status');
-        
-        // Initialize collections
-        $allSubmissions = collect();
-        
-        // === PERMOHONAN INFORMASI ===
-        if (!$categoryFilter || $categoryFilter === 'submission') {
-            $submissions = Submission::where('user_id', $user->id)
-                ->with('category')
-                ->when($search, function($query) use ($search) {
-                    $query->where(function($q) use ($search) {
-                        $q->where('ticket_id', 'like', "%{$search}%")
-                          ->orWhere('ticket_number', 'like', "%{$search}%")
-                          ->orWhere('title', 'like', "%{$search}%")
-                          ->orWhere('information_title', 'like', "%{$search}%");
-                    });
-                })
-                ->when($statusFilter, function($query) use ($statusFilter) {
-                    $status = strtolower($statusFilter);
-                    $query->where(function($q) use ($status) {
-                        // MENUNGGU PROSES
-                        if ($status === 'pending') {
-                            $q->whereIn('status', ['pending', 'belum diproses']);
-                        } 
-                        // DIPROSES
-                        elseif ($status === 'diproses') {
-                            $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
-                        } 
-                        // SELESAI
-                        elseif ($status === 'selesai') {
-                            $q->whereIn('status', ['completed', 'selesai']);
-                        } 
-                        // DITOLAK
-                        elseif ($status === 'ditolak') {
-                            $q->whereIn('status', ['rejected', 'ditolak']);
-                        }
-                    });
-                })
-                ->get()
-                ->map(function($item) {
-                    return [
-                        // PERBAIKAN: Gunakan ticket_id (bukan ticket_number)
-                        'ticket_id' => $item->ticket_id ?? $item->ticket_number ?? '-',
-                        'type' => 'submission',
-                        'type_label' => 'Permohonan',
-                        // PERBAIKAN: Gunakan information_title atau title
-                        'category' => $item->category->name ?? '-',
-                        'title' => $item->information_title ?? $item->title ?? '-',
-                        'date' => $item->created_at,
-                        'status' => strtolower($item->status),
-                        // PERBAIKAN: Tambahkan parameter ?from=history
-                        'route' => route('user.submissions.show', $item->id) . '?from=history'
-                    ];
-                });
-            
-            $allSubmissions = $allSubmissions->merge($submissions);
+        $user = auth()->user();
+
+        /* =============================
+         * AMBIL DATA DARI 3 TABEL
+         * ============================= */
+        $submissions = Submission::where('user_id', $user->id)->with('category')->get();
+        $consultations = Consultation::where('user_id', $user->id)->with('category')->get();
+        $complaints = Complaint::where('user_id', $user->id)->with('category')->get();
+
+        /* =============================
+         * HITUNG STATISTIK)
+         * ============================= */
+        $totalPending =
+            $submissions->whereIn('status', ['pending'])->count() +
+            $consultations->whereIn('status', ['pending'])->count() +
+            $complaints->whereIn('status', ['pending'])->count();
+
+        $totalProcessing =
+            $submissions->whereIn('status', ['in_progress'])->count() +
+            $consultations->whereIn('status', ['on_progress'])->count() +
+            $complaints->whereIn('status', ['diproses'])->count();
+
+        $totalCompleted =
+            $submissions->whereIn('status', ['completed'])->count() +
+            $consultations->whereIn('status', ['completed'])->count() +
+            $complaints->whereIn('status', ['selesai'])->count();
+
+        $totalRejected =
+            $submissions->whereIn('status', ['rejected'])->count() +
+            $consultations->whereIn('status', ['rejected'])->count() +
+            $complaints->whereIn('status', ['ditolak'])->count();
+
+        $totalSubmissions =
+            $submissions->count() +
+            $consultations->count() +
+            $complaints->count();
+
+        /* =============================
+         * GABUNG DATA KE SATU LIST
+         * ============================= */
+        $merged = collect();
+
+        foreach ($submissions as $item) {
+            $merged->push([
+                'ticket_id'   => $item->ticket_id,
+                'type'        => 'submission',
+                'type_label'  => 'Permohonan Informasi',
+                'category'    => $item->category->name ?? '-',
+                'title'       => $item->title,
+                'date'        => Carbon::parse($item->submitted_at),
+                'status'      => $item->status,
+                'route'       => route('user.submissions.show', $item->id),
+            ]);
         }
-        
-        // === KONSULTASI ===
-        if (!$categoryFilter || $categoryFilter === 'consultation') {
-            $consultations = Consultation::where('user_id', $user->id)
-                ->with('category')
-                ->when($search, function($query) use ($search) {
-                    $query->where(function($q) use ($search) {
-                        $q->where('ticket_number', 'like', "%{$search}%")
-                          ->orWhere('subject', 'like', "%{$search}%");
-                    });
-                })
-                ->when($statusFilter, function($query) use ($statusFilter) {
-                    $status = strtolower($statusFilter);
-                    $query->where(function($q) use ($status) {
-                        // MENUNGGU PROSES
-                        if ($status === 'pending') {
-                            $q->whereIn('status', ['pending', 'belum diproses']);
-                        } 
-                        // DIPROSES
-                        elseif ($status === 'diproses') {
-                            $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
-                        } 
-                        // SELESAI
-                        elseif ($status === 'selesai') {
-                            $q->whereIn('status', ['completed', 'selesai']);
-                        } 
-                        // DITOLAK
-                        elseif ($status === 'ditolak') {
-                            $q->whereIn('status', ['rejected', 'ditolak']);
-                        }
-                    });
-                })
-                ->get()
-                ->map(function($item) {
-                    return [
-                        'ticket_id' => $item->ticket_number,
-                        'type' => 'consultation',
-                        'type_label' => 'Konsultasi',
-                        'category' => $item->category->name ?? '-',
-                        'title' => $item->subject,
-                        'date' => $item->created_at,
-                        'status' => strtolower($item->status),
-                        // PERBAIKAN: Tambahkan parameter ?from=history
-                        'route' => route('user.consultations.show', $item->id) . '?from=history'
-                    ];
-                });
-            
-            $allSubmissions = $allSubmissions->merge($consultations);
+
+        foreach ($consultations as $item) {
+            $merged->push([
+                'ticket_id'   => $item->ticket_number,
+                'type'        => 'consultation',
+                'type_label'  => 'Konsultasi',
+                'category'    => $item->category->name ?? '-',
+                'title'       => $item->subject,
+                'date'        => Carbon::parse($item->created_at),
+                'status'      => $item->status,
+                'route'       => route('user.consultations.show', $item->id),
+            ]);
         }
-        
-        // === PENGADUAN ===
-        if (!$categoryFilter || $categoryFilter === 'complaint') {
-            $complaints = Complaint::where('user_id', $user->id)
-                ->with('category')
-                ->when($search, function($query) use ($search) {
-                    $query->where(function($q) use ($search) {
-                        $q->where('ticket_number', 'like', "%{$search}%")
-                          ->orWhere('subject', 'like', "%{$search}%")
-                          ->orWhere('complaint_title', 'like', "%{$search}%");
-                    });
-                })
-                ->when($statusFilter, function($query) use ($statusFilter) {
-                    $status = strtolower($statusFilter);
-                    $query->where(function($q) use ($status) {
-                        // MENUNGGU PROSES
-                        if ($status === 'pending') {
-                            $q->whereIn('status', ['pending', 'belum diproses']);
-                        } 
-                        // DIPROSES
-                        elseif ($status === 'diproses') {
-                            $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
-                        } 
-                        // SELESAI
-                        elseif ($status === 'selesai') {
-                            $q->whereIn('status', ['completed', 'selesai']);
-                        } 
-                        // DITOLAK
-                        elseif ($status === 'ditolak') {
-                            $q->whereIn('status', ['rejected', 'ditolak']);
-                        }
-                    });
-                })
-                ->get()
-                ->map(function($item) {
-                    return [
-                        'ticket_id' => $item->ticket_number,
-                        'type' => 'complaint',
-                        'type_label' => 'Pengaduan',
-                        'category' => $item->category->name ?? '-',
-                        // PERBAIKAN: Gunakan subject atau complaint_title
-                        'title' => $item->subject ?? $item->complaint_title ?? '-',
-                        'date' => $item->created_at,
-                        'status' => strtolower($item->status),
-                        // PERBAIKAN: Tambahkan parameter ?from=history
-                        'route' => route('user.complaints.show', $item->id) . '?from=history'
-                    ];
-                });
-            
-            $allSubmissions = $allSubmissions->merge($complaints);
+
+        foreach ($complaints as $item) {
+            $merged->push([
+                'ticket_id'   => $item->ticket_number,
+                'type'        => 'complaint',
+                'type_label'  => 'Pengaduan',
+                'category'    => $item->category->name ?? '-',
+                'title'       => $item->subject,
+                'date'        => Carbon::parse($item->created_at),
+                'status'      => $item->status,
+                'route'       => route('user.complaints.show', $item->id),
+            ]);
         }
-        
-        // Sort by date descending
-        $allSubmissions = $allSubmissions->sortByDesc('date')->values();
-        
-        // Calculate statistics
-        $totalSubmissions = $allSubmissions->count();
-        
-        // MENUNGGU PROSES
-        $totalPending = $allSubmissions->filter(function($item) {
-            return in_array($item['status'], ['pending', 'belum diproses']);
-        })->count();
-        
-        // DIPROSES
-        $totalProcessing = $allSubmissions->filter(function($item) {
-            return in_array($item['status'], ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
-        })->count();
-        
-        // SELESAI
-        $totalCompleted = $allSubmissions->filter(function($item) {
-            return in_array($item['status'], ['completed', 'selesai']);
-        })->count();
-        
-        // DITOLAK
-        $totalRejected = $allSubmissions->filter(function($item) {
-            return in_array($item['status'], ['rejected', 'ditolak']);
-        })->count();
-        
-        // Manual pagination
-        $perPage = 15;
-        $currentPage = $request->get('page', 1);
-        $offset = ($currentPage - 1) * $perPage;
-        
-        $paginatedSubmissions = $allSubmissions->slice($offset, $perPage)->values();
-        
-        // Create paginator
-        $submissions = new \Illuminate\Pagination\LengthAwarePaginator(
-            $paginatedSubmissions,
-            $totalSubmissions,
+
+        /* =============================
+         * FILTER SEARCH
+         * ============================= */
+        if ($request->filled('search')) {
+            $search = strtolower($request->search);
+            $merged = $merged->filter(fn ($item) =>
+                str_contains(strtolower($item['ticket_id']), $search) ||
+                str_contains(strtolower($item['title']), $search)
+            );
+        }
+
+        /* =============================
+         * FILTER CATEGORY
+         * ============================= */
+        if ($request->filled('category')) {
+            $merged = $merged->where('type', $request->category);
+        }
+
+        /* =============================
+         * FILTER STATUS
+         * ============================= */
+        if ($request->filled('status')) {
+            $status = $request->status;
+
+            $merged = $merged->filter(function ($item) use ($status) {
+                return match ($status) {
+                    'pending'   => in_array($item['status'], ['pending']),
+                    'diproses'  => in_array($item['status'], ['in_progress', 'on_progress', 'diproses']),
+                    'selesai'   => in_array($item['status'], ['completed', 'selesai']),
+                    'ditolak'   => in_array($item['status'], ['rejected', 'ditolak']),
+                    default     => true,
+                };
+            });
+        }
+
+        $merged = $merged->sortByDesc('date')->values();
+
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 10;
+
+        $paginated = new LengthAwarePaginator(
+            $merged->slice(($page - 1) * $perPage, $perPage)->values(),
+            $merged->count(),
             $perPage,
-            $currentPage,
-            ['path' => $request->url(), 'query' => $request->query()]
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
         );
-        
-        return view('user.history.index', compact(
-            'submissions',
-            'totalSubmissions',
-            'totalPending',
-            'totalProcessing',
-            'totalCompleted',
-            'totalRejected'
-        ));
+
+        return view('user.history.index', [
+            'submissions'      => $paginated,
+            'totalSubmissions' => $totalSubmissions,
+            'totalPending'     => $totalPending,
+            'totalProcessing'  => $totalProcessing, 
+            'totalCompleted'   => $totalCompleted,
+            'totalRejected'    => $totalRejected,
+        ]);
     }
 }

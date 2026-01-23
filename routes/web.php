@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -30,6 +31,10 @@ use App\Http\Controllers\Admin\ReportExportController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/tentang-kami', [HomeController::class, 'about'])->name('about');
 Route::get('/kontak', [HomeController::class, 'contact'])->name('contact');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/search/preview', [SearchController::class, 'preview'])->name('search.preview');
+    Route::get('/search/result', [SearchController::class, 'result'])->name('search.result');
+});
 
 // Authentication Routes (Guest Only)
 Route::middleware('guest')->group(function () {

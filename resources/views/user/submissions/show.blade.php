@@ -14,6 +14,10 @@
                     $backUrl = route('user.dashboard');
                 } elseif ($from === 'history') {
                     $backUrl = route('user.history.index');
+                } elseif ($from === 'search') {
+                    // Jika dari search, ambil query string 'q' untuk kembali ke hasil pencarian
+                    $searchQuery = request()->get('q', '');
+                    $backUrl = route('search.result', ['q' => $searchQuery]);
                 } else {
                     $backUrl = route('user.submissions.index');
                 }

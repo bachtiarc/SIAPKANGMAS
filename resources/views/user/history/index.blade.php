@@ -131,7 +131,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Filter Kategori -->
                 <div>
-                    <span class="text-sm text-gray-600 font-semibold mb-2 block">Kategori:</span>
+                    <span class="text-sm text-gray-600 font-semibold mb-2 block">Jenis Pengajuan:</span>
                     <div class="flex flex-wrap items-center gap-2">
                         <a href="{{ route('user.history.index', array_filter(['search' => request('search'), 'status' => request('status')])) }}" 
                            class="px-4 py-2 rounded-lg text-sm font-medium transition {{ !request('category') ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
@@ -192,7 +192,7 @@
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ID Tiket</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Jenis</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Kategori</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Judul</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Judul Pengajuan</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Tanggal</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aksi</th>

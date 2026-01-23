@@ -188,7 +188,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
             </div>
-            <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Formulir Anda Berhasil Terkirim</h3>
+            <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Formulir Anda Berhasil Terkirim!</h3>
             <div class="mt-4 px-7 py-3">
                 <p class="text-sm text-gray-600 mb-4">
                     Terima kasih telah mengirimkan konsultasi. Pengajuan Anda akan segera ditinjau. Silakan cek Email untuk melihat bukti konfirmasi formulir telah terkirim.
@@ -207,9 +207,9 @@
             </div>
             <div class="items-center px-4 py-3 space-y-2">
                 @if(session('consultation_id'))
-                <button onclick="window.location.href='{{ route('user.document.show', session('consultation_id')) }}'" 
+                <button onclick="window.location.href='{{ route('user.consultations.show', session('consultation_id')) }}'" 
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
-                    Lihat Detail Pengaduan
+                    Lihat Detail Konsultasi
                 </button>
                 @endif
                 <button onclick="window.location.href='{{ route('user.consultations.index') }}'" 

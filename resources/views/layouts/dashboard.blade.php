@@ -70,6 +70,7 @@
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+            z-index: 50;
         }
 
         .sidebar-toggle-btn:hover {
@@ -98,6 +99,15 @@
         .sidebar.expanded .sidebar-text {
             opacity: 1;
             transition: opacity 0.3s ease 0.1s;
+        }
+
+        /* Custom styles for search dropdown */
+        .search-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .search-result-item:hover {
+            background-color: #f3f4f6;
         }
     </style>
     
@@ -130,7 +140,7 @@
                         <span class="sidebar-text ml-4 whitespace-nowrap font-semibold">Dashboard</span>
                     </a>
 
-                    <a href="{{ route('user.submissions.index') }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all text-gray-600 hover:bg-gray-100" title="Permohonan Informasi">
+                    <a href="{{ route('user.submissions.index') }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs('user.submissions.*') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Permohonan Informasi">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
@@ -185,7 +195,8 @@
             </nav>
         </aside>
 
-        <div class="sidebar-toggle-btn" id="sidebar-toggle" style="position: absolute; left: 88px; z-index: 50;">
+        <!-- TOGGLE BUTTON - PENTING: POSISI FIXED -->
+        <div class="sidebar-toggle-btn" id="sidebar-toggle" style="left: 88px;">
             <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
             </svg>
@@ -196,15 +207,34 @@
             <header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
                 <div class="px-6 py-4">
                     <div class="flex items-center justify-between">
-                        <div class="flex-1 max-w-md">
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                    </svg>
+                        <!-- Search Bar with Live Preview -->
+                        <div class="flex-1 max-w-md relative" id="searchContainer">
+                            <form action="{{ route('search.result') }}" method="GET" id="searchForm">
+                                <div class="relative">
+                                    <input 
+                                        type="text" 
+                                        name="q" 
+                                        id="searchInput"
+                                        placeholder="Cari judul pengajuan atau tiket..." 
+                                        class="font-lato block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                        autocomplete="off"
+                                        autocorrect="off"
+                                        autocapitalize="off"
+                                        spellcheck="false"
+                                    >
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
                                 </div>
-                                <input type="text" placeholder="Cari layanan atau tiket..." 
-                                    class="font-lato block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                            </form>
+                            
+                            <!-- Live Search Results Preview -->
+                            <div id="searchResults" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 search-results z-50">
+                                <div id="searchResultsContent" class="py-2">
+                                    <!-- Results will be inserted here by JavaScript -->
+                                </div>
                             </div>
                         </div>
 
@@ -253,51 +283,236 @@
         </div>
     </div>
 
+    <!-- SCRIPT UTAMA - JANGAN DIHAPUS -->
     <script>
-        const sidebar = document.getElementById('sidebar');
-        const sidebarToggle = document.getElementById('sidebar-toggle');
-        const logoIcon = document.getElementById('logo-icon');
-        const logoFull = document.getElementById('logo-full');
-        
-        let sidebarExpanded = false;
-
-        sidebarToggle.addEventListener('click', function() {
-            sidebarExpanded = !sidebarExpanded;
+        // PASTIKAN SEMUA ELEMENT KELOAD DULU
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const logoIcon = document.getElementById('logo-icon');
+            const logoFull = document.getElementById('logo-full');
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            const searchResultsContent = document.getElementById('searchResultsContent');
+            const searchForm = document.getElementById('searchForm');
             
-            if (sidebarExpanded) {
-                // Expand sidebar
-                sidebar.style.width = '280px';
-                sidebar.classList.add('expanded');
-                
-                // BERI CLASS ACTIVE PADA TOGGLE SUPAYA PANAH BERPUTAR KE KIRI
-                sidebarToggle.classList.add('active');
-                
-                // Move toggle button
-                sidebarToggle.style.left = '280px';
-                
-                // Show logo full, hide icon
-                setTimeout(() => {
-                    logoIcon.classList.add('hidden');
-                    logoFull.classList.remove('hidden');
-                }, 150);
+            let searchTimeout = null;
+            let sidebarExpanded = false;
+
+            // DEBUGGING - CEK APAKAH ELEMENT KEDETECT
+            console.log('Sidebar:', sidebar);
+            console.log('Toggle Button:', sidebarToggle);
+            console.log('Search Input:', searchInput);
+
+            // ==================== LIVE SEARCH FUNCTIONALITY ====================
+            if (searchInput && searchResults && searchResultsContent) {
+                // Event listener untuk mendeteksi setiap ketikan
+                searchInput.addEventListener('input', function(e) {
+                    clearTimeout(searchTimeout);
+                    const query = this.value.trim();
+                    
+                    console.log('Input event triggered:', query); // Debug
+                    
+                    if (query.length < 2) {
+                        searchResults.classList.add('hidden');
+                        return;
+                    }
+
+                    // Show loading state
+                    searchResultsContent.innerHTML = `
+                        <div class="px-4 py-3 text-sm text-gray-500 text-center">
+                            <svg class="animate-spin h-5 w-5 mx-auto text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    `;
+                    searchResults.classList.remove('hidden');
+
+                    searchTimeout = setTimeout(() => {
+                        fetchSearchResults(query);
+                    }, 300); // Debounce 300ms
+                });
+
+                // Also trigger on keyup for better responsiveness
+                searchInput.addEventListener('keyup', function(e) {
+                    // Skip if arrow keys or enter
+                    if (['ArrowUp', 'ArrowDown', 'Enter'].includes(e.key)) {
+                        return;
+                    }
+                    
+                    const query = this.value.trim();
+                    if (query.length >= 2 && searchResults.classList.contains('hidden')) {
+                        clearTimeout(searchTimeout);
+                        searchTimeout = setTimeout(() => {
+                            fetchSearchResults(query);
+                        }, 300);
+                    }
+                });
+
+                // Fetch search results via AJAX
+                function fetchSearchResults(query) {
+                    console.log('Fetching results for:', query); // Debug
+                    
+                    fetch(`{{ route('search.preview') }}?q=${encodeURIComponent(query)}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        }
+                    })
+                    .then(response => {
+                        console.log('Response received:', response.status); // Debug
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Data received:', data); // Debug
+                        displaySearchResults(data, query);
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        searchResultsContent.innerHTML = `
+                            <div class="px-4 py-3 text-sm text-red-500">
+                                Terjadi kesalahan saat mencari
+                            </div>
+                        `;
+                        searchResults.classList.remove('hidden');
+                    });
+                }
+
+                // Display search results in dropdown
+                function displaySearchResults(results, query) {
+                    if (results.length === 0) {
+                        searchResultsContent.innerHTML = `
+                            <div class="px-4 py-3 text-sm text-gray-500">
+                                Tidak ada hasil untuk "${query}"
+                            </div>
+                        `;
+                        searchResults.classList.remove('hidden');
+                        return;
+                    }
+
+                    let html = '';
+                    results.forEach(item => {
+                        html += `
+                            <a href="${item.url}" class="block px-4 py-3 hover:bg-gray-50 search-result-item border-b border-gray-100 last:border-b-0">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="text-xs text-gray-500 font-lato">${item.ticket || ''}</span>
+                                        </div>
+                                        <div class="font-medium text-gray-900 text-sm">${item.title}</div>
+                                    </div>
+                                    <svg class="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </a>
+                        `;
+                    });
+
+                    // Add "See all results" link
+                    html += `
+                        <div class="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                            <button type="submit" form="searchForm" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                Lihat semua hasil untuk "${query}" →
+                            </button>
+                        </div>
+                    `;
+
+                    searchResultsContent.innerHTML = html;
+                    searchResults.classList.remove('hidden');
+                }
+
+                // Close search results when clicking outside
+                document.addEventListener('click', function(e) {
+                    const searchContainer = document.getElementById('searchContainer');
+                    if (searchContainer && !searchContainer.contains(e.target)) {
+                        searchResults.classList.add('hidden');
+                    }
+                });
+
+                // Show results when input is focused if there's content
+                searchInput.addEventListener('focus', function() {
+                    const query = this.value.trim();
+                    if (query.length >= 2) {
+                        // If there's already content in results, show it
+                        if (searchResultsContent.innerHTML.trim() !== '') {
+                            searchResults.classList.remove('hidden');
+                        } else {
+                            // Otherwise fetch fresh results
+                            fetchSearchResults(query);
+                        }
+                    }
+                });
+
+                // Handle paste event
+                searchInput.addEventListener('paste', function(e) {
+                    setTimeout(() => {
+                        const query = this.value.trim();
+                        if (query.length >= 2) {
+                            clearTimeout(searchTimeout);
+                            searchTimeout = setTimeout(() => {
+                                fetchSearchResults(query);
+                            }, 300);
+                        }
+                    }, 10);
+                });
+            }
+
+            // ==================== SIDEBAR TOGGLE ====================
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log('Toggle clicked! Current state:', sidebarExpanded);
+                    
+                    sidebarExpanded = !sidebarExpanded;
+                    
+                    if (sidebarExpanded) {
+                        // EXPAND SIDEBAR
+                        console.log('Expanding sidebar...');
+                        sidebar.style.width = '280px';
+                        sidebar.classList.add('expanded');
+                        
+                        // PANAH MUTER KE KIRI
+                        sidebarToggle.classList.add('active');
+                        
+                        // Move toggle button
+                        sidebarToggle.style.left = '280px';
+                        
+                        // Show logo full, hide icon
+                        if (logoIcon && logoFull) {
+                            setTimeout(() => {
+                                logoIcon.classList.add('hidden');
+                                logoFull.classList.remove('hidden');
+                            }, 150);
+                        }
+                    } else {
+                        // COLLAPSE SIDEBAR
+                        console.log('Collapsing sidebar...');
+                        sidebar.style.width = '88px';
+                        sidebar.classList.remove('expanded');
+                        
+                        // PANAH BALIK KE KANAN
+                        sidebarToggle.classList.remove('active');
+                        
+                        // Move toggle button back
+                        sidebarToggle.style.left = '88px';
+                        
+                        // Show logo icon, hide full
+                        if (logoIcon && logoFull) {
+                            logoIcon.classList.remove('hidden');
+                            logoFull.classList.add('hidden');
+                        }
+                    }
+                });
             } else {
-                // Collapse sidebar
-                sidebar.style.width = '88px';
-                sidebar.classList.remove('expanded');
-                
-                // HAPUS CLASS ACTIVE SUPAYA PANAH BALIK KE KANAN
-                sidebarToggle.classList.remove('active');
-                
-                // Move toggle button back
-                sidebarToggle.style.left = '88px';
-                
-                // Show logo icon, hide full
-                logoIcon.classList.remove('hidden');
-                logoFull.classList.add('hidden');
+                console.error('ERROR: Sidebar atau Toggle button tidak ditemukan!');
             }
         });
 
-        // Logout Modal Functions
+        // ==================== LOGOUT MODAL FUNCTIONS ====================
         function showLogoutModal() {
             const modal = document.getElementById('logoutModal');
             modal.style.display = 'flex';
