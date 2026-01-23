@@ -97,7 +97,7 @@
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 1 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 15MB)</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
                                     <p id="fileName1" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(1)" id="clearBtn1" class="hidden text-red-500 hover:text-red-700">
@@ -119,7 +119,7 @@
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 2 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 15MB)</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
                                     <p id="fileName2" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(2)" id="clearBtn2" class="hidden text-red-500 hover:text-red-700">
@@ -141,7 +141,7 @@
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 3 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 15MB)</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
                                     <p id="fileName3" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(3)" id="clearBtn3" class="hidden text-red-500 hover:text-red-700">
@@ -160,14 +160,18 @@
 
         <!-- Submit Buttons -->
         <div class="flex justify-between items-center">
-            <a href="{{ route('user.complaints.index') }}" 
+            @php
+                $from = request()->query('from', 'index');
+                $backUrl = $from === 'dashboard' ? route('user.dashboard') : route('user.complaints.index');
+            @endphp
+            <a href="{{ $backUrl }}" 
                 class="px-6 py-3 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none">
                 Kembali
             </a>
             <button type="submit" 
                 class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 Kirim Pengajuan
             </button>
@@ -259,9 +263,9 @@ function displayFileName(index, input) {
     if (input.files && input.files[0]) {
         const file = input.files[0];
         const fileSize = (file.size / 1024 / 1024).toFixed(2); // Convert to MB
-        
-        if (fileSize > 15) {
-            alert('Ukuran file maksimal 15MB!');
+
+        if (fileSize > 2) {
+            alert('Ukuran file maksimal 2MB!');
             input.value = '';
             fileNameDisplay.classList.add('hidden');
             clearBtn.classList.add('hidden');

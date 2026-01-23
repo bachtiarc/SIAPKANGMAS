@@ -76,8 +76,25 @@ class ConsultationController extends Controller
             'category_id' => 'required|exists:categories,id',
             'subject' => 'required|string|max:255',
             'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:15120', 
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', // Max 2MB per file
         ]);
+
+        // Validasi total ukuran file maksimal 6MB
+        if ($request->hasFile('documents')) {
+            $totalSize = 0;
+            foreach ($request->file('documents') as $file) {
+                if ($file && $file->isValid()) {
+                    $totalSize += $file->getSize();
+                }
+            }
+            
+            // 6MB = 6291456 bytes
+            if ($totalSize > 6291456) {
+                return back()->withErrors([
+                    'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
+                ])->withInput();
+            }
+        }
 
         $ticketNumber = "KL." . ($user->bidang_code ?? "01") . "." . ($user->sub_bagian_code ?? "106") . "." . now()->format('dmY') . "_" . str_pad(Consultation::count() + 1, 3, '0', STR_PAD_LEFT);
 

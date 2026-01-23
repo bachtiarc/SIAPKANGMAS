@@ -97,7 +97,7 @@
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 1 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 15MB)</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
                                     <p id="fileName1" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(1)" id="clearBtn1" class="hidden text-red-500 hover:text-red-700">
@@ -119,7 +119,7 @@
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 2 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 15MB)</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
                                     <p id="fileName2" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(2)" id="clearBtn2" class="hidden text-red-500 hover:text-red-700">
@@ -141,7 +141,7 @@
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 3 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 15MB)</p>
+                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
                                     <p id="fileName3" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(3)" id="clearBtn3" class="hidden text-red-500 hover:text-red-700">
@@ -164,7 +164,11 @@
 
         <!-- Action Buttons -->
         <div class="flex items-center justify-between">
-            <a href="{{ route('user.consultations.index') }}" 
+            @php
+                $from = request()->query('from', 'index');
+                $backUrl = $from === 'dashboard' ? route('user.dashboard') : route('user.consultations.index');
+            @endphp
+            <a href="{{ $backUrl }}" 
                 class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
                 Kembali
             </a>
@@ -263,9 +267,9 @@ function displayFileName(index, input) {
     if (input.files && input.files[0]) {
         const file = input.files[0];
         const fileSize = (file.size / 1024 / 1024).toFixed(2); // Convert to MB
-        
-        if (fileSize > 15) {
-            alert('Ukuran file maksimal 15MB!');
+
+        if (fileSize > 2) {
+            alert('Ukuran file maksimal 2MB!');
             input.value = '';
             fileNameDisplay.classList.add('hidden');
             clearBtn.classList.add('hidden');

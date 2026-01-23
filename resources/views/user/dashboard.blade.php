@@ -110,7 +110,7 @@
         <h2 class="font-montserrat text-lg font-bold text-gray-900 mb-4">Layanan Cepat</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- Permohonan Informasi -->
-            <a href="{{ route('user.submissions.create') }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
+            <a href="{{ route('user.submissions.create', ['from' => 'dashboard']) }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition">
@@ -130,7 +130,7 @@
             </a>
 
             <!-- Konsultasi -->
-            <a href="{{ route('user.consultations.create') }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
+            <a href="{{ route('user.consultations.create', ['from' => 'dashboard']) }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition">
@@ -150,7 +150,7 @@
             </a>
 
             <!-- Buat Pengaduan -->
-            <a href="{{ route('user.complaints.create') }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
+            <a href="{{ route('user.complaints.create', ['from' => 'dashboard']) }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition">
@@ -262,7 +262,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
                 <p class="font-lato text-gray-500">Belum ada aktivitas pengajuan</p>
-                <a href="{{ route('user.submissions.create') }}" class="mt-4 inline-block font-montserrat text-sm text-blue-600 hover:text-blue-700 font-medium">Buat Pengajuan Pertama →</a>
+                <a href="{{ route('user.submissions.create', ['from' => 'dashboard']) }}" class="mt-4 inline-block font-montserrat text-sm text-blue-600 hover:text-blue-700 font-medium">Buat Pengajuan Pertama →</a>
             </div>
         @endif
     </div>

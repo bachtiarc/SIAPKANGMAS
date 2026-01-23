@@ -101,15 +101,32 @@ class SubmissionController extends Controller
             'category_id' => 'required|exists:categories,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:15120', 
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', // Max 2MB per file
         ], [
             'category_id.required' => 'Kategori informasi wajib dipilih.',
             'category_id.exists' => 'Kategori tidak valid.',
             'title.required' => 'Judul permohonan wajib diisi.',
             'description.required' => 'Deskripsi lengkap wajib diisi.',
             'documents.*.mimes' => 'Format dokumen harus PDF, JPG, JPEG, atau PNG.',
-            'documents.*.max' => 'Ukuran setiap dokumen maksimal 15MB.',
+            'documents.*.max' => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
+
+        // Validasi total ukuran file maksimal 6MB
+        if ($request->hasFile('documents')) {
+            $totalSize = 0;
+            foreach ($request->file('documents') as $file) {
+                if ($file && $file->isValid()) {
+                    $totalSize += $file->getSize();
+                }
+            }
+            
+            // 6MB = 6291456 bytes
+            if ($totalSize > 6291456) {
+                return back()->withErrors([
+                    'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
+                ])->withInput();
+            }
+        }
 
         $submission = Submission::create([
             'user_id' => $user->id,
