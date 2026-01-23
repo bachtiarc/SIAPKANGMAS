@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\ConsultationController as AdminConsultationContro
 use App\Http\Controllers\Admin\ComplaintController as AdminComplaintController;
 use App\Http\Controllers\Admin\AllSubmissionsController;
 use App\Http\Controllers\Admin\ReportExportController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 
 // Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -180,4 +181,20 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     Route::get('/manajemen-pengajuan/pengaduan/{id}/pdf', [AdminComplaintController::class, 'downloadPdf'])
         ->name('complaints.pdf');
+
+    // Manajemen Kategori
+    Route::get('/manajemen-kategori', [AdminCategoryController::class, 'index'])
+        ->name('categories.kategori');
+
+    Route::post('/manajemen-kategori', [AdminCategoryController::class, 'store'])
+        ->name('categories.store');
+
+    Route::get('/manajemen-kategori/{category}/edit', [AdminCategoryController::class, 'edit'])
+        ->name('categories.edit');
+
+    Route::put('/manajemen-kategori/{category}', [AdminCategoryController::class, 'update'])
+        ->name('categories.update');
+
+    Route::delete('/manajemen-kategori/{category}', [AdminCategoryController::class, 'destroy'])
+        ->name('categories.destroy');
 });
