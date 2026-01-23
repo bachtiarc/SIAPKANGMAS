@@ -67,7 +67,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="flex items-center gap-2">
             @if($waLink)
                 <a href="{{ $waLink }}"
@@ -96,9 +96,9 @@
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         <div class="lg:col-span-2 space-y-6">
-            
+
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
                     <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -115,17 +115,14 @@
                             {{ $submission->description }}
                         </div>
                     </div>
-                    
+
                     <div>
                         <h4 class="font-bold text-gray-900 text-sm mb-3">Lampiran Dokumen</h4>
                         @if($submission->documents && $submission->documents->count() > 0)
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 @foreach($submission->documents as $doc)
-                                
-                                {{-- PERBAIKAN DI SINI: Ubah href ke route download --}}
-                                <a href="{{ route('admin.submissions.document', $doc->id) }}" 
-                                class="flex items-center p-3 border border-blue-100 bg-blue-50 rounded-lg hover:bg-blue-100 transition group">
-                                
+                                <a href="{{ route('admin.submissions.document', $doc->id) }}"
+                                   class="flex items-center p-3 border border-blue-100 bg-blue-50 rounded-lg hover:bg-blue-100 transition group">
                                     <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-sm mr-3 shrink-0">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                     </div>
@@ -191,17 +188,17 @@
         </div>
 
         <div class="space-y-6">
-            
+
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
                     <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                     <h3 class="font-montserrat font-bold text-gray-900">Tindak Lanjut</h3>
                 </div>
                 <div class="p-6">
-                    <form action="{{ route('admin.submissions.update', $submission->id) }}" method="POST">
+                    <form id="submission-followup-form" action="{{ route('admin.submissions.update', $submission->id) }}" method="POST">
                         @csrf
                         @method('PUT')
-                        
+
                         <div class="mb-4">
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Update Status Tiket</label>
                             <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
@@ -222,7 +219,10 @@
                             <label for="notify_user" class="ml-2 text-xs text-gray-500">Kirim notifikasi email kepada pemohon</label>
                         </div>
 
-                        <button type="submit" class="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-lg transition shadow-sm text-sm">
+                        {{-- tombol simpan -> modal --}}
+                        <button type="button"
+                                onclick="openSaveModalSubmission()"
+                                class="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-lg transition shadow-sm text-sm">
                             Simpan Perubahan
                         </button>
                     </form>
@@ -240,9 +240,9 @@
                             @foreach($submission->statusHistories as $history)
                             <li class="mb-6 ml-6">
                                 <span class="absolute flex items-center justify-center w-4 h-4 bg-blue-600 rounded-full -left-2 ring-4 ring-white"></span>
-                                
+
                                 <h3 class="font-bold text-gray-900 text-sm">
-                                    Status diubah menjadi 
+                                    Status diubah menjadi
                                     '{{ match($history->new_status) {
                                         'pending' => 'Pending',
                                         'in_progress' => 'Sedang Diproses',
@@ -257,7 +257,7 @@
                                 </p>
 
                                 <time class="block mb-1 text-xs font-normal text-gray-400">{{ $history->created_at->format('d M Y, H:i') }} WIB</time>
-                                
+
                                 @if($history->notes)
                                     <div class="p-3 bg-gray-50 border border-gray-100 rounded-lg mt-2">
                                         <p class="text-xs text-gray-600 italic">"{{ $history->notes }}"</p>
@@ -279,4 +279,73 @@
         </div>
     </div>
 </div>
+
+{{-- Modal Konfirmasi Simpan --}}
+<div id="saveModalSubmission"
+     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-center">
+        <div class="mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-full bg-blue-100">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 3h7l3 3v15a2 2 0 01-2 2H7.862
+                      a2 2 0 01-1.995-1.858L5 7V5a2 2 0 012-2z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 3v4a2 2 0 002 2h4"/>
+            </svg>
+        </div>
+
+        <h2 class="text-lg font-montserrat font-bold text-gray-900">
+            Konfirmasi Perubahan
+        </h2>
+
+        <p class="text-sm text-gray-600 mt-2">
+            Anda yakin ingin menyimpan perubahan?
+        </p>
+
+        <div class="mt-6 flex justify-center gap-3">
+            <button type="button"
+                    onclick="closeSaveModalSubmission()"
+                    class="px-5 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 transition">
+                Batal
+            </button>
+
+            <button type="button"
+                    onclick="submitSubmissionFollowup()"
+                    class="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">
+                Ya, Simpan
+            </button>
+        </div>
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+    function openSaveModalSubmission() {
+        const modal = document.getElementById('saveModalSubmission');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeSaveModalSubmission() {
+        const modal = document.getElementById('saveModalSubmission');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function submitSubmissionFollowup() {
+        const form = document.getElementById('submission-followup-form');
+        if (form) form.submit();
+    }
+
+    // backdrop
+    document.getElementById('saveModalSubmission').addEventListener('click', function (e) {
+        if (e.target === this) closeSaveModalSubmission();
+    });
+
+    // ESC
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeSaveModalSubmission();
+    });
+</script>
+@endpush

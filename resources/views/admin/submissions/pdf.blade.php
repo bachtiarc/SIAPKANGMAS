@@ -1,135 +1,278 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengajuan {{ $submission->ticket_id }}</title>
     <style>
-        /** 
-         * Font resmi dokumen
-         * Times-Roman ≈ Times New Roman (DomPDF compatible)
-         */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: "Times-Roman", serif;
-            font-size: 12px;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #000;
+            padding: 30px 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header h2 {
+            font-size: 12pt;
+            font-weight: normal;
+            margin-bottom: 4px;
+        }
+
+        .note {
+            border: 1px solid #000;
+            padding: 10px 15px;
+            margin-bottom: 25px;
+            font-size: 11pt;
+            font-style: italic;
+        }
+
+        .ticket-box {
+            border: 2px solid #000;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .ticket-box .label {
+            font-size: 11pt;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .ticket-box .ticket-id {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .ticket-box .full-ticket {
+            font-size: 10pt;
+        }
+
+        .section { margin-bottom: 30px; }
+
+        .section-title {
+            background-color: #000;
+            color: #fff;
+            padding: 8px 15px;
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .info-table td {
+            padding: 6px 0;
+            vertical-align: top;
             line-height: 1.5;
         }
 
-        h1 {
-            font-size: 18px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
+        .info-table td:first-child { width: 220px; }
+        .info-table td:nth-child(2) { width: 20px; text-align: center; }
 
-        hr {
-            margin: 12px 0;
-        }
+        .divider { border-bottom: 1px solid #ccc; }
 
-        .label {
+        .field-label {
             font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+
+        .description-box {
+            border: 1px solid #000;
+            padding: 15px;
+            white-space: pre-line;
+            min-height: 80px;
             margin-top: 10px;
         }
 
-        .box {
-            border: 1px solid #000;
-            padding: 8px;
-            margin-top: 4px;
-            text-align: justify;
-        }
-
-        table {
+        .history-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
+            font-size: 11pt;
         }
 
-        th, td {
+        .history-table th, .history-table td {
             border: 1px solid #000;
-            padding: 6px;
-            font-size: 11px;
+            padding: 8px;
             vertical-align: top;
         }
 
-        th {
+        .history-table th {
             background: #f2f2f2;
             text-align: left;
         }
 
-        .note {
-            margin-top: 20px;
-            font-size: 11px;
-            font-style: italic;
+        .status-text {
+            font-weight: bold;
+            text-transform: uppercase;
         }
 
         .footer {
-            margin-top: 40px;
-            font-size: 11px;
+            margin-top: 50px;
+            text-align: center;
+            font-size: 11pt;
+            border-top: 2px solid #000;
+            padding-top: 20px;
         }
+
+        .footer p { margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
-<h1>DETAIL PENGAJUAN PERMOHONAN</h1>
+@php
+    $statusLabel = match($submission->status) {
+        'pending'     => 'Menunggu Verifikasi',
+        'in_progress' => 'Sedang Diproses',
+        'completed'   => 'Selesai',
+        'approved'    => 'Selesai',
+        'rejected'    => 'Ditolak',
+        'ditolak'     => 'Ditolak',
+        default       => ucfirst($submission->status),
+    };
+@endphp
 
-<p><b>No Tiket</b> : {{ $submission->ticket_id }}</p>
-<p><b>Status</b> : {{ ucfirst($submission->status) }}</p>
-<p><b>Tanggal Pengajuan</b> : {{ $submission->created_at->format('d F Y') }}</p>
-
-<hr>
-
-<p class="label">Judul</p>
-<div class="box">
-    {{ $submission->title }}
+<!-- Header -->
+<div class="header">
+    <h1>FORMULIR PERMOHONAN INFORMASI</h1>
+    <h2>HELPDESK SIAPKANGMAS</h2>
+    <h2>DINAS PERINDUSTRIAN DAN PERDAGANGAN PROVINSI JAWA TENGAH</h2>
 </div>
 
-<p class="label">Deskripsi</p>
-<div class="box">
-    {{ $submission->description }}
-</div>
-
-<p class="label">Data Pemohon</p>
-<table>
-    <tr>
-        <th width="30%">Nama</th>
-        <td>{{ $submission->user->name }}</td>
-    </tr>
-    <tr>
-        <th>Email</th>
-        <td>{{ $submission->user->email }}</td>
-    </tr>
-    <tr>
-        <th>Telepon</th>
-        <td>{{ $submission->user->phone }}</td>
-    </tr>
-</table>
-
-<p class="label">Riwayat Status</p>
-<table>
-    <tr>
-        <th width="20%">Tanggal</th>
-        <th width="20%">Status</th>
-        <th>Catatan</th>
-    </tr>
-    @foreach($submission->statusHistories as $history)
-    <tr>
-        <td>{{ $history->created_at->format('d M Y H:i') }}</td>
-        <td>{{ ucfirst($history->new_status) }}</td>
-        <td>{{ $history->notes ?? '-' }}</td>
-    </tr>
-    @endforeach
-</table>
-
-{{-- ✅ CATATAN LAMPIRAN --}}
-<p class="note">
-    <b>Catatan:</b><br>
+<!-- Note -->
+<div class="note">
+    <strong>Catatan:</strong>
     Lampiran dokumen pendukung <u>tidak disertakan dalam berkas PDF ini</u> dan
-    <b>diunduh secara terpisah</b> melalui sistem aplikasi SIAPKANGMAS.
-</p>
+    <strong>diunduh secara terpisah</strong> melalui sistem aplikasi SIAPKANGMAS.
+</div>
 
+<!-- Ticket Box -->
+<div class="ticket-box">
+    <div class="label">NOMOR TIKET PERMOHONAN</div>
+    <div class="ticket-id">{{ $submission->ticket_id }}</div>
+    @if(!empty($submission->full_ticket_number))
+        <div class="full-ticket">{{ $submission->full_ticket_number }}</div>
+    @endif
+</div>
+
+<!-- Section A: Identitas Pemohon -->
+<div class="section">
+    <div class="section-title">A. Identitas Pemohon Permohonan</div>
+
+    <table class="info-table">
+        <tr>
+            <td>Nama</td>
+            <td>:</td>
+            <td>{{ $submission->user->name ?? '-' }}</td>
+        </tr>
+        <tr class="divider">
+            <td>Email</td>
+            <td>:</td>
+            <td>{{ $submission->user->email ?? '-' }}</td>
+        </tr>
+        <tr class="divider">
+            <td>Telepon</td>
+            <td>:</td>
+            <td>{{ $submission->user->phone ?? '-' }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- Section B: Rincian Permohonan -->
+<div class="section">
+    <div class="section-title">B. Rincian Formulir Permohonan</div>
+
+    <table class="info-table">
+        <tr>
+            <td>Judul</td>
+            <td>:</td>
+            <td>{{ $submission->title ?? '-' }}</td>
+        </tr>
+        <tr class="divider">
+            <td>Kategori</td>
+            <td>:</td>
+            <td>{{ $submission->category->name ?? '-' }}</td>
+        </tr>
+        <tr class="divider">
+            <td>Tanggal Pengajuan</td>
+            <td>:</td>
+            <td>{{ $submission->created_at->format('d F Y, H:i') }} WIB</td>
+        </tr>
+        <tr class="divider">
+            <td>Status</td>
+            <td>:</td>
+            <td><span class="status-text">{{ $statusLabel }}</span></td>
+        </tr>
+    </table>
+
+    <div class="field-label">Deskripsi:</div>
+    <div class="description-box">{{ $submission->description ?? '-' }}</div>
+</div>
+
+<!-- Section C: Riwayat Status -->
+<div class="section">
+    <div class="section-title">C. Riwayat Status</div>
+
+    <table class="history-table">
+        <tr>
+            <th style="width: 22%;">Tanggal</th>
+            <th style="width: 18%;">Status</th>
+            <th>Catatan</th>
+        </tr>
+
+        @foreach($submission->statusHistories as $history)
+            @php
+                $historyLabel = match($history->new_status) {
+                    'pending'     => 'Menunggu Verifikasi',
+                    'in_progress' => 'Sedang Diproses',
+                    'completed'   => 'Selesai',
+                    'approved'    => 'Selesai',
+                    'rejected'    => 'Ditolak',
+                    'ditolak'     => 'Ditolak',
+                    default       => ucfirst($history->new_status)
+                };
+            @endphp
+            <tr>
+                <td>{{ $history->created_at->format('d M Y H:i') }}</td>
+                <td>{{ $historyLabel }}</td>
+                <td>{{ $history->notes ?? '-' }}</td>
+            </tr>
+        @endforeach
+    </table>
+</div>
+
+<!-- Footer -->
 <div class="footer">
-    <p>
-        Dokumen ini dihasilkan secara otomatis oleh sistem SIAPKANGMAS dan
-        digunakan sebagai arsip administrasi.
-    </p>
+    <p><strong>DINAS PERINDUSTRIAN DAN PERDAGANGAN PROVINSI JAWA TENGAH</strong></p>
+    <p>Dokumen ini dicetak secara otomatis oleh sistem SIAPKANGMAS</p>
+    <p>Tanggal Cetak: {{ now()->format('d F Y, H:i') }} WIB</p>
 </div>
 
 </body>

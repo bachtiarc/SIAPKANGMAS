@@ -87,7 +87,7 @@
                     </a>
 
                     <!-- Manajemen Kategori -->
-                    <a href="#"
+                    <a href="{{ route('admin.categories.kategori') }}"
                     class="nav-item group flex items-center px-2 py-3.5 text-sm font-montserrat font-semibold rounded-xl transition-all
                     text-gray-600 hover:bg-gray-100">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

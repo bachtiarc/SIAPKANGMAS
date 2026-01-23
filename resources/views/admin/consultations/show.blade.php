@@ -211,7 +211,7 @@
                     <h3 class="font-montserrat font-bold text-gray-900">Tindak Lanjut</h3>
                 </div>
                 <div class="p-6">
-                    <form action="{{ route('admin.consultations.update', $consultation->id) }}" method="POST">
+                    <form id="consultation-followup-form" action="{{ route('admin.consultations.update', $consultation->id) }}" method="POST">
                         @csrf
                         @method('PUT')
 
@@ -235,8 +235,11 @@
                             <label for="notify_user" class="ml-2 text-xs text-gray-500">Kirim notifikasi email balasan ke pemohon</label>
                         </div>
 
-                        <button type="submit" class="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-lg transition shadow-sm text-sm">
-                            Simpan & Kirim
+                        {{-- tombol simpan -> modal --}}
+                        <button type="button"
+                                onclick="openSaveModalConsultation()"
+                                class="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-lg transition shadow-sm text-sm">
+                            Simpan Perubahan
                         </button>
                     </form>
                 </div>
@@ -292,4 +295,73 @@
         </div>
     </div>
 </div>
+
+{{-- Modal Konfirmasi Simpan --}}
+<div id="saveModalConsultation"
+     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-center">
+        <div class="mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-full bg-blue-100">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 3h7l3 3v15a2 2 0 01-2 2H7.862
+                      a2 2 0 01-1.995-1.858L5 7V5a2 2 0 012-2z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 3v4a2 2 0 002 2h4"/>
+            </svg>
+        </div>
+
+        <h2 class="text-lg font-montserrat font-bold text-gray-900">
+            Konfirmasi Perubahan
+        </h2>
+
+        <p class="text-sm text-gray-600 mt-2">
+            Anda yakin ingin menyimpan perubahan?
+        </p>
+
+        <div class="mt-6 flex justify-center gap-3">
+            <button type="button"
+                    onclick="closeSaveModalConsultation()"
+                    class="px-5 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 transition">
+                Batal
+            </button>
+
+            <button type="button"
+                    onclick="submitConsultationFollowup()"
+                    class="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">
+                Ya, Simpan
+            </button>
+        </div>
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+    function openSaveModalConsultation() {
+        const modal = document.getElementById('saveModalConsultation');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeSaveModalConsultation() {
+        const modal = document.getElementById('saveModalConsultation');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function submitConsultationFollowup() {
+        const form = document.getElementById('consultation-followup-form');
+        if (form) form.submit();
+    }
+
+    // backdrop
+    document.getElementById('saveModalConsultation').addEventListener('click', function (e) {
+        if (e.target === this) closeSaveModalConsultation();
+    });
+
+    // ESC
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeSaveModalConsultation();
+    });
+</script>
+@endpush
