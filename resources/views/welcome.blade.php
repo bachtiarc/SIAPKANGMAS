@@ -29,6 +29,39 @@
     </div>
 </div>
 
+<!-- Lacak Tiket Cepat Section (FITUR BARU) -->
+<div class="bg-white border-t border-b border-gray-200">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white rounded-lg shadow-lg p-8 border-2 border-orange-500">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2 text-center">Lacak Tiket Cepat</h2>
+            <p class="text-gray-600 text-center mb-6">Cek status pengajuan Anda tanpa login.</p>
+            
+            @if(session('error'))
+                <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            <form action="{{ route('ticket.search') }}" method="GET" class="flex gap-2">
+                <input 
+                    type="text" 
+                    name="ticket_id" 
+                    placeholder="Masukkan ID Tiket Anda dengan Lengkap 22-23 Karakter" 
+                    value="{{ request('ticket_id') }}"
+                    class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                >
+                <button 
+                    type="submit" 
+                    class="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-lg font-semibold transition shadow-md hover:shadow-lg"
+                >
+                    Lacak
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Features Section -->
 <div class="bg-blue-50 py-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

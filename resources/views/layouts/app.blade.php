@@ -141,7 +141,7 @@
     <footer class="bg-white border-t border-gray-200 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="text-center text-gray-600 text-sm mb-4 font-lato">
-                2026 Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah
+                Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah
             </div>
             <div class="flex justify-center space-x-6 text-sm">
                 <a href="#" class="font-montserrat text-blue-600 hover:text-blue-700">Kebijakan Privasi</a>

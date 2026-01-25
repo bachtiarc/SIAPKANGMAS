@@ -32,6 +32,11 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/tentang-kami', [HomeController::class, 'about'])->name('about');
 Route::get('/kontak', [HomeController::class, 'contact'])->name('contact');
+
+// PENCARIAN TIKET TANPA LOGIN (PUBLIC)
+Route::get('/lacak-tiket', [SearchController::class, 'publicSearch'])->name('ticket.search');
+
+// PENCARIAN TIKET UNTUK YANG SUDAH LOGIN
 Route::middleware(['auth'])->group(function () {
     Route::get('/search/preview', [SearchController::class, 'preview'])->name('search.preview');
     Route::get('/search/result', [SearchController::class, 'result'])->name('search.result');

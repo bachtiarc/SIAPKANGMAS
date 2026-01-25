@@ -9,6 +9,57 @@ use App\Models\Complaint;
 
 class SearchController extends Controller
 {
+    /**
+     * Pencarian tiket TANPA LOGIN (Public)
+     * Tampilkan data dasar tiket tanpa informasi sensitif
+     */
+    public function publicSearch(Request $request)
+    {
+        $ticketId = trim($request->input('ticket_id'));
+        
+        if (!$ticketId) {
+            return redirect()->route('home')->with('error', 'ID Tiket harus diisi');
+        }
+
+        // Cari di semua tabel
+        $ticket = null;
+        $ticketType = null;
+
+        // Cek di Submissions
+        $submission = Submission::with(['category', 'statusHistories'])->where('ticket_id', $ticketId)->first();
+        if ($submission) {
+            $ticket = $submission;
+            $ticketType = 'submission';
+        }
+
+        // Cek di Consultations jika tidak ditemukan
+        if (!$ticket) {
+            $consultation = Consultation::with(['category', 'statusHistories'])->where('ticket_number', $ticketId)->first();
+            if ($consultation) {
+                $ticket = $consultation;
+                $ticketType = 'consultation';
+            }
+        }
+
+        // Cek di Complaints jika tidak ditemukan
+        if (!$ticket) {
+            $complaint = Complaint::with(['category', 'statusHistories'])->where('ticket_number', $ticketId)->first();
+            if ($complaint) {
+                $ticket = $complaint;
+                $ticketType = 'complaint';
+            }
+        }
+
+        if (!$ticket) {
+            return redirect()->route('home')->with('error', 'Tiket tidak ditemukan');
+        }
+
+        return view('public.ticket-search', compact('ticket', 'ticketType', 'ticketId'));
+    }
+
+    /**
+     * Preview pencarian (untuk yang sudah login)
+     */
     public function preview(Request $request)
     {
         $q = trim($request->q);
@@ -71,6 +122,9 @@ class SearchController extends Controller
         );
     }
 
+    /**
+     * Result pencarian (untuk yang sudah login)
+     */
     public function result(Request $request)
     {
         $q = trim($request->q);
