@@ -313,7 +313,7 @@
                     
                     console.log('Input event triggered:', query); // Debug
                     
-                    if (query.length < 2) {
+                    if (query.length < 1) {
                         searchResults.classList.add('hidden');
                         return;
                     }
@@ -350,10 +350,11 @@
                     }
                 });
 
+                
                 // Fetch search results via AJAX
                 function fetchSearchResults(query) {
                     console.log('Fetching results for:', query); // Debug
-                    
+
                     fetch(`{{ route('search.preview') }}?q=${encodeURIComponent(query)}`, {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
@@ -362,22 +363,40 @@
                     })
                     .then(response => {
                         console.log('Response received:', response.status); // Debug
+
+                        // Jika bukan response sukses, anggap tidak ada hasil (BUKAN error)
+                        if (!response.ok) {
+                            return [];
+                        }
+
+                        // Pastikan response benar-benar JSON
+                        const contentType = response.headers.get('content-type') || '';
+                        if (!contentType.includes('application/json')) {
+                            return [];
+                        }
+
                         return response.json();
                     })
                     .then(data => {
                         console.log('Data received:', data); // Debug
+
+                        // Pastikan data valid sebelum diproses
+                        if (!Array.isArray(data)) {
+                            data = [];
+                        }
+
                         displaySearchResults(data, query);
                     })
                     .catch(error => {
+                        // ERROR jaringan / JS saja yang masuk sini
                         console.error('Search error:', error);
-                        searchResultsContent.innerHTML = `
-                            <div class="px-4 py-3 text-sm text-red-500">
-                                Terjadi kesalahan saat mencari
-                            </div>
-                        `;
-                        searchResults.classList.remove('hidden');
+
+                        // Untuk AJAX preview, JANGAN tampilkan pesan error
+                        // Cukup sembunyikan hasil
+                        searchResults.classList.add('hidden');
                     });
                 }
+
 
                 // Display search results in dropdown
                 function displaySearchResults(results, query) {

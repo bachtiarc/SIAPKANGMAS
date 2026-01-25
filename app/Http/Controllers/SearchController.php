@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\Submission;
 use App\Models\Consultation;
@@ -10,149 +11,140 @@ use App\Models\Complaint;
 class SearchController extends Controller
 {
     /**
-     * Pencarian tiket TANPA LOGIN (Public)
-     * Tampilkan data dasar tiket tanpa informasi sensitif
+     * PUBLIC SEARCH
      */
     public function publicSearch(Request $request)
     {
-        $ticketId = trim($request->input('ticket_id'));
-        
-        if (!$ticketId) {
-            return redirect()->route('home')->with('error', 'ID Tiket harus diisi');
-        }
-
-        // Cari di semua tabel
-        $ticket = null;
-        $ticketType = null;
-
-        // Cek di Submissions
-        $submission = Submission::with(['category', 'statusHistories'])->where('ticket_id', $ticketId)->first();
-        if ($submission) {
-            $ticket = $submission;
-            $ticketType = 'submission';
-        }
-
-        // Cek di Consultations jika tidak ditemukan
-        if (!$ticket) {
-            $consultation = Consultation::with(['category', 'statusHistories'])->where('ticket_number', $ticketId)->first();
-            if ($consultation) {
-                $ticket = $consultation;
-                $ticketType = 'consultation';
-            }
-        }
-
-        // Cek di Complaints jika tidak ditemukan
-        if (!$ticket) {
-            $complaint = Complaint::with(['category', 'statusHistories'])->where('ticket_number', $ticketId)->first();
-            if ($complaint) {
-                $ticket = $complaint;
-                $ticketType = 'complaint';
-            }
-        }
-
-        if (!$ticket) {
-            return redirect()->route('home')->with('error', 'Tiket tidak ditemukan');
-        }
-
-        return view('public.ticket-search', compact('ticket', 'ticketType', 'ticketId'));
-    }
-
-    /**
-     * Preview pencarian (untuk yang sudah login)
-     */
-    public function preview(Request $request)
-    {
-        $q = trim($request->q);
-        $userId = auth()->id();
-
-        if (strlen($q) < 2) {
+        if ($request->ajax()) {
             return response()->json([]);
         }
 
-        $submissions = Submission::where('user_id', $userId)
-            ->where(function ($x) use ($q) {
-                $x->where('title', 'ILIKE', "%{$q}%")
-                  ->orWhere('description', 'ILIKE', "%{$q}%")
-                  ->orWhere('ticket_id', 'ILIKE', "%{$q}%");
-            })
-            ->limit(5)
-            ->get()
-            ->map(fn ($i) => [
-                'type' => 'Submission',
-                'title' => $i->title,
-                'ticket' => $i->ticket_id,
-                'url' => route('user.submissions.show', $i->id),
-            ]);
+        $ticketId = trim((string) $request->input('ticket_id'));
 
-        $consultations = Consultation::where('user_id', $userId)
-            ->where(function ($x) use ($q) {
-                $x->where('subject', 'ILIKE', "%{$q}%")
-                  ->orWhere('description', 'ILIKE', "%{$q}%")
-                  ->orWhere('ticket_number', 'ILIKE', "%{$q}%");
-            })
-            ->limit(5)
-            ->get()
-            ->map(fn ($i) => [
-                'type' => 'Consultation',
-                'title' => $i->subject,
-                'ticket' => $i->ticket_number,
-                'url' => route('user.consultations.show', $i->id),
-            ]);
+        if ($ticketId === '') {
+            return redirect()->route('home')
+                ->with('error', 'ID Tiket harus diisi');
+        }
 
-        $complaints = Complaint::where('user_id', $userId)
-            ->where(function ($x) use ($q) {
-                $x->where('subject', 'ILIKE', "%{$q}%")
-                  ->orWhere('description', 'ILIKE', "%{$q}%")
-                  ->orWhere('ticket_number', 'ILIKE', "%{$q}%");
-            })
-            ->limit(5)
-            ->get()
-            ->map(fn ($i) => [
-                'type' => 'Complaint',
-                'title' => $i->subject,
-                'ticket' => $i->ticket_number,
-                'url' => route('user.complaints.show', $i->id),
-            ]);
+        $ticket = null;
+        $ticketType = null;
+
+        if (str_starts_with($ticketId, 'PD.')) {
+            $ticket = Complaint::with(['category', 'statusHistories'])
+                ->where('ticket_number', $ticketId)
+                ->first();
+
+            $ticketType = $ticket ? 'complaint' : null;
+        }
+
+        if (!$ticket) {
+            $ticket = Consultation::with(['category', 'statusHistories'])
+                ->where('ticket_number', $ticketId)
+                ->first();
+
+            $ticketType = $ticket ? 'consultation' : null;
+        }
+
+        if (!$ticket) {
+            $ticket = Submission::with(['category', 'statusHistories'])
+                ->where('ticket_id', $ticketId)
+                ->first();
+
+            $ticketType = $ticket ? 'submission' : null;
+        }
+
+        if (!$ticket) {
+            return redirect()->route('home')
+                ->with('error', 'Tiket tidak ditemukan');
+        }
+
+        return view('public.ticket-search', compact(
+            'ticket',
+            'ticketType',
+            'ticketId'
+        ));
+    }
+
+    /**
+     * AJAX PREVIEW (LOGIN)
+     */
+    public function preview(Request $request)
+    {
+        $q = trim((string) $request->q);
+
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        $complaints = DB::table('complaints')
+            ->select(
+                'ticket_number as ticket',
+                'subject as title',
+                DB::raw("'/user/complaints/' || id as url"),
+                DB::raw("'complaint' as type")
+            )
+            ->where('ticket_number', 'ILIKE', "%{$q}%")
+            ->orWhere('subject', 'ILIKE', "%{$q}%")
+            ->limit(5);
+
+        $consultations = DB::table('consultations')
+            ->select(
+                'ticket_number as ticket',
+                'subject as title',
+                DB::raw("'/user/consultations/' || id as url"),
+                DB::raw("'consultation' as type")
+            )
+            ->where('ticket_number', 'ILIKE', "%{$q}%")
+            ->orWhere('subject', 'ILIKE', "%{$q}%")
+            ->limit(5);
+
+        $submissions = DB::table('submissions')
+            ->select(
+                'ticket_id as ticket',
+                'title',
+                DB::raw("'/user/submissions/' || id as url"),
+                DB::raw("'submission' as type")
+            )
+            ->where('ticket_id', 'ILIKE', "%{$q}%")
+            ->orWhere('title', 'ILIKE', "%{$q}%")
+            ->limit(5);
 
         return response()->json(
-            $submissions
-                ->merge($consultations)
-                ->merge($complaints)
-                ->values()
+            $complaints
+                ->unionAll($consultations)
+                ->unionAll($submissions)
+                ->get()
         );
     }
 
     /**
-     * Result pencarian (untuk yang sudah login)
+     * RESULT PAGE (LOGIN, ENTER)
      */
     public function result(Request $request)
     {
-        $q = trim($request->q);
+        $q = trim((string) $request->q);
         $userId = auth()->id();
 
         $submissions = Submission::where('user_id', $userId)
-            ->where(function ($x) use ($q) {
+            ->where(fn ($x) =>
                 $x->where('title', 'ILIKE', "%{$q}%")
                   ->orWhere('description', 'ILIKE', "%{$q}%")
-                  ->orWhere('ticket_id', 'ILIKE', "%{$q}%");
-            })
-            ->get();
+                  ->orWhere('ticket_id', 'ILIKE', "%{$q}%")
+            )->get();
 
         $consultations = Consultation::where('user_id', $userId)
-            ->where(function ($x) use ($q) {
+            ->where(fn ($x) =>
                 $x->where('subject', 'ILIKE', "%{$q}%")
                   ->orWhere('description', 'ILIKE', "%{$q}%")
-                  ->orWhere('ticket_number', 'ILIKE', "%{$q}%");
-            })
-            ->get();
+                  ->orWhere('ticket_number', 'ILIKE', "%{$q}%")
+            )->get();
 
         $complaints = Complaint::where('user_id', $userId)
-            ->where(function ($x) use ($q) {
+            ->where(fn ($x) =>
                 $x->where('subject', 'ILIKE', "%{$q}%")
                   ->orWhere('description', 'ILIKE', "%{$q}%")
-                  ->orWhere('ticket_number', 'ILIKE', "%{$q}%");
-            })
-            ->get();
+                  ->orWhere('ticket_number', 'ILIKE', "%{$q}%")
+            )->get();
 
         return view('user.search.result', compact(
             'q',

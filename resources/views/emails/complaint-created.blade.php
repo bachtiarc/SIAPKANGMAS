@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,113 +8,127 @@
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
+            color: #1f2937;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
         }
         .header {
-            background-color: #dc2626;
-            color: white;
-            padding: 20px;
+            background-color: #2563eb;
+            color: #ffffff;
+            padding: 24px;
             text-align: center;
-            border-radius: 8px 8px 0 0;
         }
         .content {
-            background-color: #f9fafb;
             padding: 30px;
-            border-radius: 0 0 8px 8px;
         }
         .ticket-box {
-            background-color: #fee2e2;
-            border-left: 4px solid #dc2626;
-            padding: 15px;
+            background-color: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 16px;
             margin: 20px 0;
         }
         .ticket-number {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
-            color: #991b1b;
-            margin: 10px 0;
+            color: #1e3a8a;
+            margin-top: 8px;
         }
         .info-row {
-            margin: 10px 0;
+            margin: 8px 0;
         }
         .label {
             font-weight: bold;
-            color: #4b5563;
+            color: #374151;
         }
         .button {
             display: inline-block;
-            background-color: #dc2626;
-            color: white;
+            background-color: #2563eb;
+            color: #ffffff;
             padding: 12px 24px;
             text-decoration: none;
             border-radius: 6px;
-            margin: 20px 0;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+        .note {
+            background-color: #fff7ed;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #92400e;
         }
         .footer {
             text-align: center;
-            color: #6b7280;
             font-size: 12px;
-            margin-top: 30px;
-            padding-top: 20px;
+            color: #6b7280;
+            padding: 20px;
             border-top: 1px solid #e5e7eb;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Pengaduan Anda Telah Diterima</h1>
-    </div>
-    
-    <div class="content">
-        <p>Yth. <strong>{{ $complaint->user->name }}</strong>,</p>
-        
-        <p>Terima kasih telah menyampaikan pengaduan melalui SIAPKANGMAS. Pengaduan Anda telah kami terima dan akan segera diproses oleh tim kami.</p>
-        
-        <div class="ticket-box">
-            <div class="label">NOMOR TIKET PENGADUAN</div>
-            <div class="ticket-number">{{ $complaint->ticket_number }}</div>
+    <div class="container">
+        <div class="header">
+            <h1>Pengaduan Telah Berhasil Dikirim</h1>
         </div>
-        
-        <div class="info-row">
-            <span class="label">Subjek:</span> {{ $complaint->subject }}
+
+        <div class="content">
+            <p>Yth. <strong>{{ $complaint->user->name }}</strong>,</p>
+
+            <p>
+                Terima kasih telah menyampaikan pengaduan melalui SIAPKANGMAS.
+                Pengaduan Anda telah kami terima dan akan diproses oleh tim terkait.
+            </p>
+
+            <div class="ticket-box">
+                <div class="label">Nomor Tiket Pengaduan</div>
+                <div class="ticket-number">{{ $complaint->ticket_number }}</div>
+            </div>
+
+            <div class="info-row">
+                <span class="label">Subjek:</span> {{ $complaint->subject }}
+            </div>
+            <div class="info-row">
+                <span class="label">Kategori:</span> {{ $complaint->category->name }}
+            </div>
+            <div class="info-row">
+                <span class="label">Prioritas:</span> {{ $complaint->priority_label }}
+            </div>
+            <div class="info-row">
+                <span class="label">Tanggal Pengajuan:</span>
+                {{ $complaint->created_at->format('d F Y, H:i') }} WIB
+            </div>
+            <div class="info-row">
+                <span class="label">Status:</span> Menunggu Verifikasi
+            </div>
+
+            <div style="text-align:center;">
+                <a href="{{ route('user.complaints.show', $complaint->id) }}" class="button">
+                    Lihat Detail Pengaduan
+                </a>
+            </div>
+
+            <div class="note">
+                Sistem akan mengirimkan notifikasi email apabila terdapat perubahan
+                status atau tindak lanjut atas pengaduan Anda.
+            </div>
         </div>
-        
-        <div class="info-row">
-            <span class="label">Kategori:</span> {{ $complaint->category->name }}
+
+        <div class="footer">
+            <strong>SIAPKANGMAS</strong><br>
+            Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah<br>
+            Email ini dikirim otomatis, mohon tidak membalas email ini.
         </div>
-        
-        <div class="info-row">
-            <span class="label">Prioritas:</span> {{ $complaint->priority_label }}
-        </div>
-        
-        <div class="info-row">
-            <span class="label">Tanggal Pengajuan:</span> {{ $complaint->created_at->format('d F Y, H:i') }} WIB
-        </div>
-        
-        <div class="info-row">
-            <span class="label">Status:</span> <strong>Menunggu Verifikasi</strong>
-        </div>
-        
-        <p style="margin-top: 20px;">Anda dapat memantau perkembangan pengaduan Anda melalui dashboard atau klik tombol di bawah ini:</p>
-        
-        <center>
-            <a href="{{ route('user.complaints.show', $complaint->id) }}" class="button">
-                Lihat Detail Pengaduan
-            </a>
-        </center>
-        
-        <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">
-            <strong>Catatan:</strong> Kami akan mengirimkan notifikasi email setiap kali ada pembaruan status pada pengaduan Anda.
-        </p>
-    </div>
-    
-    <div class="footer">
-        <p><strong>SIAPKANGMAS - Sistem Aplikasi Konsultasi, Pengaduan, & Permohonan Informasi</strong></p>
-        <p>Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah</p>
-        <p>Email ini dikirim secara otomatis, mohon tidak membalas email ini.</p>
     </div>
 </body>
 </html>

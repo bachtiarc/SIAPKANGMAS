@@ -1,141 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konsultasi Diterima</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
+            background-color: #f9fafb;
+            color: #1f2937;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
         }
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
+            background-color: #2563eb;
+            color: #ffffff;
+            padding: 24px;
             text-align: center;
-            border-radius: 10px 10px 0 0;
         }
         .content {
-            background: #ffffff;
             padding: 30px;
-            border: 1px solid #e0e0e0;
         }
         .ticket-box {
-            background: #f8f9fa;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        .footer {
-            background: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            border-radius: 0 0 10px 10px;
-            font-size: 12px;
-            color: #666;
-        }
-        .button {
-            display: inline-block;
-            padding: 12px 30px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 16px;
             margin: 20px 0;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin-top: 15px;
         }
         table td {
             padding: 8px 0;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #e5e7eb;
         }
         table td:first-child {
             font-weight: bold;
-            width: 150px;
+            width: 160px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 28px;
+            background-color: #2563eb;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        .note {
+            background-color: #fff7ed;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #92400e;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #6b7280;
+            border-top: 1px solid #e5e7eb;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1 style="margin: 0;">✅ Konsultasi Berhasil Dikirim</h1>
-        <p style="margin: 10px 0 0 0;">Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah</p>
-    </div>
-
-    <div class="content">
-        <p>Yth. <strong>{{ $consultation->user->name }}</strong>,</p>
-        
-        <p>Terima kasih telah mengajukan konsultasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah.</p>
-
-        <div class="ticket-box">
-            <h3 style="margin-top: 0; color: #667eea;">📋 Nomor Tiket Konsultasi Anda</h3>
-            <h2 style="margin: 10px 0; font-size: 24px; color: #333;">{{ $consultation->ticket_number }}</h2>
-            <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Simpan nomor tiket ini untuk lacak status konsultasi</p>
+    <div class="container">
+        <div class="header">
+            <h1>Konsultasi Berhasil Dikirim</h1>
+            <p>Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah</p>
         </div>
 
-        <h3 style="color: #667eea;">Detail Konsultasi:</h3>
-        <table>
-            <tr>
-                <td>Subjek</td>
-                <td>{{ $consultation->subject }}</td>
-            </tr>
-            <tr>
-                <td>Kategori</td>
-                <td>{{ $consultation->category->name ?? 'Kategori Konsultasi' }}</td>
-            </tr>
-            <tr>
-                <td>Tanggal Pengajuan</td>
-                <td>{{ $consultation->created_at->format('d F Y, H:i') }} WIB</td>
-            </tr>
-            <tr>
-                <td>Status</td>
-                <td><strong style="color: #f59e0b;">● Menunggu Proses</strong></td>
-            </tr>
-        </table>
+        <div class="content">
+            <p>Yth. <strong>{{ $consultation->user->name }}</strong>,</p>
 
-        <h3 style="color: #667eea;">📝 Deskripsi Konsultasi:</h3>
-        <p style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-style: italic;">
-            "{{ $consultation->description }}"
-        </p>
+            <p>
+                Konsultasi yang Anda ajukan telah diterima oleh sistem dan
+                akan segera ditindaklanjuti oleh petugas terkait.
+            </p>
 
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="{{ route('user.consultations.show', $consultation->id) }}" class="button">
-                👁️ Lihat Detail Konsultasi
-            </a>
+            <div class="ticket-box">
+                <strong>Nomor Tiket Konsultasi</strong><br>
+                {{ $consultation->ticket_number }}
+            </div>
+
+            <table>
+                <tr>
+                    <td>Subjek</td>
+                    <td>{{ $consultation->subject }}</td>
+                </tr>
+                <tr>
+                    <td>Kategori</td>
+                    <td>{{ $consultation->category->name ?? 'Kategori Konsultasi' }}</td>
+                </tr>
+                <tr>
+                    <td>Tanggal Pengajuan</td>
+                    <td>{{ $consultation->created_at->format('d F Y, H:i') }} WIB</td>
+                </tr>
+                <tr>
+                    <td>Status</td>
+                    <td>Menunggu Proses</td>
+                </tr>
+            </table>
+
+            <p style="margin-top: 20px;"><strong>Deskripsi Konsultasi:</strong></p>
+            <p style="background:#f9fafb; padding:15px; border-radius:6px;">
+                {{ $consultation->description }}
+            </p>
+
+            <div style="text-align:center;">
+                <a href="{{ route('user.consultations.show', $consultation->id) }}" class="button">
+                    Lihat Detail Konsultasi
+                </a>
+            </div>
+
+            <div class="note">
+                Estimasi waktu respons maksimal 1 x 24 jam.
+                Notifikasi akan dikirimkan apabila terdapat perubahan status.
+            </div>
         </div>
 
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-
-        <h3 style="color: #667eea;">ℹ️ Informasi Penting:</h3>
-        <ul style="line-height: 1.8;">
-            <li>Tim kami akan memproses konsultasi Anda dalam 1x24 jam</li>
-            <li>Anda akan menerima email notifikasi jika ada update status</li>
-            <li>Gunakan nomor tiket untuk melacak status konsultasi</li>
-            <li>Anda dapat mengakses detail konsultasi melalui dashboard</li>
-        </ul>
-
-        <p style="margin-top: 30px;">
-            Jika ada pertanyaan, silakan hubungi kami:<br>
-            📧 Email: disperindag@jatengprov.go.id<br>
-            📞 Telepon: (024) 3520044
-        </p>
-    </div>
-
-    <div class="footer">
-        <p style="margin: 0;">
-            <strong>Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah</strong><br>
-            Jl. Mgr. Soegijapranata No.1, Semarang<br>
-            © 2026 SiapKangmas - Sistem Informasi Aplikasi Pelayanan Publik
-        </p>
-        <p style="margin: 15px 0 0 0; font-size: 11px; color: #999;">
-            Email ini dikirim otomatis. Mohon tidak membalas email ini.
-        </p>
+        <div class="footer">
+            Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah<br>
+            Email ini dikirim otomatis oleh sistem.
+        </div>
     </div>
 </body>
 </html>
