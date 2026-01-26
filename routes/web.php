@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\AllSubmissionsController;
 use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\TicketSearchController;
+use App\Http\Controllers\ContactController;
 
 // Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -36,6 +37,8 @@ Route::get('/kontak', [HomeController::class, 'contact'])->name('contact');
 
 // PENCARIAN TIKET TANPA LOGIN (PUBLIC)
 Route::get('/lacak-tiket', [SearchController::class, 'publicSearch'])->name('ticket.search');
+// Kirim pesan kontak (PUBLIC)
+Route::post('/kontak/kirim', [ContactController::class, 'send'])->name('contact.send');
 
 // PENCARIAN TIKET UNTUK YANG SUDAH LOGIN
 Route::middleware(['auth'])->group(function () {

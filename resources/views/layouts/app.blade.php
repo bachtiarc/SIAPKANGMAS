@@ -103,10 +103,10 @@
                 <a href="{{ route('home') }}" class="font-montserrat block text-gray-700 hover:bg-gray-100 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium">
                     Beranda
                 </a>
-                <a href="{{ route('about') }}" class="font-montserrat block text-gray-700 hover:bg-gray-100 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium">
+                <a href="{{ route('home') }}#tentang-kami" class="font-montserrat block text-gray-700 hover:bg-gray-100 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium">
                     Tentang Kami
                 </a>
-                <a href="{{ route('contact') }}" class="font-montserrat block text-gray-700 hover:bg-gray-100 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium">
+                <a href="{{ route('home') }}#kontak" class="font-montserrat block text-gray-700 hover:bg-gray-100 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium">
                     Kontak
                 </a>
                 
