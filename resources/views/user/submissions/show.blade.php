@@ -4,293 +4,204 @@
 
 @section('content')
 <div class="p-6 bg-gray-50 min-h-screen">
-    <!-- Header dengan tombol kembali yang smart -->
+    <!-- Header -->
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center space-x-4">
             @php
                 $from = request()->get('from', 'index');
-                
                 if ($from === 'dashboard') {
                     $backUrl = route('user.dashboard');
                 } elseif ($from === 'history') {
                     $backUrl = route('user.history.index');
                 } elseif ($from === 'search') {
-                    // Jika dari search, ambil query string 'q' untuk kembali ke hasil pencarian
                     $searchQuery = request()->get('q', '');
                     $backUrl = route('search.result', ['q' => $searchQuery]);
                 } else {
                     $backUrl = route('user.submissions.index');
                 }
+
+                // Status flags
+                $statusLower = strtolower($submission->status);
+                $isPending    = in_array($statusLower, ['pending','belum diproses']);
+                $isProcessing = in_array($statusLower, ['in_progress','on_progress','diproses','sedang diproses']);
+                $isCompleted  = in_array($statusLower, ['completed','selesai']);
+                $isRejected   = in_array($statusLower, ['rejected','ditolak']);
+                $isFinished   = $isCompleted || $isRejected;
+
+                // Progress width
+                if ($isPending) $progressWidth = '25%';
+                elseif ($isProcessing) $progressWidth = '58%';
+                elseif ($isFinished) $progressWidth = '100%';
+                else $progressWidth = '0%';
             @endphp
-            
+
             <a href="{{ $backUrl }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
                 Kembali
             </a>
             <h1 class="text-2xl font-bold text-blue-700">Tiket {{ $submission->ticket_id }}</h1>
         </div>
-        
-        <div class="flex items-center space-x-3">
-            <a href="{{ route('user.submissions.download', $submission) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                </svg>
-                Download PDF
-            </a>
-        </div>
+
+        <a href="{{ route('user.submissions.download', $submission) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download PDF
+        </a>
     </div>
 
-    <!-- Progress Bar dengan 4 Tahap -->
+    <!-- PROGRESS BAR -->
     <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
         <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
             <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h12M4 18h8"/>
             </svg>
             Progres Permohonan
         </h2>
 
         <div class="relative">
-            <!-- Background Line -->
             <div class="absolute top-6 left-0 w-full h-0.5 bg-gray-200"></div>
-            
-            @php
-                $statusLower = strtolower($submission->status);
-                
-                // Progress width calculation
-                if (in_array($statusLower, ['pending', 'belum diproses'])) {
-                    $progressWidth = '25%'; // Step 1-2
-                } elseif (in_array($statusLower, ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])) {
-                    $progressWidth = '58%'; // Step 2-3
-                } elseif (in_array($statusLower, ['completed', 'selesai', 'rejected', 'ditolak'])) {
-                    $progressWidth = '100%'; // Step 4 (final)
-                } else {
-                    $progressWidth = '0%';
-                }
-                
-                // Check states
-                $isPending = in_array($statusLower, ['pending', 'belum diproses']);
-                $isProcessing = in_array($statusLower, ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
-                $isCompleted = in_array($statusLower, ['completed', 'selesai']);
-                $isRejected = in_array($statusLower, ['rejected', 'ditolak']);
-                $isFinished = $isCompleted || $isRejected;
-            @endphp
-            
-            <!-- Progress Line -->
-            <div class="absolute top-6 left-0 h-0.5 bg-green-500 transition-all duration-500" 
-                style="width: {{ $progressWidth }};"></div>
+            <div class="absolute top-6 left-0 h-0.5 bg-green-500 transition-all duration-500" style="width: {{ $progressWidth }};"></div>
 
-            <!-- Steps -->
             <div class="relative flex justify-between">
-                <!-- Step 1: Terkirim -->
-                <div class="flex flex-col items-center" style="width: 25%;">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-green-500 text-white shadow-lg z-10">
+                <!-- STEP 1: Terkirim -->
+                <div class="flex flex-col items-center w-1/4">
+                    <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white z-10">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                     </div>
-                    <div class="text-center">
-                        <p class="font-semibold text-gray-900 text-sm">Permohonan Terkirim</p>
-                        <p class="text-xs text-gray-500 mt-1">{{ $submission->created_at->format('d M Y, H:i') }}</p>
-                    </div>
+                    <p class="font-semibold text-sm">Permohonan Terkirim</p>
+                    <p class="text-xs text-gray-500">{{ $submission->created_at->format('d M Y, H:i') }}</p>
                 </div>
 
-                <!-- Step 2: Menunggu Proses -->
-                <div class="flex flex-col items-center" style="width: 25%;">
-                    @php
-                        $step2Active = !$isPending;
-                        $step2Current = $isPending;
-                    @endphp
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 {{ $step2Active ? 'bg-green-500' : ($step2Current ? 'bg-yellow-400' : 'bg-gray-300') }} text-white shadow-lg z-10">
-                        @if($step2Active)
+                <!-- STEP 2: Menunggu Proses -->
+                <div class="flex flex-col items-center w-1/4">
+                    <div class="w-12 h-12 rounded-full {{ $isPending ? 'bg-yellow-400 animate-pulse' : 'bg-green-500' }} flex items-center justify-center text-white z-10">
+                        <!-- jam pasir -->
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M6 2h12M6 22h12M8 2v6l4 4-4 4v6M16 2v6l-4 4 4 4v6"/>
+                        </svg>
+                    </div>
+                    <p class="font-semibold text-sm">Menunggu Proses</p>
+                    <p class="text-xs text-gray-500">
+                        {{ $submission->waiting_at?->format('d M Y, H:i') ?? $submission->updated_at->format('d M Y, H:i') }}
+                    </p>
+                </div>
+
+                <!-- STEP 3: Sedang Diproses -->
+                <div class="flex flex-col items-center w-1/4">
+                    <div class="w-12 h-12 rounded-full {{ $isProcessing ? 'bg-blue-500' : ($isFinished ? 'bg-green-500' : 'bg-gray-300') }} flex items-center justify-center text-white z-10">
+                        <!-- jam biasa -->
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"/>
+                        </svg>
+                    </div>
+                    <p class="font-semibold text-sm">Sedang Diproses</p>
+                    <p class="text-xs text-gray-500">
+                        {{ $submission->processing_at?->format('d M Y, H:i') ?? $submission->updated_at->format('d M Y, H:i') }}
+                    </p>
+                </div>
+
+                <!-- STEP 4: Selesai/Ditolak -->
+                <div class="flex flex-col items-center w-1/4">
+                    <div class="w-12 h-12 rounded-full {{ $isCompleted ? 'bg-green-500' : ($isRejected ? 'bg-red-500' : 'bg-gray-300') }} flex items-center justify-center text-white z-10">
+                        @if($isRejected)
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
                         @else
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
                         @endif
                     </div>
-                    <div class="text-center">
-                        <p class="font-semibold text-gray-900 text-sm">Menunggu Proses</p>
-                        @if($step2Current)
-                            <p class="text-xs text-yellow-600 mt-1 font-semibold italic">Admin belum melihat...</p>
-                        @elseif($step2Active)
-                            <p class="text-xs text-gray-400 mt-1">Sudah dilihat admin</p>
-                        @endif
-                    </div>
-                </div>
-
-                <!-- Step 3: Sedang Diproses -->
-                <div class="flex flex-col items-center" style="width: 25%;">
-                    @php
-                        $step3Active = $isFinished;
-                        $step3Current = $isProcessing;
-                    @endphp
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 {{ $step3Active ? 'bg-green-500' : ($step3Current ? 'bg-blue-500' : 'bg-gray-300') }} text-white shadow-lg z-10">
-                        @if($step3Active)
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                        @else
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                            </svg>
-                        @endif
-                    </div>
-                    <div class="text-center">
-                        <p class="font-semibold text-gray-900 text-sm">Sedang Diproses</p>
-                        @if($step3Current)
-                            <p class="text-xs text-blue-600 mt-1 font-semibold italic">Koordinasi bidang...</p>
-                        @elseif($step3Active)
-                            <p class="text-xs text-gray-400 mt-1">Selesai diproses</p>
-                        @endif
-                    </div>
-                </div>
-
-                <!-- Step 4: Selesai / Ditolak -->
-                <div class="flex flex-col items-center" style="width: 25%;">
-                    @php
-                        $finalBg = 'bg-gray-300';
-                        $finalLabel = 'Menunggu';
-                        
-                        if ($isCompleted) {
-                            $finalBg = 'bg-green-500';
-                            $finalLabel = 'Selesai';
-                        } elseif ($isRejected) {
-                            $finalBg = 'bg-red-500';
-                            $finalLabel = 'Ditolak';
-                        }
-                    @endphp
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3 {{ $finalBg }} text-white shadow-lg z-10">
-                        @if($isCompleted)
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        @elseif($isRejected)
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        @else
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        @endif
-                    </div>
-                    <div class="text-center">
-                        <p class="font-semibold text-gray-900 text-sm">{{ $finalLabel }}</p>
-                        @if($isCompleted && $submission->completed_at)
-                            <p class="text-xs text-green-600 mt-1">{{ $submission->completed_at->format('d M Y, H:i') }}</p>
-                        @elseif($isRejected && $submission->completed_at)
-                            <p class="text-xs text-red-600 mt-1">{{ $submission->completed_at->format('d M Y, H:i') }}</p>
-                        @endif
-                    </div>
+                    <p class="font-semibold text-sm">{{ $isCompleted ? 'Selesai' : ($isRejected ? 'Ditolak' : 'Menunggu') }}</p>
+                    @if($submission->completed_at)
+                        <p class="text-xs text-gray-500">{{ $submission->completed_at->format('d M Y, H:i') }}</p>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Detail Permohonan -->
+    <!-- DETAIL PERMOHONAN -->
     <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Left Column -->
+            <!-- Left -->
             <div class="space-y-6">
                 <div>
-                    <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
-                        <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
-                        </svg>
-                        Informasi Permohonan
-                    </h2>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Kategori Permohonan</label>
+                    <label class="block text-sm font-semibold text-gray-600">Kategori Permohonan</label>
                     <p class="text-gray-900">{{ $submission->category->name }}</p>
                 </div>
-
                 <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Subjek Permohonan</label>
+                    <label class="block text-sm font-semibold text-gray-600">Subjek Permohonan</label>
                     <p class="text-gray-900">{{ $submission->subject }}</p>
                 </div>
-
                 <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Status Permohonan</label>
+                    <label class="block text-sm font-semibold text-gray-600">Status</label>
                     <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full {{ $submission->status_badge }}">
                         {{ $submission->status_label }}
                     </span>
                 </div>
-
                 <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Tanggal Pengajuan</label>
+                    <label class="block text-sm font-semibold text-gray-600">Tanggal Pengajuan</label>
                     <p class="text-gray-900">{{ $submission->created_at->format('d F Y, H:i') }} WIB</p>
                 </div>
             </div>
 
-            <!-- Right Column -->
+            <!-- Right -->
             <div class="space-y-6">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Deskripsi Lengkap</label>
+                    <label class="block text-sm font-semibold text-gray-600">Deskripsi Lengkap</label>
                     <div class="bg-gray-50 p-4 rounded-lg">
                         <p class="text-gray-900 whitespace-pre-line">{{ $submission->description }}</p>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Dokumen Pendukung</label>
+                    <label class="block text-sm font-semibold text-gray-600">Dokumen Pendukung</label>
                     @if($submission->documents && $submission->documents->count() > 0)
                         <div class="space-y-2">
                             @foreach($submission->documents as $doc)
                                 @php
                                     $fileName = $doc->original_name ?? basename($doc->file_path);
                                     $ext = pathinfo($fileName, PATHINFO_EXTENSION);
-                                    
-                                    // Build Supabase URL
                                     $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-                                    $bucket = env('SUPABASE_submissionS_BUCKET', 'submissions');
+                                    $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', 'submissions');
                                     $path = ltrim($doc->file_path, '/');
-                                    
-                                    // Remove bucket prefix if present
-                                    if (Str::startsWith($path, 'submissions/')) {
-                                        $path = Str::after($path, 'submissions/');
-                                    }
-                                    
+                                    if (Str::startsWith($path, 'submissions/')) $path = Str::after($path, 'submissions/');
                                     $documentUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
                                 @endphp
                                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition group">
                                     <div class="flex items-center space-x-3 min-w-0 flex-1">
-                                        @if(in_array(strtolower($ext), ['jpg', 'jpeg', 'png', 'gif', 'webp']))
+                                        @if(in_array(strtolower($ext), ['jpg','jpeg','png','gif','webp']))
                                             <svg class="w-8 h-8 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
                                             </svg>
                                         @else
                                             <svg class="w-8 h-8 text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
                                             </svg>
                                         @endif
-                                        
                                         <div class="overflow-hidden">
                                             <p class="text-sm font-medium text-gray-900 truncate max-w-[150px] md:max-w-[200px]">{{ $fileName }}</p>
                                             <p class="text-xs text-gray-500">{{ number_format($doc->file_size / 1024, 2) }} KB</p>
                                         </div>
                                     </div>
-                                    
                                     <div class="flex items-center space-x-2">
                                         <span class="text-xs text-gray-500 group-hover:text-blue-600">.{{ strtoupper($ext) }}</span>
-                                        
-                                        <!-- Download Button -->
                                         <a href="{{ route('user.submissions.document.download', $doc) }}" class="text-blue-600 hover:text-blue-800" title="Download">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                             </svg>
                                         </a>
-                                        
-                                        <!-- View Button -->
                                         <a href="{{ $documentUrl }}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Lihat">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                                             </svg>
                                         </a>
                                     </div>
@@ -302,83 +213,30 @@
                     @endif
                 </div>
 
+                <!-- Admin Response -->
                 @if($submission->admin_response || $submission->admin_notes)
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Respon dari Admin</label>
-                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
-                        <div class="flex items-start">
-                            <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
-                            </svg>
-                            <div class="flex-1">
-                                <p class="text-gray-900 whitespace-pre-line">{{ $submission->admin_response ?? $submission->admin_notes }}</p>
-                                @if($submission->handler)
-                                    <p class="text-xs text-blue-700 mt-3 font-semibold">Ditangani oleh: {{ $submission->handler->name }}</p>
-                                @endif
-                                @if($submission->completed_at)
-                                    <p class="text-xs text-gray-500 mt-1">{{ $submission->completed_at->format('d M Y, H:i') }} WIB</p>
-                                @endif
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-2">Respon dari Admin</label>
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                                </svg>
+                                <div class="flex-1">
+                                    <p class="text-gray-900 whitespace-pre-line">{{ $submission->admin_response ?? $submission->admin_notes }}</p>
+                                    @if($submission->handler)
+                                        <p class="text-xs text-blue-700 mt-3 font-semibold">Ditangani oleh: {{ $submission->handler->name }}</p>
+                                    @endif
+                                    @if($submission->completed_at)
+                                        <p class="text-xs text-gray-500 mt-1">{{ $submission->completed_at->format('d M Y, H:i') }} WIB</p>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                @endif
-
-                @if($submission->handler && !$submission->admin_response && !$submission->admin_notes)
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Ditangani Oleh</label>
-                    <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-sm font-semibold text-gray-900">{{ $submission->handler->name }}</p>
-                            <p class="text-xs text-gray-500">{{ $submission->handler->email ?? 'Admin' }}</p>
-                        </div>
-                    </div>
-                </div>
                 @endif
             </div>
         </div>
     </div>
-
-    <!-- Riwayat Aktivitas -->
-    @if(isset($submission->statusHistories) && $submission->statusHistories->count() > 0)
-    <div class="bg-white rounded-lg shadow-sm p-8 mt-6">
-        <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
-            <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            Riwayat Aktivitas
-        </h2>
-
-        <div class="space-y-4">
-            @foreach($submission->statusHistories as $history)
-            <div class="flex items-start space-x-4">
-                <div class="flex-shrink-0">
-                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="flex-1 bg-gray-50 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-1">
-                        <p class="text-sm font-bold text-gray-900">
-                            {{ strtoupper($history->new_status ?? $history->status) }}
-                        </p>
-                        <p class="text-xs text-gray-500">{{ $history->created_at->format('d/m/Y H:i') }} WIB</p>
-                    </div>
-                    @if($history->notes || $history->description)
-                        <p class="text-sm text-gray-700">{{ $history->notes ?? $history->description }}</p>
-                    @endif
-                </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-    @endif
 </div>
 @endsection

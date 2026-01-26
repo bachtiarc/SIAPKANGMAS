@@ -152,7 +152,7 @@ class ComplaintController extends Controller
             'status' => 'pending',
         ]);
 
-        // ✅ UPLOAD MULTIPLE FILES (Max 3)
+        // UPLOAD MULTIPLE FILES (Max 3)
         if ($request->hasFile('documents')) {
             $documents = $request->file('documents');
             
