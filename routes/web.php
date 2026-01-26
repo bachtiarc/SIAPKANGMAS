@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\ComplaintController as AdminComplaintController;
 use App\Http\Controllers\Admin\AllSubmissionsController;
 use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\TicketSearchController;
 
 // Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -142,6 +143,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     Route::get('/manajemen-pengajuan/export/{tab}', [App\Http\Controllers\Admin\ReportExportController::class, 'export'])
         ->name('management.export');
+    
+    Route::get('/tickets/search', [App\Http\Controllers\Admin\TicketSearchController::class, 'search'])
+        ->name('tickets.search');
 
     // Route Manajemen Pengajuan
     Route::get('/manajemen-pengajuan/permohonan', [App\Http\Controllers\Admin\SubmissionController::class, 'index'])
