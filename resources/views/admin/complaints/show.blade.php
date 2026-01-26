@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('header_title', 'Detail Pengaduan')
-@section('title', 'Detail Pengaduan #' . ($complaint->ticket_number ?? ($complaint->ticket_id ?? $complaint->id)))
+@section('title', 'Detail Pengaduan ' . ($complaint->ticket_number ?? ($complaint->ticket_id ?? $complaint->id)))
 
 @section('content')
 @php
@@ -28,7 +28,7 @@
     $waPhone = (strlen($waPhone) >= 10) ? $waPhone : null;
 
     $ticketNo = $complaint->ticket_number ?? ($complaint->ticket_id ?? $complaint->id);
-    $waText = rawurlencode("Halo {$complaint->user->name}, kami dari Admin SIAPKANGMAS terkait Pengaduan #{$ticketNo}.");
+    $waText = rawurlencode("Halo {$complaint->user->name}, kami dari Admin SIAPKANGMAS terkait Pengaduan {$ticketNo}.");
     $waLink = $waPhone ? "https://wa.me/{$waPhone}?text={$waText}" : null;
 @endphp
 
@@ -44,7 +44,7 @@
             <div>
                 <div class="flex items-center gap-3">
                     <h1 class="font-montserrat text-2xl font-bold text-gray-900">
-                        Detail Pengaduan #{{ $ticketNo }}
+                        Detail Pengaduan {{ $ticketNo }}
                     </h1>
 
                     @php
@@ -312,17 +312,21 @@
     </div>
 </div>
 
-{{-- Modal Konfirmasi Simpan (style sama kayak modal hapus) --}}
+{{-- Modal Konfirmasi Simpan --}}
 <div id="saveModalComplaint"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-center">
+
+        <!-- ICON CHECK -->
         <div class="mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-full bg-blue-100">
-            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M7 3h7l3 3v15a2 2 0 01-2 2H7.862
-                      a2 2 0 01-1.995-1.858L5 7V5a2 2 0 012-2z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 3v4a2 2 0 002 2h4"/>
+            <svg class="w-9 h-9 text-blue-600"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24"
+                 stroke-width="2.5"
+                 stroke-linecap="round"
+                 stroke-linejoin="round">
+                <path d="M5 13l4 4L19 7"/>
             </svg>
         </div>
 
