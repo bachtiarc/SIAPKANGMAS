@@ -19,7 +19,7 @@ class HomeController extends Controller
      */
     public function about()
     {
-        return view('about');
+        return redirect()->to(route('home') . '#tentang-kami');
     }
 
     /**
@@ -27,6 +27,6 @@ class HomeController extends Controller
      */
     public function contact()
     {
-        return view('contact');
+        return redirect()->to(route('home') . '#kontak');
     }
 }
