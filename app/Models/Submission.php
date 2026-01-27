@@ -35,16 +35,16 @@ class Submission extends Model
      */
     private static $bidangCodes = [
         'Sekretariat' => '01',
-        'Bidang Perdagangan Dalam Negeri' => '02',
-        'Bidang Perdagangan Luar Negeri' => '03',
-        'Bidang Standarisasi Dan Perlindungan Konsumen' => '04',
-        'Bidang Industri Agro' => '05',
-        'Bidang Industri Non Agro' => '06',
-        'Balai Pengujian Dan Sertifikasi Mutu Barang Surakarta' => '07',
-        'Balai Pengujian Dan Sertifikasi Mutu Barang Semarang' => '08',
-        'Balai Industri Produk Tekstil Dan Alas Kaki' => '09',
-        'Balai Industri Kreatif Digital Dan Kemasan' => '10',
-        'Balai Industri Logam Dan Kayu' => '11',
+        'Bidang Pembangunan Sumber Daya Industri Dan Perwilayahan Industri' => '02',
+        'Bidang Pemberdayaan Industri' => '03',
+        'Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri' => '04',
+        'Bidang Perdagangan Dalam Negeri' => '05',
+        'Bidang Perdagangan Luar Negeri' => '06',
+        'Balai Industri Logam dan Kayu (BILK) Kelas A' => '07',
+        'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Surakarta Kelas A' => '08',
+        'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Semarang' => '09',
+        'Balai Industri Produk Tekstil dan Alas Kaki (BIPTAK)' => '10',
+        'Balai Industri Kreatif Digital dan Kemasan Kelas A (BIKDK)' => '11',
     ];
 
     /**
@@ -52,87 +52,98 @@ class Submission extends Model
      */
     private static $jabatanCodes = [
         // Sekretariat (01)
-        'Kasubbag Program' => '101',
-        'Kasubbag Keuangan' => '102',
-        'Kasubbag Umum dan Kepegawaian' => '103',
-        'Subbag Program' => '104',
-        'Subbag Keuangan' => '105',
-        'Subbag Umum dan Kepegawaian' => '106',
+        'Sekeretaris' => '101',
+        'Kepala Sub Bagian Umum dan Kepegawaian' => '102',
+        'Kepala Sub Bagian Keuangan' => '103',
+        'Kepala Sub Bagian Program' => '104',
+        'Sub Bagian Program' => '105',
+        'Sub Bagian Keuangan' => '106',
+        'Sub Bagian Umum dan Kepegawaian' => '107',
         
-        // Bidang Perdagangan Dalam Negeri (02)
-        'Kepala Seksi Distribusi dan Logistik' => '201',
-        'Kepala Seksi Promosi dan Informasi Pasar' => '202',
-        'Kepala Seksi Pengembangan Pasar dan Usaha Dagang Kecil Menengah' => '203',
-        'Seksi Distribusi dan Logistik' => '204',
-        'Seksi Promosi dan Informasi Pasar' => '205',
-        'Seksi Pengembangan Pasar dan Usaha Dagang Kecil Menengah' => '206',
+        // Bidang Pembangunan Sumber Daya Industri Dan Perwilayahan Industri (02)
+        'Kepala Bidang Pembangunan Sumber Daya Industri Dan Perwilayahan Industri' => '201',
+        'Ketua Kelompok Kerja Pengembangan Perwilayahan Industri' => '202',
+        'Ketua Kelompok Kerja Pengembangan Teknologi Industri' => '203',
+        'Ketua Kelompok Kerja Pengembangan SDM Industri' => '204',
+        'Kelompok Kerja Pengembangan Perwilayahan Industri' => '205',
+        'Kelompok Kerja pengembangan Teknologi Industri' => '206',
+        'Kelompok Kerja Pengembangan SDM Industri' => '207',
         
-        // Bidang Perdagangan Luar Negeri (03)
-        'Kepala Seksi Ekspor Dan Impor' => '301',
-        'Kepala Seksi Promosi Dan Kerjasama Perdagangan Luar Negeri' => '302',
-        'Kepala Seksi Informasi Dan Analisis Pasar' => '303',
-        'Seksi Ekspor Dan Impor' => '304',
-        'Seksi Promosi Dan Kerjasama Perdagangan Luar Negeri' => '305',
-        'Seksi Informasi Dan Analisis Pasar' => '306',
+        // Bidang Pemberdayaan Industri (03)
+        'Kepala Bidang Pemberdayaan Industri' => '301',
+        'Ketua Kelompok Kerja Pengembangan Industri' => '302',
+        'Ketua Kelompok Kerja Promosi dan Kerja Sama Industri' => '303',
+        'Ketua Kelompok Kerja Industri Hijau' => '304',
+        'Kelompok Kerja Pengembangan Industri' => '305',
+        'Kelompok Kerja Promosi dan Kerja Sama Industri' => '306',
+        'Kelompok Kerja Promosi dan Kerja Sama Industri' => '307',
         
-        // Bidang Standarisasi Dan Perlindungan Konsumen (04)
-        'Kepala Seksi Perlindungan Konsumen' => '401',
-        'Kepala Seksi Tertib Niaga' => '402',
-        'Kepala Seksi Standarisasi Industri' => '403',
-        'Seksi Perlindungan Konsumen' => '404',
-        'Seksi Tertib Niaga' => '405',
-        'Seksi Standarisasi Industri' => '406',
+        // Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri (04)
+        'Kepala Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri' => '401',
+        'Ketua Kelompok Kerja Pengembangan Sarana Prasarana Industri' => '402',
+        'Ketua Kelompok Kerja Pengawasan dan Pengendalian Industri' => '403',
+        'Ketua Kelompok Kerja Data dan Informasi Industri' => '404',
+        'Kelompok Kerja Pengembangan Sarana Prasarana Industri' => '405',
+        'Kelompok Kerja Pengawasan dan Pengendalian Industri' => '406',
+        'Kelompok Kerja Data dan Informasi Industri' => '407',
         
-        // Bidang Industri Agro (05)
-        'Kepala Seksi Pengembangan Sdm Dan Inovasi Industri Agro' => '501',
-        'Kepala Seksi Pengembangan Sarana Dan Prasarana Industri Agro' => '502',
-        'Kepala Seksi Pengendalian Dan Informasi Industri Agro' => '503',
-        'Seksi Pengembangan Sdm Dan Inovasi Industri Agro' => '504',
-        'Seksi Pengembangan Sarana Dan Prasarana Industri Agro' => '505',
-        'Seksi Pengendalian Dan Informasi Industri Agro' => '506',
+        // Bidang Perdagangan Dalam Negeri (05)
+        'Kepala Bidang Perdagangan Dalam Negeri' => '501',
+        'Ketua Kelompok Kerja Pengendalian Bapokting, Pengembangan Informasi dan Sarana Perdagangan' => '502',
+        'Ketua Kelompok Kerja Promosi dan Kerjasama' => '503',
+        'Ketua Kelompok Kerja Perlindungan Konsumen dan Tertib Niaga' => '504',
+        'Kelompok Kerja Pengendalian Bapokting, Pengembangan Informasi dan Sarana Perdagangan' => '505',
+        'Kelompok Kerja Promosi dan Kerjasama' => '506',
+        'Kelompok Kerja Perlindungan Konsumen dan Tertib Niaga' => '507',
         
-        // Bidang Industri Non Agro (06)
-        'Kepala Seksi Pengembangan SDM, Kreativitas, dan Inovasi Industri Non Agro' => '601',
-        'Kepala Seksi Pengembangan Sarana dan Prasarana Industri Non Agro' => '602',
-        'Kepala Seksi Pengendalian dan Informasi Industri Non Agro' => '603',
-        'Seksi Pengembangan SDM, Kreativitas, dan Inovasi Industri Non Agro' => '604',
-        'Seksi Pengembangan Sarana dan Prasarana Industri Non Agro' => '605',
-        'Seksi Pengendalian dan Informasi Industri Non Agro' => '606',
-        
-        // Balai Pengujian Dan Sertifikasi Mutu Barang Surakarta (07)
+        // Bidang Perdagangan Luar Negeri (06)
+        'Kepala Bidang Perdagangan Luar Negeri' => '601',
+        'Ketua Kelompok Kerja Ekspor dan Impor' => '602',
+        'Ketua Kelompok Kerja Promosi dan Kerjasama Perdagangan Luar Negeri' => '603',
+        'Ketua Kelompok Kerja Informasi Dan Analisis Pasar' => '604',
+        'Kelompok Kerja Ekspor dan Impor' => '605',
+        'Kelompok Kerja Promosi dan Kerjasama Perdagangan Luar Negeri' => '606',
+        'Kelompok Kerja Informasi Dan Analisis Pasar' => '607',
+
+        // Balai Industri Logam dan Kayu (BILK) Kelas A (07)
         'Kepala Sub Bagian Tata Usaha' => '701',
-        'Kepala Seksi Pelayanan Teknis Pengujian Dan Kalibrasi' => '702',
-        'Kepala Seksi Pengembangan Jasa Pengujian Dan Kalibrasi' => '703',
-        'Sub Bagian Tata Usaha' => '704',
-        'Seksi Pelayanan Teknis Pengujian Dan Kalibrasi' => '705',
-        'Seksi Pengembangan Jasa Pengujian Dan Kalibrasi' => '706',
+        'Ketua Kelompok Kerja Pelayanan Jasa Keteknikan' => '702',
+        'Ketua Kelompok Kerja Penerapan dan Rekayasa' => '703',
+        'Kelompok Kerja Pelayanan Jasa Keteknikan' => '704',
+        'Kelompok Kerja Penerapan dan Rekayasa' => '705',
+        'Kelompok Jabatan Fungsional' => '706',
         
-        // Balai Pengujian Dan Sertifikasi Mutu Barang Semarang (08)
-        // Kepala Sub Bagian Tata Usaha => '801' (handled by context)
+        // Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Surakarta Kelas A (08)
+        'Kepala Sub Bagian Tata Usaha' => '801',
+        'Ketua Kelompok Kerja Pelayanan Teknis Pengujian dan Kalibrasi' => '802',
+        'Ketua Kelompok Kerja Pengembangan Jasa Pengujian dan Kalibrasi' => '803',
+        'Kelompok Kerja Pelayanan Teknis Pengujian dan Kalibrasi' => '804',
+        'Kelompok Kerja Pengembangan Jasa Pengujian dan Kalibrasi' => '805',
+        'Kelompok Jabatan Fungsional' => '806',
         
-        // Balai Industri Produk Tekstil Dan Alas Kaki (09)
-        // Kepala Sub Bagian Tata Usaha => '901' (handled by context)
-        'Kepala Seksi Pengembangan Produk Tekstil' => '902',
-        'Kepala Seksi Pengembangan Produk Alas Kaki' => '903',
-        // Sub Bagian Tata Usaha => '904' (handled by context)
-        'Seksi Pengembangan Produk Tekstil' => '905',
-        'Seksi Pengembangan Produk Alas Kaki' => '906',
+        // Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Semarang (09)
+        'Kepala Sub Bagian Tata Usaha' => '901',
+        'Ketua Kelompok Kerja Produk Alas Kaki' => '902',
+        'Ketua Kelompok Kerja Pengembangan Jasa Pengujian dan Kalibrasi' => '903',
+        'Kelompok Kerja Pengembangan Produk Alas Kaki' => '904',
+        'Kelompok Kerja Pengembangan Jasa Pengujian dan Kalibrasi' => '905',
+        'Kelompok Jabatan Fungsional' => '906',
         
-        // Balai Industri Kreatif Digital Dan Kemasan (10)
-        // Kepala Sub Bagian Tata Usaha => '1001' (handled by context)
-        'Kepala Seksi Industri Kreatif Digital' => '1002',
-        'Kepala Seksi Pengembangan Kemasan' => '1003',
-        // Sub Bagian Tata Usaha => '1004' (handled by context)
-        'Seksi Industri Kreatif Digital' => '1005',
-        'Seksi Pengembangan Kemasan' => '1006',
+        // Balai Industri Produk Tekstil dan Alas Kaki (BIPTAK) (10)
+        'Kepala Sub Bagian Tata Usaha' => '1001',
+        'Ketua Kelompok Kerja Pengembangan Produk Tekstil' => '1002',
+        'Ketua Kelompok Kerja Pengembangan Produk Alas Kaki' => '1003',
+        'Kelompok Kerja Pengembangan Produk Tekstil' => '1004',
+        'Kelompok Kerja Pengembangan Produk Alas Kaki' => '1005',
+        'Kelompok Jabatan Fungsional' => '1006',
         
-        // Balai Industri Logam Dan Kayu (11)
-        // Kepala Sub Bagian Tata Usaha => '1101' (handled by context)
-        'Kepala Seksi Pelayanan Jasa Keteknikan' => '1102',
-        'Kepala Seksi Penerapan Dan Rekayasa' => '1103',
-        // Sub Bagian Tata Usaha => '1104' (handled by context)
-        'Seksi Pelayanan Jasa Keteknikan' => '1105',
-        'Seksi Penerapan Dan Rekayasa' => '1106',
+        // Balai Industri Kreatif Digital dan Kemasan Kelas A (BIKDK) (11)
+        'Kepala Sub Bagian Tata Usaha' => '1101',
+        'Ketua Kelompok Kerja Industri Kreatif Digital' => '1102',
+        'Ketua Kelompok Kerja Pengembangan Kemasan' => '1103',
+        'Kelompok Kerja Industri Kreatif Digital' => '1105',
+        'Kelompok Kerja Pengembangan Kemasan' => '1106',
+        'Kelompok Jabatan Fungsional' => '1107',
     ];
 
     /**

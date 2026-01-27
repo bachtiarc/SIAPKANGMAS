@@ -41,7 +41,7 @@ class RegisterController extends Controller
                 'Ketua Kelompok Kerja Industri Hijau',
                 'Kelompok Kerja Pengembangan Industri',
                 'Kelompok Kerja Promosi dan Kerja Sama Industri',
-                'Kelompok Kerja Industri Hijau',
+                'Kelompok Kerja Promosi dan Kerja Sama Industri',
             ],
             'Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri' => [
                 'Kepala Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri',
@@ -91,6 +91,7 @@ class RegisterController extends Controller
                 'Ketua Kelompok Kerja Produk Alas Kaki',
                 'Ketua Kelompok Kerja Pengembangan Jasa Pengujian dan Kalibrasi',
                 'Kelompok Kerja Pengembangan Produk Alas Kaki',
+                'Kelompok Kerja Pengembangan Jasa Pengujian dan Kalibrasi',
                 'Kelompok Jabatan Fungsional',
             ],
             'Balai Industri Produk Tekstil dan Alas Kaki (BIPTAK)' => [
