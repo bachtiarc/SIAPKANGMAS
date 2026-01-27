@@ -4,22 +4,22 @@ namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
 use App\Models\Submission;
+use App\Models\SubmissionDocument;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
-use App\Mail\SubmissionCreated;
+use App\Mail\MasyarakatSubmissionCreated;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class SubmissionController extends Controller
 {
-    /**
-     * Display a listing of submissions
-     */
     public function index(Request $request)
     {
         $user = auth()->user();
-        
-        // Check if user is masyarakat_umum
+
         if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
@@ -27,111 +27,161 @@ class SubmissionController extends Controller
         $query = Submission::where('user_id', $user->id)
             ->with(['category', 'handler']);
 
-        // Filter by status
-        if ($request->has('status') && $request->status != 'semua') {
-            $query->where('status', $request->status);
-        }
-
-        // Search by ticket_id or title
-        if ($request->has('search') && $request->search) {
+        if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('ticket_id', 'like', "%{$search}%")
-                  ->orWhere('full_ticket_number', 'like', "%{$search}%")
-                  ->orWhere('title', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('ticket_id', 'ilike', "%{$search}%")
+                  ->orWhere('title', 'ilike', "%{$search}%")
+                  ->orWhere('subject', 'ilike', "%{$search}%");
             });
         }
 
-        $submissions = $query->latest()->paginate(10);
+        if ($request->filled('status') && $request->status !== 'semua') {
+            $status = strtolower($request->status);
+            $query->where(function ($q) use ($status) {
+                if ($status === 'pending') {
+                    $q->whereIn('status', ['pending', 'belum diproses']);
+                } elseif ($status === 'diproses') {
+                    $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
+                } elseif ($status === 'selesai') {
+                    $q->whereIn('status', ['completed', 'selesai']);
+                } elseif ($status === 'ditolak') {
+                    $q->whereIn('status', ['rejected', 'ditolak']);
+                }
+            });
+        }
+
+        $submissions = $query->latest()->paginate(10)->withQueryString();
 
         return view('masyarakat.submissions.index', compact('submissions'));
     }
 
-    /**
-     * Show the form for creating a new submission
-     */
     public function create()
     {
         $user = auth()->user();
-        
-        // Check if user is masyarakat_umum
+
         if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
 
-        // Get active categories for permohonan informasi
         $categories = Category::active()
             ->ofType('permohonan')
+            ->where(function ($q) {
+                $q->where('user_type', 'masyarakat_umum')
+                  ->orWhere('user_type', 'all');
+            })
             ->orderBy('name')
             ->get();
 
         return view('masyarakat.submissions.create', compact('categories'));
     }
 
-    /**
-     * Store a newly created submission in storage
-     */
     public function store(Request $request)
     {
         $user = auth()->user();
-        
-        // Validate request
+
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // 5MB max
-        ], [
-            'category_id.required' => 'Kategori informasi wajib dipilih.',
-            'category_id.exists' => 'Kategori tidak valid.',
-            'title.required' => 'Judul permohonan wajib diisi.',
-            'description.required' => 'Deskripsi lengkap wajib diisi.',
-            'document.mimes' => 'Format dokumen harus PDF, JPG, JPEG, atau PNG.',
-            'document.max' => 'Ukuran dokumen maksimal 5MB.',
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
-        // Upload document if exists
-        $documentPath = null;
-        if ($request->hasFile('document')) {
-            $documentPath = $request->file('document')->store('submission-documents', 'public');
-        }
-
-        // Create submission (ticket generated automatically in model)
         $submission = Submission::create([
             'user_id' => $user->id,
             'category_id' => $validated['category_id'],
             'title' => $validated['title'],
+            'subject' => $validated['title'],
             'description' => $validated['description'],
-            'document_path' => $documentPath,
             'status' => 'pending',
         ]);
 
-        // Send email notification
-        try {
-            Mail::to($user->email)->send(new SubmissionCreated($submission));
-        } catch (\Exception $e) {
-            // Log error but don't fail the request
-            \Log::error('Failed to send submission email: ' . $e->getMessage());
+        if ($request->hasFile('documents')) {
+            foreach (array_slice($request->file('documents'), 0, 3) as $document) {
+                if ($document && $document->isValid()) {
+
+                    $filename = Str::random(40).'.'.$document->getClientOriginalExtension();
+
+                    // FIX: upload ke disk supabase (bucket submissions)
+                    $path = $document->storeAs(
+                        (string) $submission->id,
+                        $filename,
+                        'supabase'
+                    );
+
+                    SubmissionDocument::create([
+                        'submission_id' => $submission->id,
+                        'original_name' => $document->getClientOriginalName(),
+                        'file_path' => $path, // contoh: "1/abcd.pdf"
+                        'file_type' => $document->getMimeType(),
+                        'file_size' => $document->getSize(),
+                    ]);
+                }
+            }
         }
 
-        return redirect()->route('masyarakat.submissions.show', $submission->id)
-            ->with('success', 'Formulir berhasil dikirim! Nomor tiket Anda: ' . $submission->ticket_id);
+        try {
+            Mail::to($user->email)->send(new MasyarakatSubmissionCreated($submission));
+        } catch (\Throwable $e) {
+            Log::error($e->getMessage());
+        }
+
+        return redirect()->route('masyarakat.submissions.create')
+            ->with('success', true)
+            ->with('ticket_id', $submission->ticket_id)
+            ->with('submission_id', $submission->id);
     }
 
-    /**
-     * Display the specified submission
-     */
     public function show(Submission $submission)
     {
-        $user = auth()->user();
-        
-        // Check authorization
-        if ($submission->user_id !== $user->id) {
-            abort(403, 'Unauthorized access.');
+        if ($submission->user_id !== auth()->id()) {
+            abort(403);
         }
 
-        $submission->load(['category', 'handler', 'statusHistories']);
+        $submission->load(['category', 'handler', 'statusHistories', 'documents']);
 
         return view('masyarakat.submissions.show', compact('submission'));
+    }
+
+    public function viewDocument(SubmissionDocument $document)
+    {
+        if ($document->submission->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // FIX: public bucket URL yang benar
+        $base = rtrim(env('SUPABASE_URL'), '/');
+        $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', 'submissions');
+        $path = ltrim($document->file_path, '/');
+
+        return redirect()->away(
+            "{$base}/storage/v1/object/public/{$bucket}/{$path}"
+        );
+    }
+
+    public function downloadDocument(SubmissionDocument $document)
+    {
+        if ($document->submission->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $base = rtrim(env('SUPABASE_URL'), '/');
+        $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', 'submissions');
+        $path = ltrim($document->file_path, '/');
+
+        $url = "{$base}/storage/v1/object/public/{$bucket}/{$path}";
+
+        $response = Http::get($url);
+
+        if (!$response->successful()) {
+            abort(404);
+        }
+
+        return response($response->body(), 200)
+            ->header('Content-Type', $document->file_type)
+            ->header(
+                'Content-Disposition',
+                'attachment; filename="'.$document->original_name.'"'
+            );
     }
 }

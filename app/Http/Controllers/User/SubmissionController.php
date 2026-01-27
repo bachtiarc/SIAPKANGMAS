@@ -82,8 +82,13 @@ class SubmissionController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
+        // Filter kategori untuk pegawai saja
         $categories = Category::active()
             ->ofType('permohonan')
+            ->where(function($query) {
+                $query->where('user_type', 'pegawai')
+                    ->orWhere('user_type', 'all');
+            })
             ->orderBy('name')
             ->get();
 

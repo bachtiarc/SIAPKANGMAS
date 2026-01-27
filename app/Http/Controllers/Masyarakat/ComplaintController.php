@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
@@ -22,8 +22,8 @@ class ComplaintController extends Controller
     {
         $user = auth()->user();
         
-        // Check if user is pegawai
-        if ($user->user_type !== 'pegawai') {
+        // Check if user is masyarakat_umum
+        if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
 
@@ -65,7 +65,7 @@ class ComplaintController extends Controller
 
         $complaints = $query->latest()->paginate(10)->withQueryString();
 
-        return view('user.complaints.index', compact('complaints'));
+        return view('masyarakat.complaints.index', compact('complaints'));
     }
 
     /**
@@ -86,7 +86,7 @@ class ComplaintController extends Controller
             ->orderBy('name')
             ->get();
         
-        return view('user.complaints.create', compact('categories'));
+        return view('masyarakat.complaints.create', compact('categories'));
     }
 
     /**
@@ -127,23 +127,22 @@ class ComplaintController extends Controller
             }
         }
 
-        // Generate ticket number dengan format: PD.XX.YY.DDMMYYYY_***
+        // Generate ticket number dengan format: PD.XXXXXX.DDMMYYYY_***
+        // XXXXXX = 6 digit terakhir NIK
         $kodeLayanan = "PD"; // Pengaduan
-        $kodeBalai = $user->bidang_code ?? "01";
-        $kodeSubBagian = $user->sub_bagian_code ?? "106";
+        $lastSixNik = substr($user->nik, -6); // 6 digit terakhir NIK
         
         $tanggal = now()->format('dmY');
         
-        // Hitung urutan pengaduan bulan ini
-        $count = Complaint::whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year)
+        // Hitung urutan pengaduan hari ini
+        $count = Complaint::whereDate('created_at', now()->toDateString())
                     ->count() + 1;
         
         $urutan = str_pad($count, 3, '0', STR_PAD_LEFT);
         
-        $ticketNumber = "{$kodeLayanan}.{$kodeBalai}.{$kodeSubBagian}.{$tanggal}_{$urutan}";
+        $ticketNumber = "{$kodeLayanan}.{$lastSixNik}.{$tanggal}_{$urutan}";
 
-        // Create complaint (TANPA PRIORITY)
+        // Create complaint
         $complaint = Complaint::create([
             'user_id' => $user->id,
             'category_id' => $validated['category_id'],
@@ -188,7 +187,7 @@ class ComplaintController extends Controller
             \Log::error('Failed to send complaint email: ' . $e->getMessage());
         }
 
-        return redirect()->route('user.complaints.create')
+        return redirect()->route('masyarakat.complaints.create')
             ->with('success', true)
             ->with('ticket_id', $complaint->ticket_number)
             ->with('complaint_id', $complaint->id);
@@ -209,7 +208,7 @@ class ComplaintController extends Controller
         // Load relationships including documents
         $complaint->load(['category', 'handler', 'statusHistories', 'documents']);
 
-        return view('user.complaints.show', compact('complaint'));
+        return view('masyarakat.complaints.show', compact('complaint'));
     }
 
     /**

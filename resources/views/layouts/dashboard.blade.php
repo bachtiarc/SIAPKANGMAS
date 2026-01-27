@@ -128,11 +128,23 @@
             <nav class="py-6">
                 <div class="px-4 space-y-2">
                     @php
-                        // Deteksi route prefix untuk penentuan link dashboard & profil
-                        $dashRoute = (auth()->user()->user_type == 'pegawai') ? 'user.dashboard' : 'masyarakat.dashboard';
-                        $profileRoute = (auth()->user()->user_type == 'pegawai') ? 'user.profile' : 'masyarakat.profile';
+                        // Deteksi user type untuk route dinamis
+                        $userType = auth()->user()->user_type;
+                        $isPegawai = $userType === 'pegawai';
+                        $isMasyarakat = $userType === 'masyarakat_umum';
+                        
+                        // Route dinamis berdasarkan user type
+                        $dashRoute = $isPegawai ? 'user.dashboard' : 'masyarakat.dashboard';
+                        $profileRoute = $isPegawai ? 'user.profile' : 'masyarakat.profile';
+                        $submissionsRoute = $isPegawai ? 'user.submissions.index' : 'masyarakat.submissions.index';
+                        $submissionsPattern = $isPegawai ? 'user.submissions.*' : 'masyarakat.submissions.*';
+                        $consultationsRoute = $isPegawai ? 'user.consultations.index' : 'masyarakat.consultations.index';
+                        $consultationsPattern = $isPegawai ? 'user.consultations.*' : 'masyarakat.consultations.*';
+                        $complaintsRoute = $isPegawai ? 'user.complaints.index' : 'masyarakat.complaints.index';
+                        $complaintsPattern = $isPegawai ? 'user.complaints.*' : 'masyarakat.complaints.*';
                     @endphp
 
+                    {{-- Dashboard --}}
                     <a href="{{ route($dashRoute) }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs($dashRoute) ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Dashboard">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 13a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM13 4a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zM13 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
@@ -140,27 +152,31 @@
                         <span class="sidebar-text ml-4 whitespace-nowrap font-semibold">Dashboard</span>
                     </a>
 
-                    <a href="{{ route('user.submissions.index') }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs('user.submissions.*') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Permohonan Informasi">
+                    {{-- Permohonan Informasi (Dinamis untuk Pegawai & Masyarakat) --}}
+                    <a href="{{ route($submissionsRoute) }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs($submissionsPattern) ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Permohonan Informasi">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
                         <span class="sidebar-text ml-4 whitespace-nowrap font-semibold">Permohonan Informasi</span>
                     </a>
 
-                    <a href="{{ route('user.consultations.index') }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs('user.consultations.*') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
+                    {{-- ✅ PERBAIKAN: Konsultasi (Dinamis untuk Pegawai & Masyarakat) --}}
+                    <a href="{{ route($consultationsRoute) }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs($consultationsPattern) ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                         </svg>
                         <span class="sidebar-text ml-4 font-semibold">Konsultasi</span>
                     </a>
 
-                    <a href="{{ route('user.complaints.index') }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs('user.complaints.*') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Buat Pengaduan">
+                    {{-- Buat Pengaduan (SEMUA USER) --}}
+                    <a href="{{ route($complaintsRoute) }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all {{ request()->routeIs($complaintsPattern) ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}" title="Buat Pengaduan">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                         </svg>
                         <span class="sidebar-text ml-4 whitespace-nowrap font-semibold">Buat Pengaduan</span>
                     </a>
 
+                    {{-- Riwayat Pengajuan (SEMUA USER) --}}
                     <a href="{{ route('user.history.index') }}" class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all text-gray-600 hover:bg-gray-100" title="Riwayat Pengajuan">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -508,18 +524,15 @@
                             }, 150);
                         }
                     } else {
-                        // COLLAPSE SIDEBAR
+
                         console.log('Collapsing sidebar...');
                         sidebar.style.width = '88px';
                         sidebar.classList.remove('expanded');
                         
-                        // PANAH BALIK KE KANAN
                         sidebarToggle.classList.remove('active');
                         
-                        // Move toggle button back
                         sidebarToggle.style.left = '88px';
                         
-                        // Show logo icon, hide full
                         if (logoIcon && logoFull) {
                             logoIcon.classList.remove('hidden');
                             logoFull.classList.add('hidden');
@@ -531,7 +544,6 @@
             }
         });
 
-        // ==================== LOGOUT MODAL FUNCTIONS ====================
         function showLogoutModal() {
             const modal = document.getElementById('logoutModal');
             modal.style.display = 'flex';
