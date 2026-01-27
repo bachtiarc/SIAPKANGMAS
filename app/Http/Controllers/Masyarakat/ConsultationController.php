@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
 use App\Models\Consultation;
@@ -18,7 +18,7 @@ class ConsultationController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        if ($user->user_type !== 'pegawai') {
+        if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
 
@@ -58,12 +58,17 @@ class ConsultationController extends Controller
         }
 
         $consultations = $query->latest()->paginate(10)->withQueryString();
-        return view('user.consultations.index', compact('consultations'));
+        return view('masyarakat.consultations.index', compact('consultations'));
     }
 
     public function create()
     {
         $user = auth()->user();
+        
+        if ($user->user_type !== 'masyarakat_umum') {
+            abort(403, 'Unauthorized access.');
+        }
+        
         $userType = $user->user_type;
         
         // Filter kategori berdasarkan user type
@@ -71,25 +76,29 @@ class ConsultationController extends Controller
             ->ofType('konsultasi')
             ->where(function($query) use ($userType) {
                 $query->where('user_type', $userType)
-                    ->orWhere('user_type', 'all');
+                      ->orWhere('user_type', 'all');
             })
             ->orderBy('name')
             ->get();
         
-        return view('user.consultations.create', compact('categories'));
+        return view('masyarakat.consultations.create', compact('categories'));
     }
 
     public function store(Request $request)
     {
         $user = auth()->user();
+        
+        if ($user->user_type !== 'masyarakat_umum') {
+            abort(403, 'Unauthorized access.');
+        }
+        
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'subject' => 'required|string|max:255',
             'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', // Max 2MB per file
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', 
         ]);
 
-        // Validasi total ukuran file maksimal 6MB
         if ($request->hasFile('documents')) {
             $totalSize = 0;
             foreach ($request->file('documents') as $file) {
@@ -98,7 +107,6 @@ class ConsultationController extends Controller
                 }
             }
             
-            // 6MB = 6291456 bytes
             if ($totalSize > 6291456) {
                 return back()->withErrors([
                     'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
@@ -106,7 +114,11 @@ class ConsultationController extends Controller
             }
         }
 
-        $ticketNumber = "KL." . ($user->bidang_code ?? "01") . "." . ($user->sub_bagian_code ?? "106") . "." . now()->format('dmY') . "_" . str_pad(Consultation::count() + 1, 3, '0', STR_PAD_LEFT);
+        $nik = $user->nik ?? '000000000000000000';
+        $lastSixNik = substr($nik, 10, 6);
+        $date = now()->format('dmY');
+        $sequence = str_pad(Consultation::count() + 1, 3, '0', STR_PAD_LEFT);
+        $ticketNumber = "KL.{$lastSixNik}.{$date}_{$sequence}";
 
         $consultation = DB::transaction(function () use ($user, $validated, $ticketNumber, $request) {
             $consultation = Consultation::create([
@@ -120,12 +132,13 @@ class ConsultationController extends Controller
                 'attachment' => null, 
             ]);
             
+            // Upload multiple documents
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $file) {
                     if ($file->isValid()) {
                         $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
                         
-                        // Store file in consultations folder using public disk
+                        // Store file in consultations folder
                         $path = $consultation->id . '/' . $filename;
 
                         Storage::disk('supabase_consultations')->put(
@@ -149,10 +162,10 @@ class ConsultationController extends Controller
         try {
             Mail::to($user->email)->send(new ConsultationCreated($consultation));
         } catch (\Exception $e) {
-            \Log::error('Failed to send email: ' . $e->getMessage());
+            \Log::error('Failed to send consultation email: ' . $e->getMessage());
         }
 
-        return redirect()->route('user.consultations.create')
+        return redirect()->route('masyarakat.consultations.create')
             ->with('success', true)
             ->with('ticket_id', $consultation->ticket_number)
             ->with('consultation_id', $consultation->id);
@@ -161,12 +174,14 @@ class ConsultationController extends Controller
     public function show(Consultation $consultation)
     {
         $user = auth()->user();
-        if ($consultation->user_id !== $user->id) abort(403);
+        
+        if ($consultation->user_id !== $user->id) {
+            abort(403, 'Unauthorized access.');
+        }
 
-        // Load relasi
         $consultation->load(['category', 'handler', 'statusHistories', 'documents']);
 
-        return view('user.consultations.show', compact('consultation'));
+        return view('masyarakat.consultations.show', compact('consultation'));
     }
 
     /**
@@ -190,7 +205,6 @@ class ConsultationController extends Controller
 
         $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
         
-        // Fetch file dari Supabase
         try {
             $response = \Illuminate\Support\Facades\Http::get($publicUrl);
             

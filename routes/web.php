@@ -20,6 +20,11 @@ use App\Http\Controllers\User\ComplaintPdfController;
 use App\Http\Controllers\User\ProfileController as UserProfileController;
 use App\Http\Controllers\Masyarakat\DashboardController as MasyarakatDashboardController;
 use App\Http\Controllers\Masyarakat\ProfileController as MasyarakatProfileController;
+use App\Http\Controllers\Masyarakat\SubmissionPdfController;
+use App\Http\Controllers\Masyarakat\ConsultationController as MasyarakatConsultationController;
+use App\Http\Controllers\Masyarakat\ConsultationPdfController as MasyarakatConsultationPdfController;
+use App\Http\Controllers\Masyarakat\ComplaintController as MasyarakatComplaintController;
+use App\Http\Controllers\Masyarakat\ComplaintPdfController as MasyarakatComplaintPdfController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController;
 use App\Http\Controllers\Admin\ConsultationController as AdminConsultationController;
@@ -130,11 +135,34 @@ Route::middleware(['auth', 'verified', 'role:user,masyarakat_umum'])->prefix('ma
     Route::get('/profile', [MasyarakatProfileController::class, 'index'])->name('profile');
     Route::put('/password', [MasyarakatProfileController::class, 'updatePassword'])->name('password.update');
     Route::put('/profile/photo', [MasyarakatProfileController::class, 'updatePhoto'])->name('profile.photo.update');
+
     // PERMOHONAN INFORMASI (SUBMISSIONS)
     Route::get('/permohonan-informasi', [MasyarakatSubmissionController::class, 'index'])->name('submissions.index');
     Route::get('/permohonan-informasi/create', [MasyarakatSubmissionController::class, 'create'])->name('submissions.create');
     Route::post('/permohonan-informasi', [MasyarakatSubmissionController::class, 'store'])->name('submissions.store');
     Route::get('/permohonan-informasi/{submission}', [MasyarakatSubmissionController::class, 'show'])->name('submissions.show');
+    Route::get('/permohonan-informasi/{submission}/pdf', [SubmissionPdfController::class, 'download'])->name('submissions.download');
+    Route::get('/permohonan-informasi/document/{document}/view', [MasyarakatSubmissionController::class, 'viewDocument'])->name('submissions.view');
+    Route::get('/permohonan-informasi/document/{document}/download', [MasyarakatSubmissionController::class, 'downloadDocument'])->name('submissions.document.download');
+
+    // KONSULTASI (CONSULTATIONS)
+    Route::prefix('konsultasi')->name('consultations.')->group(function () {
+        Route::get('/', [MasyarakatConsultationController::class, 'index'])->name('index');
+        Route::get('/create', [MasyarakatConsultationController::class, 'create'])->name('create');
+        Route::post('/store', [MasyarakatConsultationController::class, 'store'])->name('store');
+        Route::get('/{consultation}', [MasyarakatConsultationController::class, 'show'])->name('show');
+        Route::get('/{consultation}/download', [MasyarakatConsultationPdfController::class, 'download'])->name('download');
+        Route::get('/document/{document}/download', [MasyarakatConsultationController::class, 'downloadDocument'])->name('document.download');
+    });
+    
+    // PENGADUAN
+    Route::get('/pengaduan', [MasyarakatComplaintController::class, 'index'])->name('complaints.index');
+    Route::get('/pengaduan/create', [MasyarakatComplaintController::class, 'create'])->name('complaints.create');
+    Route::post('/pengaduan', [MasyarakatComplaintController::class, 'store'])->name('complaints.store');
+    Route::get('/pengaduan/{complaint}', [MasyarakatComplaintController::class, 'show'])->name('complaints.show');
+    Route::get('/pengaduan/{complaint}/pdf', [MasyarakatComplaintPdfController::class, 'download'])->name('complaints.download');
+    Route::get('/pengaduan/document/{document}', [MasyarakatComplaintController::class, 'viewDocument'])->name('complaints.documents.view');
+    Route::get('/pengaduan/document/{document}/download', [MasyarakatComplaintController::class, 'downloadDocument'])->name('complaints.document.download');
 });
 
 // Admin Routes (Role: admin)

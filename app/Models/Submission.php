@@ -31,7 +31,7 @@ class Submission extends Model
     ];
 
     /**
-     * Mapping Bidang/Balai to Code
+     * Mapping Bidang/Balai to Code (untuk PEGAWAI)
      */
     private static $bidangCodes = [
         'Sekretariat' => '01',
@@ -48,7 +48,7 @@ class Submission extends Model
     ];
 
     /**
-     * Mapping Jabatan to Code
+     * Mapping Jabatan to Code (untuk PEGAWAI)
      */
     private static $jabatanCodes = [
         // Sekretariat (01)
@@ -145,71 +145,87 @@ class Submission extends Model
         static::creating(function ($submission) {
             $user = $submission->user;
             
-            // Generate ticket_id dengan format lengkap
-            $submission->ticket_id = self::generateTicketId($user);
+            // Generate ticket_id berdasarkan user_type
+            if ($user->user_type === 'pegawai') {
+                $submission->ticket_id = self::generateTicketIdPegawai($user);
+            } else {
+                // masyarakat_umum
+                $submission->ticket_id = self::generateTicketIdMasyarakat($user);
+            }
         });
     }
 
     /**
-     * Generate ticket ID dengan format: PI.01.106.12012026_010
+     * Generate ticket ID untuk PEGAWAI
      * Format: PI.XX.YYY.DDMMYYYY_NNN
-     * - PI: Permohonan Informasi
-     * - XX: Kode Bidang/Balai
-     * - YYY: Kode Sub Bagian/Jabatan
-     * - DDMMYYYY: Tanggal pengajuan
-     * - NNN: Nomor urut bulan ini
+     * Contoh: PI.01.106.12012026_010
      */
-    private static function generateTicketId($user)
+    private static function generateTicketIdPegawai($user)
     {
-        $prefix = 'PI'; // Permohonan Informasi
+        $prefix = 'PI'; 
         
-        // Get bidang code
         $bidangCode = self::$bidangCodes[$user->bidang] ?? '00';
         
-        // Get jabatan code (with context-aware handling)
         $jabatanCode = self::getJabatanCode($user->bidang, $user->jabatan);
         
-        // Get date in format: ddmmyyyy
         $date = date('dmY'); 
         
-        // Get sequence number for this month
         $sequence = self::getMonthlySequence();
         
         return "{$prefix}.{$bidangCode}.{$jabatanCode}.{$date}_{$sequence}";
     }
 
     /**
-     * Get jabatan code with bidang context
+     * Generate ticket ID untuk MASYARAKAT
+     * Format: PI.XXXXXX.DDMMYYYY_NNN
+     * XXXXXX = 6 digit terakhir NIK (digit ke-11 sampai ke-16)
+     * Contoh: PI.614725.30012026_020
+     */
+    private static function generateTicketIdMasyarakat($user)
+    {
+        $prefix = 'PI';
+        
+        // Ambil 6 digit terakhir NIK (digit ke-11 sampai ke-16)
+        // NIK format: 16 digit
+        // Digit ke-11 sampai ke-16 = substr(10, 6)
+        $nik = $user->nik ?? '000000000000000000'; 
+        $nikCode = substr($nik, 10, 6); 
+        
+        $date = date('dmY');
+        
+        $sequence = self::getMonthlySequence();
+        
+        return "{$prefix}.{$nikCode}.{$date}_{$sequence}";
+    }
+
+    /**
+     * Get jabatan code with bidang context (untuk PEGAWAI)
      */
     private static function getJabatanCode($bidang, $jabatan)
     {
-        // Special handling for duplicate jabatan names across different balai
         if ($jabatan === 'Kepala Sub Bagian Tata Usaha') {
             $bidangCode = self::$bidangCodes[$bidang] ?? '00';
-            return $bidangCode . '01'; // 701, 801, 901, 1001, 1101
+            return $bidangCode . '01'; 
         }
         
         if ($jabatan === 'Sub Bagian Tata Usaha') {
             $bidangCode = self::$bidangCodes[$bidang] ?? '00';
-            return $bidangCode . '04'; // 704, 804, 904, 1004, 1104
+            return $bidangCode . '04'; 
         }
         
-        // Normal lookup
         return self::$jabatanCodes[$jabatan] ?? '000';
     }
 
     /**
      * Get monthly sequence number
-     * Returns format: 001, 002, 010, etc.
+     * Returns format: 001, 002, 010, 020, etc.
      */
     private static function getMonthlySequence()
     {
-        // Count submissions in current month
         $count = self::whereYear('created_at', date('Y'))
             ->whereMonth('created_at', date('m'))
             ->count();
         
-        // Increment by 1
         $sequence = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
         
         return $sequence;
@@ -251,22 +267,18 @@ class Submission extends Model
     {
         $status = strtolower($this->status);
 
-        // SELESAI = HIJAU
         if (in_array($status, ['completed', 'selesai'])) {
             return 'bg-green-100 text-green-800';
         }
 
-        // DIPROSES = BIRU
         if (in_array($status, ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])) {
             return 'bg-blue-100 text-blue-800';
         }
 
-        // MENUNGGU PROSES = KUNING
         if (in_array($status, ['pending', 'belum diproses'])) {
             return 'bg-yellow-100 text-yellow-800';
         }
 
-        // DITOLAK = MERAH
         if (in_array($status, ['rejected', 'ditolak'])) {
             return 'bg-red-100 text-red-800';
         }
