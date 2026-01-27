@@ -114,7 +114,7 @@
                                     class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-600">
                                     <option value="Semua">Semua</option>
                                     <option value="pegawai" {{ request('type') == 'pegawai' ? 'selected' : '' }}>Pegawai</option>
-                                    <option value="masyarakat" {{ request('type') == 'masyarakat' ? 'selected' : '' }}>Masyarakat</option>
+                                    <option value="masyarakat_umum" {{ request('type') == 'masyarakat_umum' ? 'selected' : '' }}>Masyarakat Umum</option>
                                 </select>
                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +229,11 @@
                             </td>
 
                             <td class="px-4 py-4 text-sm text-gray-600 whitespace-nowrap text-center">
-                                {{ ucfirst($item->user->user_type ?? 'Masyarakat') }}
+                                {{ match(optional($item->user)->user_type) {
+                                    'masyarakat_umum' => 'Masyarakat Umum',
+                                    'pegawai'         => 'Pegawai',
+                                    default           => '-',
+                                } }}
                             </td>
 
                             <td class="px-4 py-4 text-sm text-gray-600">

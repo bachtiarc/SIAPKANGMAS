@@ -7,7 +7,6 @@
 <style>
     html { scroll-behavior: smooth; }
 
-    /* --- Gen-Z smooth system --- */
     :root{
         --ease-out: cubic-bezier(.16, 1, .3, 1);
         --ease-spring: cubic-bezier(.2, .9, .2, 1.1);
@@ -15,9 +14,8 @@
         --dur-2: .35s;
         --dur-3: .7s;
 
-        /* Keep your colors (blue + orange) */
-        --blue: 37 99 235;   /* ~blue-600 */
-        --orange: 249 115 22; /* ~orange-500 */
+        --blue: 37 99 235;   
+        --orange: 249 115 22; 
     }
 
     body{
@@ -26,7 +24,6 @@
         -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Subtle noise overlay (premium feel) */
     .soft-noise { position: relative; }
     .soft-noise::after{
         content:"";
@@ -39,7 +36,6 @@
         border-radius: inherit;
     }
 
-    /* Make sections feel connected */
     .section-glow{
         position: relative;
         overflow: hidden;
@@ -59,7 +55,6 @@
     }
     .section-inner{ position: relative; z-index:1; }
 
-    /* Wave smoother */
     .wave{
         position:absolute;
         left:0; right:0;
@@ -69,7 +64,6 @@
     }
     .wave svg{ width:100%; height:100%; display:block; }
 
-    /* Reveal */
     .reveal{
         opacity:0;
         transform: translateY(18px) scale(.995);
@@ -86,7 +80,6 @@
         filter: blur(0);
     }
 
-    /* Hover premium */
     .premium-hover{
         transition:
             transform var(--dur-2) var(--ease-out),
@@ -102,7 +95,6 @@
     }
     .premium-hover:active{ transform: translateY(0); }
 
-    /* Button micro interaction */
     .btn-breathe{
         transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out), filter var(--dur-2) var(--ease-out);
         will-change: transform;
@@ -110,7 +102,6 @@
     .btn-breathe:hover{ transform: translateY(-1px); }
     .btn-breathe:active{ transform: translateY(0); }
 
-    /* Focus ring consistent */
     .focus-ring:focus{
         outline:none !important;
         box-shadow: 0 0 0 4px rgba(var(--blue), .18);
@@ -121,7 +112,6 @@
     }
     textarea{ resize: vertical; }
 
-    /* Modal fade container */
     #quickTrackModal{
         opacity:0;
         pointer-events:none;
@@ -137,7 +127,6 @@
     }
     #quickTrackModal.is-open #quickTrackBackdrop{ opacity:1; }
 
-    /* Dialog animation */
     .modal-enter{ opacity:0; transform: translateY(10px) scale(.98); filter: blur(6px); }
     .modal-enter-active{
         opacity:1; transform: translateY(0) scale(1); filter: blur(0);
@@ -149,7 +138,6 @@
         transition: all .24s var(--ease-out);
     }
 
-    /* Reduced motion */
     @media (prefers-reduced-motion: reduce){
         html{ scroll-behavior:auto; }
         .reveal, .premium-hover, .btn-breathe,
@@ -654,7 +642,6 @@
 </div>
 
 <script>
-    // Modal Quick Track (buttery smooth + fade container)
     const modal = document.getElementById('quickTrackModal');
     const backdrop = document.getElementById('quickTrackBackdrop');
     const openBtn = document.getElementById('openQuickTrack');
@@ -714,22 +701,17 @@
         openQuickTrackModal();
     @endif
 
-    // -------- UI polish without changing content ----------
-    // Consistent focus ring for all inputs/textarea/select
     document.querySelectorAll('input, textarea, select').forEach(el => {
         el.classList.add('focus-ring');
     });
 
-    // Ensure "premium-hover" is applied to main cards/surfaces if missed
     const surfaces = document.querySelectorAll('.shadow-md, .shadow-xl, .shadow-2xl');
     surfaces.forEach(el => {
         if (!el.classList.contains('premium-hover')) el.classList.add('premium-hover');
     });
 
-    // -------- Reveal on scroll (stagger + smoother) ----------
     const revealEls = Array.from(document.querySelectorAll('.reveal'));
 
-    // stagger delay by visual order, capped
     revealEls.forEach((el, i) => {
         el.style.transitionDelay = `${Math.min(i * 60, 360)}ms`;
     });
@@ -745,7 +727,6 @@
 
     revealEls.forEach(el => io.observe(el));
 
-    // Auto-hide success alert (gentle)
     const successAlert = document.querySelector('[data-success-alert]');
     if (successAlert) {
         setTimeout(() => {

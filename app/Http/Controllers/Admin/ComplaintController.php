@@ -27,12 +27,21 @@ class ComplaintController extends Controller
 
         $query = Complaint::with(['user', 'category']);
 
-        if ($request->filled('start_date')) {
-            $query->whereDate('created_at', '>=', $request->start_date);
+        // ================= FILTER TANGGAL =================
+        $hasStart = $request->filled('start_date');
+        $hasEnd   = $request->filled('end_date');
+
+        if ($hasStart && $hasEnd) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date   . ' 23:59:59',
+            ]);
+        } elseif ($hasStart) {
+            $query->whereDate('created_at', $request->start_date);
+        } elseif ($hasEnd) {
+            $query->whereDate('created_at', $request->end_date);
         }
-        if ($request->filled('end_date')) {
-            $query->whereDate('created_at', '<=', $request->end_date);
-        }
+        // ==================================================
 
         if ($request->filled('type') && $request->type !== 'Semua') {
             $query->whereHas('user', function ($q) use ($request) {

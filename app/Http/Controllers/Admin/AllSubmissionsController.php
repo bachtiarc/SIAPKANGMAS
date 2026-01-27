@@ -39,16 +39,36 @@ class AllSubmissionsController extends Controller
         $qComplaint    = Complaint::with(['user', 'category']);
         $qSubmission   = Submission::with(['user', 'category']);
 
-        if ($request->filled('start_date')) {
-            $qConsultation->whereDate('created_at', '>=', $request->start_date);
-            $qComplaint->whereDate('created_at', '>=', $request->start_date);
-            $qSubmission->whereDate('created_at', '>=', $request->start_date);
+        // ================= FILTER TANGGAL =================
+        $hasStart = $request->filled('start_date');
+        $hasEnd   = $request->filled('end_date');
+
+        if ($hasStart && $hasEnd) {
+            // rentang tanggal
+            $qConsultation->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date   . ' 23:59:59',
+            ]);
+            $qComplaint->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date   . ' 23:59:59',
+            ]);
+            $qSubmission->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date   . ' 23:59:59',
+            ]);
+        } elseif ($hasStart) {
+            // hanya tanggal mulai → 1 hari itu saja
+            $qConsultation->whereDate('created_at', $request->start_date);
+            $qComplaint->whereDate('created_at', $request->start_date);
+            $qSubmission->whereDate('created_at', $request->start_date);
+        } elseif ($hasEnd) {
+            // hanya tanggal akhir → 1 hari itu saja
+            $qConsultation->whereDate('created_at', $request->end_date);
+            $qComplaint->whereDate('created_at', $request->end_date);
+            $qSubmission->whereDate('created_at', $request->end_date);
         }
-        if ($request->filled('end_date')) {
-            $qConsultation->whereDate('created_at', '<=', $request->end_date);
-            $qComplaint->whereDate('created_at', '<=', $request->end_date);
-            $qSubmission->whereDate('created_at', '<=', $request->end_date);
-        }
+        // ==================================================
 
         if ($request->filled('type') && $request->type !== 'Semua') {
             $qConsultation->whereHas('user', fn($q) => $q->where('user_type', $request->type));
