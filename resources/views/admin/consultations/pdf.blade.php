@@ -134,15 +134,23 @@
             page-break-before: always;
         }
 
+        .ktp-wrap {
+            margin-top: 10px;
+            border: 1px solid #000;
+            padding: 10px;
+        }
+
+        .ktp-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
         .footer {
-            position: fixed;
-            left: 40px;
-            right: 40px;
-            bottom: 20px; 
+            margin-top: 50px;
             text-align: center;
             font-size: 11pt;
             border-top: 2px solid #000;
-            padding-top: 10px;
+            padding-top: 20px;
         }
 
         .footer p { margin-bottom: 5px; }
@@ -160,6 +168,20 @@
         'ditolak'      => 'Ditolak',
         default        => ucfirst($consultation->status),
     };
+
+    $user = $consultation->user;
+    $userType = $user->user_type ?? null;
+
+    // masyarakat
+    $nik = $user->nik ?? null;
+    $alamat = $user->address ?? null;
+
+    // pegawai
+    $nip = $user->nip ?? null;
+    $jabatan = $user->jabatan ?? null;
+    $subbagBalai = $user->bidang ?? null;
+
+    $ktpPublicUrl = $ktpPublicUrl ?? null;
 @endphp
 
 <!-- Header -->
@@ -184,46 +206,99 @@
 
 <!-- Section A: Identitas Pemohon -->
 <div class="section">
-    <div class="section-title">A. Identitas Pemohon Konsultasi</div>
+    <div class="section-title">A. Identitas Pemohon Permohonan</div>
 
     <table class="info-table">
         <tr>
+            <td>Jenis Pelapor</td>
+            <td>:</td>
+            <td>{{ $userType ? ucwords(str_replace('_', ' ', $userType)) : '-' }}</td>
+        </tr>
+
+        <tr class="divider">
             <td>Nama</td>
             <td>:</td>
-            <td>{{ $consultation->user->name ?? '-' }}</td>
+            <td>{{ $user->name ?? '-' }}</td>
         </tr>
         <tr class="divider">
             <td>Email</td>
             <td>:</td>
-            <td>{{ $consultation->user->email ?? '-' }}</td>
+            <td>{{ $user->email ?? '-' }}</td>
         </tr>
         <tr class="divider">
             <td>Telepon</td>
             <td>:</td>
-            <td>{{ $consultation->user->phone ?? '-' }}</td>
+            <td>{{ $user->phone ?? '-' }}</td>
         </tr>
-        <tr class="divider">
-            <td>Tanggal Pengajuan</td>
-            <td>:</td>
-            <td>{{ $consultation->created_at->format('d F Y') }}</td>
-        </tr>
-        <tr class="divider">
-            <td>Status</td>
-            <td>:</td>
-            <td><span class="status-text">{{ $statusLabel }}</span></td>
-        </tr>
+
+        {{-- ===== MASYARAKAT UMUM ===== --}}
+        @if($userType === 'masyarakat_umum')
+            <tr class="divider">
+                <td>NIK</td>
+                <td>:</td>
+                <td>{{ $nik ?? '-' }}</td>
+            </tr>
+            <tr class="divider">
+                <td>Alamat</td>
+                <td>:</td>
+                <td style="white-space: pre-line;">{{ $alamat ?: '-' }}</td>
+            </tr>
+        @endif
+
+        {{-- ===== PEGAWAI ===== --}}
+        @if($userType === 'pegawai')
+            <tr class="divider">
+                <td>NIP</td>
+                <td>:</td>
+                <td>{{ $nip ?? '-' }}</td>
+            </tr>
+            <tr class="divider">
+                <td>Jabatan</td>
+                <td>:</td>
+                <td>{{ $jabatan ?? '-' }}</td>
+            </tr>
+            <tr class="divider">
+                <td>Subbag / Balai</td>
+                <td>:</td>
+                <td>{{ $subbagBalai ?? '-' }}</td>
+            </tr>
+        @endif
     </table>
+
+    {{-- FOTO KTP hanya untuk masyarakat_umum --}}
+    @if($userType === 'masyarakat_umum')
+        <div class="ktp-wrap">
+            <div class="ktp-title">Foto KTP</div>
+            tidak disertakan dalam berkas PDF ini, dapat
+            <strong>diunduh secara terpisah</strong> melalui sistem aplikasi SIAPKANGMAS.
+        </div>
+    @endif
 </div>
 
-<!-- Section B: Rincian Konsultasi -->
+<!-- Section B: Rincian Permohonan -->
 <div class="section">
-    <div class="section-title">B. Rincian Konsultasi</div>
+    <div class="section-title">B. Rincian Formulir Permohonan</div>
 
     <table class="info-table">
         <tr>
             <td>Judul</td>
             <td>:</td>
             <td>{{ $consultation->title ?? '-' }}</td>
+        </tr>
+        <tr class="divider">
+            <td>Kategori</td>
+            <td>:</td>
+            <td>{{ $consultation->category->name ?? '-' }}</td>
+        </tr>
+        <tr class="divider">
+            <td>Tanggal Pengajuan</td>
+            <td>:</td>
+            <td>{{ $consultation->created_at->format('d F Y, H:i') }} WIB</td>
+        </tr>
+        <tr class="divider">
+            <td>Status</td>
+            <td>:</td>
+            <td><span class="status-text">{{ $statusLabel }}</span></td>
         </tr>
     </table>
 
@@ -232,7 +307,7 @@
 </div>
 
 <!-- Section C: Riwayat Status -->
-<div class="section page-break">
+<div class="section">
     <div class="section-title">C. Riwayat Status</div>
 
     <table class="history-table">

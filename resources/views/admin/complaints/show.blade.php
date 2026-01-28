@@ -225,10 +225,27 @@
                                 <p class="text-xs text-gray-500 mb-2">Foto KTP</p>
 
                                 @if($ktpPublicUrl)
-                                    <a href="{{ $ktpPublicUrl }}" target="_blank" rel="noopener" class="block w-full max-w-md">
-                                        <img src="{{ $ktpPublicUrl }}" alt="Foto KTP"
-                                            class="w-full rounded-xl border border-gray-200 shadow-sm hover:opacity-95 transition">
-                                    </a>
+                                    <div class="flex flex-col gap-3 max-w-md">
+                                        {{-- Preview klik untuk lihat --}}
+                                        <a href="{{ $ktpPublicUrl }}" target="_blank" rel="noopener" class="block">
+                                            <img src="{{ $ktpPublicUrl }}" alt="Foto KTP"
+                                                class="w-full rounded-xl border border-gray-200 shadow-sm hover:opacity-95 transition">
+                                        </a>
+
+                                        <div class="flex gap-2">
+                                            <a href="{{ $ktpPublicUrl }}"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
+                                                Lihat
+                                            </a>
+
+                                            <a href="{{ route('admin.complaints.ktp.download', $complaint->id) }}"
+                                            class="px-4 py-2 bg-gray-800 text-white text-sm font-semibold rounded-lg hover:bg-gray-900 transition">
+                                                Unduh
+                                            </a>
+                                        </div>
+                                    </div>
                                 @else
                                     <p class="text-sm text-gray-500 italic">Foto KTP belum tersedia.</p>
                                 @endif
