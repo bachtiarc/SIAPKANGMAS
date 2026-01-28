@@ -196,4 +196,57 @@ class ComplaintController extends Controller
         $filename = 'Pengaduan-' . ($complaint->ticket_number ?? $complaint->id) . '.pdf';
         return $pdf->download($filename);
     }
+
+    public function downloadKtp($id)
+    {
+        $complaint = Complaint::with('user')->findOrFail($id);
+
+        $user = $complaint->user;
+        if (!$user || ($user->user_type ?? null) !== 'masyarakat_umum') {
+            abort(404);
+        }
+
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
+
+        $ktpRaw = $user->foto_ktp ?? null;
+        if (!$ktpRaw || !$supabaseUrl) {
+            abort(404);
+        }
+
+        $ktpRaw = ltrim($ktpRaw, '/');
+
+        // full URL
+        if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
+            $fileUrl = $ktpRaw;
+        } else {
+            // kalau masih nyimpen "ktp-photos/<path>"
+            if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
+                $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
+            }
+            $fileUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
+        }
+
+        // ambil konten file (stream)
+        $res = Http::get($fileUrl);
+        if (!$res->successful()) {
+            abort(404);
+        }
+
+        $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
+
+        // tentukan ekstensi dari content-type / url
+        $ext = match (true) {
+            str_contains($contentType, 'png') => 'png',
+            str_contains($contentType, 'jpeg'), str_contains($contentType, 'jpg') => 'jpg',
+            default => pathinfo(parse_url($fileUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION) ?: 'jpg',
+        };
+
+        $filename = 'KTP-' . ($user->nik ?? $user->id) . '.' . $ext;
+
+        return response($res->body(), 200, [
+            'Content-Type' => $contentType,
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
 }

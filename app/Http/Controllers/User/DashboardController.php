@@ -156,11 +156,13 @@ class DashboardController extends Controller
             });
 
         // Gabungkan dan sort by date
-        $recentActivities = $submissions->merge($consultations)
-                                       ->merge($complaints)
-                                       ->sortByDesc('created_at')
-                                       ->take(10)
-                                       ->values();
+        $recentActivities = collect()
+            ->concat(collect($submissions))
+            ->concat(collect($consultations))
+            ->concat(collect($complaints))
+            ->sortByDesc(fn ($item) => data_get($item, 'created_at'))
+            ->take(10)
+            ->values();
 
         return view('user.dashboard', compact(
             'totalSubmissions',

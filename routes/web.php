@@ -230,6 +230,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     Route::get('/manajemen-pengajuan/pengaduan/{id}/pdf', [AdminComplaintController::class, 'downloadPdf'])
         ->name('complaints.pdf');
+    
+    Route::get('/manajemen-pengajuan/pengaduan/{id}/ktp/download', [AdminComplaintController::class, 'downloadKtp'])
+        ->name('complaints.ktp.download');
 
     // Manajemen Kategori
     Route::get('/manajemen-kategori', [AdminCategoryController::class, 'index'])

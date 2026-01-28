@@ -64,10 +64,6 @@
             letter-spacing: 1px;
         }
 
-        .ticket-box .full-ticket {
-            font-size: 10pt;
-        }
-
         .section { margin-bottom: 30px; }
 
         .section-title {
@@ -134,6 +130,24 @@
             text-transform: uppercase;
         }
 
+        .ktp-wrap {
+            margin-top: 10px;
+            border: 1px solid #000;
+            padding: 10px;
+        }
+
+        .ktp-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .ktp-img {
+            width: 100%;
+            max-width: 420px;
+            height: auto;
+            border: 1px solid #ccc;
+        }
+
         .footer {
             margin-top: 50px;
             text-align: center;
@@ -158,6 +172,26 @@
         'ditolak'  => 'Ditolak',
         default    => ucfirst($complaint->status)
     };
+
+    $user = $complaint->user;
+    $userType = $user->user_type ?? null;
+
+    // fields masyarakat
+    $nik = $user->nik ?? null;
+    $alamat = $user->address ?? null;
+
+    // fields pegawai
+    $nip = $user->nip ?? null;
+    $jabatan = $user->jabatan ?? null;
+    // di DB kamu: $user->bidang (di UI kamu ditulis Bidang/Balai)
+    $subbagBalai = $user->bidang ?? null;
+
+    /**
+     * FOTO KTP URL
+     * - Kalau di controller/view show kamu sudah ada $ktpPublicUrl, pakai itu.
+     * - Kalau belum ada, kamu bisa isi sendiri sesuai storage kamu.
+     */
+    $ktpPublicUrl = $ktpPublicUrl ?? null;
 @endphp
 
 <!-- Header -->
@@ -170,7 +204,7 @@
 <!-- Note -->
 <div class="note">
     <strong>Catatan:</strong>
-    Lampiran dokumen pendukung <u>tidak disertakan dalam berkas PDF ini</u> dan
+    Dokumen pendukung selain identitas (mis. lampiran pengaduan) <u>tidak disertakan dalam berkas PDF ini</u> dan
     <strong>diunduh secara terpisah</strong> melalui sistem aplikasi SIAPKANGMAS.
 </div>
 
@@ -186,20 +220,60 @@
 
     <table class="info-table">
         <tr>
+            <td>Jenis Pelapor</td>
+            <td>:</td>
+            <td>{{ $userType ? ucwords(str_replace('_', ' ', $userType)) : '-' }}</td>
+        </tr>
+
+        <tr class="divider">
             <td>Nama</td>
             <td>:</td>
-            <td>{{ $complaint->user->name ?? '-' }}</td>
+            <td>{{ $user->name ?? '-' }}</td>
         </tr>
         <tr class="divider">
             <td>Email</td>
             <td>:</td>
-            <td>{{ $complaint->user->email ?? '-' }}</td>
+            <td>{{ $user->email ?? '-' }}</td>
         </tr>
         <tr class="divider">
             <td>Telepon</td>
             <td>:</td>
-            <td>{{ $complaint->user->phone ?? '-' }}</td>
+            <td>{{ $user->phone ?? '-' }}</td>
         </tr>
+
+        {{-- ===== MASYARAKAT UMUM ===== --}}
+        @if($userType === 'masyarakat_umum')
+            <tr class="divider">
+                <td>NIK</td>
+                <td>:</td>
+                <td>{{ $nik ?? '-' }}</td>
+            </tr>
+            <tr class="divider">
+                <td>Alamat</td>
+                <td>:</td>
+                <td style="white-space: pre-line;">{{ $alamat ?: '-' }}</td>
+            </tr>
+        @endif
+
+        {{-- ===== PEGAWAI ===== --}}
+        @if($userType === 'pegawai')
+            <tr class="divider">
+                <td>NIP</td>
+                <td>:</td>
+                <td>{{ $nip ?? '-' }}</td>
+            </tr>
+            <tr class="divider">
+                <td>Jabatan</td>
+                <td>:</td>
+                <td>{{ $jabatan ?? '-' }}</td>
+            </tr>
+            <tr class="divider">
+                <td>Subbag / Balai</td>
+                <td>:</td>
+                <td>{{ $subbagBalai ?? '-' }}</td>
+            </tr>
+        @endif
+
         <tr class="divider">
             <td>Tanggal Pengajuan</td>
             <td>:</td>
@@ -211,6 +285,15 @@
             <td><span class="status-text">{{ $statusLabel }}</span></td>
         </tr>
     </table>
+
+    {{-- FOTO KTP hanya untuk masyarakat_umum --}}
+    @if($userType === 'masyarakat_umum')
+        <div class="ktp-wrap">
+            <div class="ktp-title">Foto KTP</div>
+                tidak disertakan dalam berkas PDF ini, dapat 
+                <strong>diunduh secara terpisah</strong> melalui sistem aplikasi SIAPKANGMAS.
+        </div>
+    @endif
 </div>
 
 <!-- Section B: Rincian Pengaduan -->
