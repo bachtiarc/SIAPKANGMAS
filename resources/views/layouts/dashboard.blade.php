@@ -175,6 +175,21 @@
                         <span class="sidebar-text ml-4 whitespace-nowrap font-semibold">Buat Pengaduan</span>
                     </a>
 
+                    {{-- Profil Pengguna (Dinamis untuk Pegawai & Masyarakat) --}}
+                    <a href="{{ route($profileRoute) }}"
+                    class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all
+                    {{ request()->routeIs('user.profile') || request()->routeIs('masyarakat.profile')
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'text-gray-600 hover:bg-gray-100' }}"
+                    title="Profil Pengguna">
+                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <span class="sidebar-text ml-4 whitespace-nowrap font-semibold">Profil Pengguna</span>
+                    </a>
+
+
                     {{-- Riwayat Pengajuan (Dinamis untuk Pegawai & Masyarakat) --}}
                     @php
                         $historyRoute = $isPegawai ? 'user.history.index' : 'masyarakat.history.index';
