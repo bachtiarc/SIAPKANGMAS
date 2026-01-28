@@ -146,14 +146,11 @@
         }
 
         .footer {
-            position: fixed;
-            left: 40px;
-            right: 40px;
-            bottom: 20px;
+            margin-top: 50px;
             text-align: center;
             font-size: 11pt;
             border-top: 2px solid #000;
-            padding-top: 10px;
+            padding-top: 20px;
         }
 
         .footer p { margin-bottom: 5px; }
