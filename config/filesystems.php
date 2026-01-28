@@ -96,6 +96,18 @@ return [
             'throw' => true,
         ],
 
+        // SUPABASE STORAGE DISK (untuk ktp-photos)
+        'supabase_ktp' => [
+            'driver' => 's3',
+            'key' => env('SUPABASE_ACCESS_KEY_ID'),
+            'secret' => env('SUPABASE_SECRET_ACCESS_KEY'),
+            'region' => env('SUPABASE_DEFAULT_REGION', 'ap-southeast-1'),
+            'bucket' => env('SUPABASE_KTP_BUCKET', 'ktp-photos'),
+            'endpoint' => env('SUPABASE_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw' => true,
+        ],
+
     ],
 
     /*
