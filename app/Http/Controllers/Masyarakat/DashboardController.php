@@ -158,10 +158,11 @@ class DashboardController extends Controller
                 ->get()
                 ->map(function($item) {
                     return [
-                        'id' => $item->ticket_id ?? 'N/A', // Nama key diubah ke 'id' sesuai Blade table
-                        'title' => 'Permohonan Informasi', // Nama key diubah ke 'title' sesuai Blade table
+                        'id' => $item->ticket_id ?? 'N/A',
+                        'title' => 'Permohonan Informasi',
                         'status' => $item->status,
-                        'date' => $item->created_at->format('d M Y'), // Format tanggal
+                        'date' => $item->created_at->format('d M Y'),
+                        'url' => route('masyarakat.submissions.show', ['submission' => $item->id, 'from' => 'dashboard']), 
                     ];
                 });
             $activities = $activities->merge($submissions);
@@ -175,10 +176,11 @@ class DashboardController extends Controller
                 ->get()
                 ->map(function($item) {
                     return [
-                        'id' => $item->ticket_id ?? 'N/A',
+                        'id' => $item->ticket_number ?? 'N/A',
                         'title' => 'Konsultasi',
                         'status' => $item->status,
                         'date' => $item->created_at->format('d M Y'),
+                        'url' => route('masyarakat.submissions.show', ['submission' => $item->id, 'from' => 'dashboard']), 
                     ];
                 });
             $activities = $activities->merge($consultations);
@@ -192,10 +194,11 @@ class DashboardController extends Controller
                 ->get()
                 ->map(function($item) {
                     return [
-                        'id' => $item->ticket_id ?? 'N/A',
+                        'id' => $item->ticket_number ?? 'N/A',
                         'title' => 'Pengaduan',
                         'status' => $item->status,
                         'date' => $item->created_at->format('d M Y'),
+                        'url' => route('masyarakat.submissions.show', ['submission' => $item->id, 'from' => 'dashboard']), 
                     ];
                 });
             $activities = $activities->merge($complaints);

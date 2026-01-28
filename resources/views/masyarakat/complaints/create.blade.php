@@ -22,8 +22,17 @@
     </div>
 
     <!-- Form -->
-    <form action="{{ route('masyarakat.complaints.store') }}" method="POST" enctype="multipart/form-data" id="complaintForm">
+    @php
+        // Parameter asal halaman untuk tombol "Kembali" dan redirect setelah submit
+        $from = request()->query('from', 'index');
+        $backUrl = $from === 'dashboard' ? route('masyarakat.dashboard') : route('masyarakat.complaints.index');
+        // Sertakan parameter 'from' di action POST agar Controller bisa mempertahankan asal halaman
+        $storeUrl = route('masyarakat.complaints.store', ['from' => $from]);
+    @endphp
+
+    <form action="{{ $storeUrl }}" method="POST" enctype="multipart/form-data" id="complaintForm">
         @csrf
+        <input type="hidden" name="from" value="{{ $from }}">
         
         <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
             <div class="flex items-center mb-6">
@@ -37,25 +46,21 @@
 
                 <!-- Judul Pengaduan -->
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Judul Pengaduan <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="subject" value="{{ old('subject') }}" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                        placeholder="Contoh: Pelayanan Pengajuan Surat Tidak Responsif">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Judul/Subjek Pengaduan <span class="text-red-500">*</span></label>
+                    <input type="text" name="subject" value="{{ old('subject') }}" 
+                        class="w-full px-4 py-3 border @error('subject') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                        placeholder="Masukkan judul pengaduan Anda">
                     @error('subject')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Kategori Pengaduan -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Kategori Pengaduan <span class="text-red-500">*</span>
-                    </label>
-                    <select name="category_id" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Pilih Kategori Pengaduan</option>
+                <!-- Kategori -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Kategori Pengaduan <span class="text-red-500">*</span></label>
+                    <select name="category_id" 
+                        class="w-full px-4 py-3 border @error('category_id') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                        <option value="">Pilih kategori</option>
                         @foreach($categories as $category)
                             <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
                                 {{ $category->name }}
@@ -63,110 +68,102 @@
                         @endforeach
                     </select>
                     @error('category_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
-                
-                <!-- Deskripsi Lengkap -->
+
+                <!-- Lokasi -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Lokasi Kejadian <span class="text-red-500">*</span></label>
+                    <input type="text" name="location" value="{{ old('location') }}" 
+                        class="w-full px-4 py-3 border @error('location') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                        placeholder="Masukkan lokasi kejadian">
+                    @error('location')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Tanggal Kejadian -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Kejadian <span class="text-red-500">*</span></label>
+                    <input type="date" name="incident_date" value="{{ old('incident_date') }}" 
+                        class="w-full px-4 py-3 border @error('incident_date') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    @error('incident_date')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Waktu Kejadian -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Waktu Kejadian (Opsional)</label>
+                    <input type="time" name="incident_time" value="{{ old('incident_time') }}" 
+                        class="w-full px-4 py-3 border @error('incident_time') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    @error('incident_time')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Deskripsi -->
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Deskripsi Lengkap <span class="text-red-500">*</span>
-                    </label>
-                    <textarea name="description" rows="6" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                        placeholder="Jelaskan secara detail permasalahan yang Anda hadapi, kronologi kejadian, dan dampak yang ditimbulkan...">{{ old('description') }}</textarea>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Deskripsi Pengaduan <span class="text-red-500">*</span></label>
+                    <textarea name="description" rows="6"
+                        class="w-full px-4 py-3 border @error('description') border-red-500 @else border-gray-300 @enderror rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"
+                        placeholder="Jelaskan secara detail pengaduan Anda...">{{ old('description') }}</textarea>
                     @error('description')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Dokumen Pendukung (Multiple Upload) -->
+                <!-- Lampiran -->
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Dokumen Pendukung <span class="text-gray-500">(Maksimal 3 file)</span>
-                    </label>
-                    
-                    <!-- Upload Area 1 -->
-                    <div class="space-y-4">
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
-                            onclick="document.getElementById('document1').click()">
-                            <div class="flex items-center space-x-3">
-                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                </svg>
-                                <div class="flex-1">
-                                    <p class="text-sm font-semibold text-gray-700">Dokumen 1 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
-                                    <p id="fileName1" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
-                                </div>
-                                <button type="button" onclick="event.stopPropagation(); clearFile(1)" id="clearBtn1" class="hidden text-red-500 hover:text-red-700">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                            <input id="document1" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
-                                onchange="displayFileName(1, this)">
-                        </div>
-
-                        <!-- Upload Area 2 -->
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
-                            onclick="document.getElementById('document2').click()">
-                            <div class="flex items-center space-x-3">
-                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                </svg>
-                                <div class="flex-1">
-                                    <p class="text-sm font-semibold text-gray-700">Dokumen 2 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
-                                    <p id="fileName2" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
-                                </div>
-                                <button type="button" onclick="event.stopPropagation(); clearFile(2)" id="clearBtn2" class="hidden text-red-500 hover:text-red-700">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                            <input id="document2" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
-                                onchange="displayFileName(2, this)">
-                        </div>
-
-                        <!-- Upload Area 3 -->
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
-                            onclick="document.getElementById('document3').click()">
-                            <div class="flex items-center space-x-3">
-                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                </svg>
-                                <div class="flex-1">
-                                    <p class="text-sm font-semibold text-gray-700">Dokumen 3 <span class="text-gray-400">(Opsional)</span></p>
-                                    <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
-                                    <p id="fileName3" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
-                                </div>
-                                <button type="button" onclick="event.stopPropagation(); clearFile(3)" id="clearBtn3" class="hidden text-red-500 hover:text-red-700">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                            <input id="document3" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
-                                onchange="displayFileName(3, this)">
-                        </div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Lampiran Bukti (Opsional)</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
+                        <input type="file" name="documents[]" id="documents" multiple accept=".pdf,.jpg,.jpeg,.png" class="hidden">
+                        <label for="documents" class="cursor-pointer">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v12a4 4 0 01-4 4H12a4 4 0 01-4-4V20m32-12l-8 8m8-8v12m-8-8h12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p class="mt-1 text-sm text-gray-600">
+                                <span class="font-medium text-blue-600 hover:text-blue-500">
+                                    Klik untuk upload
+                                </span>
+                                atau drag and drop
+                            </p>
+                            <p class="mt-1 text-xs text-gray-500">PDF, PNG, JPG up to 10MB</p>
+                        </label>
                     </div>
-
+                    <div id="fileList" class="mt-3 space-y-2"></div>
                     @error('documents.*')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-semibold text-blue-800">Informasi Penting</h3>
+                    <div class="mt-2 text-sm text-blue-700">
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li>Pastikan informasi yang Anda berikan akurat dan jelas</li>
+                            <li>Lampiran bukti akan membantu proses penanganan pengaduan</li>
+                            <li>Setelah mengirim pengaduan, Anda akan mendapatkan nomor tiket</li>
+                            <li>Simpan nomor tiket Anda untuk melacak status permohonan</li>
+                    </ul>
                 </div>
             </div>
         </div>
 
         <!-- Action Buttons -->
         <div class="flex items-center justify-between">
-            @php
-                $from = request()->query('from', 'index');
-                $backUrl = $from === 'dashboard' ? route('masyarakat.dashboard') : route('masyarakat.complaints.index');
-            @endphp
             <a href="{{ $backUrl }}" 
                 class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
                 Kembali
@@ -232,118 +229,113 @@
 <div id="errorModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100">
-                <svg class="h-10 w-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+                <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </div>
-            <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Formulir Anda Kurang Lengkap</h3>
+            <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Terjadi Kesalahan!</h3>
             <div class="mt-4 px-7 py-3">
-                <p class="text-sm text-gray-600 mb-3">
-                    Mohon lengkapi semua field yang wajib diisi sebelum mengirimkan formulir.
+                <p class="text-sm text-gray-600" id="errorMessage">
+                    Mohon periksa kembali form yang Anda isi.
                 </p>
-                <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded text-left">
-                    <p class="text-xs text-gray-700 font-semibold mb-2">Field yang perlu dilengkapi:</p>
-                    <ul id="errorList" class="text-sm text-red-700 list-disc list-inside space-y-1"></ul>
-                </div>
             </div>
             <div class="items-center px-4 py-3">
                 <button onclick="closeErrorModal()" 
-                    class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
-                    Kembali & Lengkapi
+                    class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none">
+                    Tutup
                 </button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- COPY SUCCESS TOAST -->
+<div id="copyToast" class="hidden fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+    Nomor tiket berhasil disalin!
+</div>
+
 <script>
-// Display file name
-function displayFileName(index, input) {
-    const fileNameDisplay = document.getElementById('fileName' + index);
-    const clearBtn = document.getElementById('clearBtn' + index);
-    
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const fileSize = (file.size / 1024 / 1024).toFixed(2); // Convert to MB
+document.addEventListener('DOMContentLoaded', function() {
+    // File upload preview
+    const fileInput = document.getElementById('documents');
+    const fileList = document.getElementById('fileList');
 
-        if (fileSize > 2) {
-            alert('Ukuran file maksimal 2MB!');
-            input.value = '';
-            fileNameDisplay.classList.add('hidden');
-            clearBtn.classList.add('hidden');
-            return;
-        }
-        
-        fileNameDisplay.textContent = `✓ ${file.name} (${fileSize} MB)`;
-        fileNameDisplay.classList.remove('hidden');
-        clearBtn.classList.remove('hidden');
-    }
-}
-
-// Clear file
-function clearFile(index) {
-    const fileInput = document.getElementById('document' + index);
-    const fileNameDisplay = document.getElementById('fileName' + index);
-    const clearBtn = document.getElementById('clearBtn' + index);
-    
-    fileInput.value = '';
-    fileNameDisplay.classList.add('hidden');
-    clearBtn.classList.add('hidden');
-}
-
-// Show success modal with ticket number
-function showSuccessModal(ticketNumber) {
-    document.getElementById('ticketNumber').textContent = ticketNumber;
-    document.getElementById('successModal').classList.remove('hidden');
-}
-
-// Copy ticket number to clipboard
-function copyTicket() {
-    const ticketNumber = document.getElementById('ticketNumber').textContent;
-    navigator.clipboard.writeText(ticketNumber).then(() => {
-        alert('Nomor tiket berhasil disalin!');
-    });
-}
-
-// Show error modal with error messages
-function showErrorModal(errors) {
-    const errorList = document.getElementById('errorList');
-    errorList.innerHTML = '';
-    
-    if (Array.isArray(errors)) {
-        errors.forEach(error => {
-            const li = document.createElement('li');
-            li.textContent = error;
-            errorList.appendChild(li);
-        });
-    } else if (typeof errors === 'object') {
-        Object.values(errors).forEach(errorArray => {
-            errorArray.forEach(error => {
-                const li = document.createElement('li');
-                li.textContent = error;
-                errorList.appendChild(li);
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            fileList.innerHTML = '';
+            
+            Array.from(this.files).forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+                
+                fileItem.innerHTML = `
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">${file.name}</p>
+                            <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="removeFile(${index})" class="text-red-600 hover:text-red-800">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                `;
+                
+                fileList.appendChild(fileItem);
             });
         });
     }
-    
-    document.getElementById('errorModal').classList.remove('hidden');
+
+    // Show success modal if session has success
+    @if(session('success'))
+        document.getElementById('successModal').classList.remove('hidden');
+        document.getElementById('ticketNumber').textContent = '{{ session('ticket_id') }}';
+    @endif
+
+    // Show error modal if there are validation errors
+    @if($errors->any())
+        document.getElementById('errorModal').classList.remove('hidden');
+    @endif
+});
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// Close error modal
+function removeFile(index) {
+    const fileInput = document.getElementById('documents');
+    const dt = new DataTransfer();
+    
+    Array.from(fileInput.files).forEach((file, i) => {
+        if (i !== index) dt.items.add(file);
+    });
+    
+    fileInput.files = dt.files;
+    fileInput.dispatchEvent(new Event('change'));
+}
+
 function closeErrorModal() {
     document.getElementById('errorModal').classList.add('hidden');
 }
 
-// Check for session success message
-@if(session('success'))
-    showSuccessModal('{{ session('ticket_id') ?? 'N/A' }}');
-@endif
-
-// Check for validation errors
-@if($errors->any())
-    const errors = @json($errors->all());
-    showErrorModal(errors);
-@endif
+function copyTicket() {
+    const ticketNumber = document.getElementById('ticketNumber').textContent;
+    navigator.clipboard.writeText(ticketNumber).then(() => {
+        const toast = document.getElementById('copyToast');
+        toast.classList.remove('hidden');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 2000);
+    });
+}
 </script>
 @endsection

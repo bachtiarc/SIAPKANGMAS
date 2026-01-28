@@ -9,12 +9,16 @@
         <div class="flex items-center space-x-4">
             @php
                 $from = request()->get('from', 'index');
+                
                 if ($from === 'dashboard') {
                     $backUrl = route('masyarakat.dashboard');
+                } elseif ($from === 'history') {
+                    $backUrl = route('masyarakat.history.index');
                 } elseif ($from === 'search') {
                     $searchQuery = request()->get('q', '');
                     $backUrl = route('search.result', ['q' => $searchQuery]);
                 } else {
+                    // Default: back to index
                     $backUrl = route('masyarakat.submissions.index');
                 }
 

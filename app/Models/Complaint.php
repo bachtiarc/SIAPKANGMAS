@@ -170,16 +170,7 @@ class Complaint extends Model
         return strtolower($this->attachment_extension) === 'pdf';
     }
 
-    /**
-     * ========================================
-     * ACCESSOR UNTUK KOMPATIBILITAS PDF VIEW
-     * ========================================
-     * Agar complaint bisa pakai view PDF yang sama dengan submission
-     */
-    
-    /**
-     * Accessor: ticket_id -> ticket_number
-     */
+  
     public function getTicketIdAttribute()
     {
         return $this->ticket_number;

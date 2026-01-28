@@ -126,9 +126,9 @@ class SubmissionController extends Controller
             Log::error($e->getMessage());
         }
 
-        return redirect()->route('masyarakat.submissions.create')
+        return redirect()->route('masyarakat.submissions.create', ['from' => $from])
             ->with('success', true)
-            ->with('ticket_id', $submission->ticket_id)
+            ->with('ticket_id', $submission->ticket_number)
             ->with('submission_id', $submission->id);
     }
 

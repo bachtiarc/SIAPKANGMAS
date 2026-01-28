@@ -188,7 +188,9 @@ class ComplaintController extends Controller
             \Log::error('Failed to send complaint email: ' . $e->getMessage());
         }
 
-        return redirect()->route('user.complaints.create')
+        $from = $request->query('from', 'index');
+
+        return redirect()->route('user.complaints.create', ['from' => $from])
             ->with('success', true)
             ->with('ticket_id', $complaint->ticket_number)
             ->with('complaint_id', $complaint->id);

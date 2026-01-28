@@ -56,14 +56,10 @@ class ComplaintController extends Controller
                 elseif ($statusFilter === 'selesai') {
                     $q->whereIn('status', ['completed', 'selesai']);
                 }
-                // DITOLAK
-                elseif ($statusFilter === 'ditolak') {
-                    $q->whereIn('status', ['rejected', 'ditolak']);
-                }
             });
         }
 
-        $complaints = $query->latest()->paginate(10)->withQueryString();
+        $complaints = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         return view('masyarakat.complaints.index', compact('complaints'));
     }
@@ -95,76 +91,41 @@ class ComplaintController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        
-        $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
+
+        // Validation
+        $request->validate([
             'subject' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'location' => 'required|string|max:255',
+            'incident_date' => 'required|date',
+            'incident_time' => 'nullable',
             'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', // Max 2MB per file
-        ], [
-            'category_id.required' => 'Kategori pengaduan wajib dipilih.',
-            'category_id.exists' => 'Kategori tidak valid.',
-            'subject.required' => 'Subjek pengaduan wajib diisi.',
-            'description.required' => 'Deskripsi lengkap wajib diisi.',
-            'documents.*.mimes' => 'Format dokumen harus PDF, JPG, JPEG, atau PNG.',
-            'documents.*.max' => 'Ukuran setiap dokumen maksimal 2MB.',
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
-        // Validasi total ukuran file maksimal 6MB
-        if ($request->hasFile('documents')) {
-            $totalSize = 0;
-            foreach ($request->file('documents') as $file) {
-                if ($file && $file->isValid()) {
-                    $totalSize += $file->getSize();
-                }
-            }
-            
-            // 6MB = 6291456 bytes
-            if ($totalSize > 6291456) {
-                return back()->withErrors([
-                    'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
-                ])->withInput();
-            }
-        }
-
-        // Generate ticket number dengan format: PD.XXXXXX.DDMMYYYY_***
-        // XXXXXX = 6 digit terakhir NIK
-        $kodeLayanan = "PD"; // Pengaduan
-        $lastSixNik = substr($user->nik, -6); // 6 digit terakhir NIK
-        
-        $tanggal = now()->format('dmY');
-        
-        // Hitung urutan pengaduan hari ini
-        $count = Complaint::whereDate('created_at', now()->toDateString())
-                    ->count() + 1;
-        
-        $urutan = str_pad($count, 3, '0', STR_PAD_LEFT);
-        
-        $ticketNumber = "{$kodeLayanan}.{$lastSixNik}.{$tanggal}_{$urutan}";
+        // Generate unique ticket number
+        $ticketNumber = 'PGD-' . date('Ymd') . '-' . strtoupper(Str::random(6));
 
         // Create complaint
         $complaint = Complaint::create([
             'user_id' => $user->id,
-            'category_id' => $validated['category_id'],
-            'subject' => $validated['subject'],
-            'description' => $validated['description'],
+            'category_id' => $request->category_id,
             'ticket_number' => $ticketNumber,
+            'subject' => $request->subject,
+            'description' => $request->description,
+            'location' => $request->location,
+            'incident_date' => $request->incident_date,
+            'incident_time' => $request->incident_time,
             'status' => 'pending',
         ]);
 
-        // UPLOAD MULTIPLE FILES (Max 3)
+        // Handle documents upload
         if ($request->hasFile('documents')) {
-            $documents = $request->file('documents');
-            
-            // Limit to 3 files
-            $documents = array_slice($documents, 0, 3);
-            
-            foreach ($documents as $document) {
+            foreach ($request->file('documents') as $document) {
                 if ($document->isValid()) {
-                    // Generate unique filename
-                    $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
+                    $filename = time() . '_' . $document->getClientOriginalName();
                     
-                    // Store file in complaints folder
+                    // Store to Supabase
                     $path = Storage::disk('supabase_complaints')
                         ->putFileAs("{$complaint->id}", $document, $filename);
                     
@@ -187,7 +148,10 @@ class ComplaintController extends Controller
             \Log::error('Failed to send complaint email: ' . $e->getMessage());
         }
 
-        return redirect()->route('masyarakat.complaints.create')
+        // Ambil asal halaman dari input (hidden field) atau query string
+        $from = $request->input('from', $request->query('from', 'index'));
+
+        return redirect()->route('masyarakat.complaints.create', ['from' => $from])
             ->with('success', true)
             ->with('ticket_id', $complaint->ticket_number)
             ->with('complaint_id', $complaint->id);
@@ -206,81 +170,136 @@ class ComplaintController extends Controller
         }
 
         // Load relationships including documents
-        $complaint->load(['category', 'handler', 'statusHistories', 'documents']);
+        $complaint->load(['category', 'handler', 'documents']);
 
         return view('masyarakat.complaints.show', compact('complaint'));
     }
 
     /**
-     * View specific document
+     * Show the form for editing the specified complaint
      */
-    public function viewDocument(ComplaintDocument $document)
+    public function edit(Complaint $complaint)
     {
         $user = auth()->user();
-
+        
         // Authorization check
-        if ($document->complaint->user_id !== $user->id) {
+        if ($complaint->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
 
-        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-        $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
-
-        $path = ltrim($document->file_path, '/');
-        if (Str::startsWith($path, 'complaints/')) {
-            $path = Str::after($path, 'complaints/');
+        // Only allow editing if status is pending
+        if (!in_array(strtolower($complaint->status), ['pending', 'belum diproses'])) {
+            return redirect()->route('masyarakat.complaints.show', $complaint->id)
+                ->with('error', 'Pengaduan tidak dapat diedit karena sudah diproses.');
         }
 
-        // normal: bucket/{path}
-        $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
+        $userType = $user->user_type;
+        
+        // Filter kategori berdasarkan user type
+        $categories = Category::active()
+            ->ofType('pengaduan')
+            ->where(function($query) use ($userType) {
+                $query->where('user_type', $userType)
+                    ->orWhere('user_type', 'all');
+            })
+            ->orderBy('name')
+            ->get();
 
-        // legacy fallback: bucket/complaints/{path}
-        $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/complaints/{$path}";
-
-        $res = Http::get($urlNormal);
-        $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
-
-        // tampilkan di browser (tanpa download)
-        return redirect()->away($finalUrl);
+        return view('masyarakat.complaints.edit', compact('complaint', 'categories'));
     }
 
     /**
-     * Download complaint document
+     * Update the specified complaint in storage
      */
-    public function downloadDocument(ComplaintDocument $document)
+    public function update(Request $request, Complaint $complaint)
     {
         $user = auth()->user();
         
-        if ($document->complaint->user_id !== $user->id) {
+        // Authorization check
+        if ($complaint->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
-        
-        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-        $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
-        $filePath = ltrim($document->file_path, '/');
-        
-        if (Str::startsWith($filePath, 'complaints/')) {
-            $filePath = Str::after($filePath, 'complaints/');
+
+        // Only allow updating if status is pending
+        if (!in_array(strtolower($complaint->status), ['pending', 'belum diproses'])) {
+            return redirect()->route('masyarakat.complaints.show', $complaint->id)
+                ->with('error', 'Pengaduan tidak dapat diedit karena sudah diproses.');
         }
 
-        $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
-        
-        // Fetch file dari Supabase
-        try {
-            $response = Http::get($publicUrl);
-            
-            if ($response->successful()) {
-                $fileName = $document->original_name ?? basename($document->file_path);
-                
-                return response($response->body(), 200)
-                    ->header('Content-Type', $response->header('Content-Type') ?? 'application/octet-stream')
-                    ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+        // Validation
+        $request->validate([
+            'subject' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'location' => 'required|string|max:255',
+            'incident_date' => 'required|date',
+            'incident_time' => 'nullable',
+            'description' => 'required|string',
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ]);
+
+        // Update complaint
+        $complaint->update([
+            'category_id' => $request->category_id,
+            'subject' => $request->subject,
+            'description' => $request->description,
+            'location' => $request->location,
+            'incident_date' => $request->incident_date,
+            'incident_time' => $request->incident_time,
+        ]);
+
+        // Handle new documents upload
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $document) {
+                if ($document->isValid()) {
+                    $filename = time() . '_' . $document->getClientOriginalName();
+                    
+                    // Store to Supabase
+                    $path = Storage::disk('supabase_complaints')
+                        ->putFileAs("{$complaint->id}", $document, $filename);
+                    
+                    // Save document info to database
+                    ComplaintDocument::create([
+                        'complaint_id' => $complaint->id,
+                        'original_name' => $document->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_type' => $document->getClientOriginalExtension(),
+                        'file_size' => $document->getSize(),
+                    ]);
+                }
             }
-            
-            abort(404, 'File not found');
-        } catch (\Exception $e) {
-            \Log::error('Download error: ' . $e->getMessage());
-            abort(500, 'Failed to download file');
         }
+
+        return redirect()->route('masyarakat.complaints.show', $complaint->id)
+            ->with('success', 'Pengaduan berhasil diperbarui.');
+    }
+
+    /**
+     * Remove the specified complaint from storage
+     */
+    public function destroy(Complaint $complaint)
+    {
+        $user = auth()->user();
+        
+        // Authorization check
+        if ($complaint->user_id !== $user->id) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        // Only allow deleting if status is pending
+        if (!in_array(strtolower($complaint->status), ['pending', 'belum diproses'])) {
+            return redirect()->route('masyarakat.complaints.show', $complaint->id)
+                ->with('error', 'Pengaduan tidak dapat dihapus karena sudah diproses.');
+        }
+
+        // Delete related documents from storage and database
+        foreach ($complaint->documents as $document) {
+            Storage::disk('supabase_complaints')->delete($document->file_path);
+            $document->delete();
+        }
+
+        $complaint->delete();
+
+        return redirect()->route('masyarakat.complaints.index')
+            ->with('success', 'Pengaduan berhasil dihapus.');
     }
 }

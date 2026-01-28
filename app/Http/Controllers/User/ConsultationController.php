@@ -152,7 +152,9 @@ class ConsultationController extends Controller
             \Log::error('Failed to send email: ' . $e->getMessage());
         }
 
-        return redirect()->route('user.consultations.create')
+        $from = $request->query('from', 'index');
+
+        return redirect()->route('user.consultations.create', ['from' => $from])
             ->with('success', true)
             ->with('ticket_id', $consultation->ticket_number)
             ->with('consultation_id', $consultation->id);

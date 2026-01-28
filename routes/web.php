@@ -25,6 +25,7 @@ use App\Http\Controllers\Masyarakat\ConsultationController as MasyarakatConsulta
 use App\Http\Controllers\Masyarakat\ConsultationPdfController as MasyarakatConsultationPdfController;
 use App\Http\Controllers\Masyarakat\ComplaintController as MasyarakatComplaintController;
 use App\Http\Controllers\Masyarakat\ComplaintPdfController as MasyarakatComplaintPdfController;
+use App\Http\Controllers\Masyarakat\HistoryController as MasyarakatHistoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController;
 use App\Http\Controllers\Admin\ConsultationController as AdminConsultationController;
@@ -163,6 +164,9 @@ Route::middleware(['auth', 'verified', 'role:user,masyarakat_umum'])->prefix('ma
     Route::get('/pengaduan/{complaint}/pdf', [MasyarakatComplaintPdfController::class, 'download'])->name('complaints.download');
     Route::get('/pengaduan/document/{document}', [MasyarakatComplaintController::class, 'viewDocument'])->name('complaints.documents.view');
     Route::get('/pengaduan/document/{document}/download', [MasyarakatComplaintController::class, 'downloadDocument'])->name('complaints.document.download');
+
+    // RIWAYAT PENGAJUAN
+    Route::get('/riwayat-pengajuan', [MasyarakatHistoryController::class, 'index'])->name('history.index');
 });
 
 // Admin Routes (Role: admin)

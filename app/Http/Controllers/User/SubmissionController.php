@@ -174,10 +174,12 @@ class SubmissionController extends Controller
             Log::error('Failed to send submission email: ' . $e->getMessage());
         }
 
-        return redirect()->route('user.submissions.create')
+        $from = $request->query('from', 'index');
+
+        return redirect()->route('user.submissions.create', ['from' => $from])
             ->with('success', true)
-            ->with('ticket_id', $submission->ticket_id)
-            ->with('submission_id', $submission->id); 
+            ->with('ticket_id', $submission->ticket_number)
+            ->with('submission_id', $submission->id);
     }
 
     /**

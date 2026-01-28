@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Formulir Pengajuan Konsultasi')
+@section('title', 'Formulir Pengajuan Pengaduan')
 
 @section('content')
 <div class="p-6">
@@ -9,52 +9,55 @@
         <ol class="flex items-center space-x-2">
             <li><a href="{{ route('masyarakat.dashboard') }}" class="text-blue-600 hover:text-blue-800">Beranda</a></li>
             <li class="text-gray-400">/</li>
-            <li><a href="{{ route('masyarakat.consultations.index') }}" class="text-blue-600 hover:text-blue-800">Konsultasi</a></li>
+            <li><a href="{{ route('masyarakat.complaints.index') }}" class="text-blue-600 hover:text-blue-800">Pengaduan</a></li>
             <li class="text-gray-400">/</li>
-            <li class="text-gray-600">Formulir Pengajuan Konsultasi</li>
+            <li class="text-gray-600">Formulir Pengajuan Pengaduan</li>
         </ol>
     </nav>
 
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h1 class="font-montserrat text-3xl font-bold text-gray-900 mb-2">Formulir Pengajuan Konsultasi</h1>
-        <p class="text-gray-600">Silakan lengkapi formulir di bawah ini untuk mengajukan konsultasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Estimasi respon waktu 1x24 jam.</p>
+        <h1 class="font-montserrat text-3xl font-bold text-gray-900 mb-2">Formulir Pengajuan Pengaduan</h1>
+        <p class="text-gray-600">
+            Silakan lengkapi formulir di bawah ini untuk mengajukan pengaduan kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah.
+            Estimasi respon waktu 1x24 jam.
+        </p>
     </div>
 
     <!-- Form -->
-    <form action="{{ route('masyarakat.consultations.store') }}" method="POST" enctype="multipart/form-data" id="consultationForm">
+    <form action="{{ route('masyarakat.complaints.store') }}" method="POST" enctype="multipart/form-data" id="complaintForm">
         @csrf
-        
+
         <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
             <div class="flex items-center mb-6">
                 <svg class="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                 </svg>
-                <h2 class="font-montserrat text-xl font-bold text-gray-900">Detail Konsultasi</h2>
+                <h2 class="font-montserrat text-xl font-bold text-gray-900">Detail Pengaduan</h2>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Subjek Konsultasi -->
+                <!-- Subjek Pengaduan -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Subjek Konsultasi <span class="text-red-500">*</span>
+                        Subjek Pengaduan <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="subject" value="{{ old('subject') }}" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                        placeholder="Contoh: Konsultasi Perizinan Usaha - Izin Industri">
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Contoh: Pengaduan Layanan - Gangguan Sistem">
                     @error('subject')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Kategori Konsultasi -->
+                <!-- Kategori Pengaduan -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Kategori Konsultasi <span class="text-red-500">*</span>
+                        Kategori Pengaduan <span class="text-red-500">*</span>
                     </label>
                     <select name="category_id" required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Pilih Kategori Konsultasi</option>
+                        <option value="">Pilih Kategori Pengaduan</option>
                         @foreach($categories as $category)
                             <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
                                 {{ $category->name }}
@@ -66,20 +69,33 @@
                     @enderror
                 </div>
 
-                <!-- Deskripsi Lengkap -->
+                <!-- Lokasi Kejadian -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Deskripsi Lengkap <span class="text-red-500">*</span>
+                        Lokasi Kejadian <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="location" value="{{ old('location') }}" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Contoh: Semarang, Jawa Tengah">
+                    @error('location')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Deskripsi Pengaduan -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Deskripsi Pengaduan <span class="text-red-500">*</span>
                     </label>
                     <textarea name="description" rows="6" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                        placeholder="Jelaskan secara spesifik permasalahan atau topik yang ingin dikonsultasikan. Sertakan detail atau konteks yang relevan.">{{ old('description') }}</textarea>
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Jelaskan secara detail pengaduan Anda...">{{ old('description') }}</textarea>
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Dokumen Pendukung (Multiple Upload) -->
+                <!-- Document Upload (Multiple Upload) -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
                         Dokumen Pendukung <span class="text-gray-500">(Maksimal 3 file)</span>
@@ -160,8 +176,8 @@
             </div>
         </div>
 
-        <!-- Important Info -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg">
+        <!-- Important Info (KUNING) -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
             <div class="flex items-start">
                 <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
@@ -176,18 +192,23 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Action Buttons -->
         <div class="flex items-center justify-between">
             @php
+                // FIX BACK: TANPA nambah field apapun
                 $from = request()->query('from', 'index');
-                $backUrl = $from === 'dashboard' ? route('masyarakat.dashboard') : route('masyarakat.consultations.index');
+                $backUrl = $from === 'dashboard'
+                    ? route('masyarakat.dashboard')
+                    : route('masyarakat.complaints.index');
             @endphp
-            <a href="{{ $backUrl }}" 
+
+            <a href="{{ $backUrl }}"
                 class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
                 Kembali
             </a>
-            <button type="submit" 
+
+            <button type="submit"
                 class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -210,13 +231,13 @@
             <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Formulir Anda Berhasil Terkirim!</h3>
             <div class="mt-4 px-7 py-3">
                 <p class="text-sm text-gray-600 mb-4">
-                    Terima kasih telah mengirimkan konsultasi. Pengajuan Anda akan segera ditinjau. Silakan cek Email untuk melihat bukti konfirmasi formulir telah terkirim.
+                    Terima kasih telah mengirimkan pengaduan. Pengajuan Anda akan segera ditinjau. Silakan cek Email untuk melihat bukti konfirmasi formulir telah terkirim.
                 </p>
                 <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
                     <p class="text-xs text-gray-600 mb-1">Nomor Tiket Anda</p>
                     <div class="flex items-center justify-between">
                         <p class="font-bold text-blue-900 text-lg" id="ticketNumber"></p>
-                        <button onclick="copyTicket()" class="text-blue-600 hover:text-blue-800" title="Copy">
+                        <button type="button" onclick="copyTicket()" class="text-blue-600 hover:text-blue-800" title="Copy">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                             </svg>
@@ -225,17 +246,17 @@
                 </div>
             </div>
             <div class="items-center px-4 py-3 space-y-2">
-                @if(session('consultation_id'))
-                <button onclick="window.location.href='{{ route('masyarakat.consultations.show', session('consultation_id')) }}'" 
+                @if(session('complaint_id'))
+                <button type="button" onclick="window.location.href='{{ route('masyarakat.complaints.show', session('complaint_id')) }}'"
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
-                    Lihat Detail Konsultasi
+                    Lihat Detail Pengaduan
                 </button>
                 @endif
-                <button onclick="window.location.href='{{ route('masyarakat.consultations.index') }}'" 
+                <button type="button" onclick="window.location.href='{{ route('masyarakat.complaints.index') }}'"
                     class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
-                    Lihat Daftar Konsultasi
+                    Lihat Daftar Pengaduan
                 </button>
-                <button onclick="window.location.href='{{ route('masyarakat.dashboard') }}'" 
+                <button type="button" onclick="window.location.href='{{ route('masyarakat.dashboard') }}'"
                     class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
                     Kembali ke Dashboard
                 </button>
@@ -264,7 +285,7 @@
                 </div>
             </div>
             <div class="items-center px-4 py-3">
-                <button onclick="closeErrorModal()" 
+                <button type="button" onclick="closeErrorModal()"
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
                     Kembali & Lengkapi
                 </button>
@@ -274,47 +295,22 @@
 </div>
 
 <script>
-// Display file name
-function displayFileName(index, input) {
-    const fileNameDisplay = document.getElementById('fileName' + index);
-    const clearBtn = document.getElementById('clearBtn' + index);
-    
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const fileSize = (file.size / 1024 / 1024).toFixed(2); // Convert to MB
-
-        if (fileSize > 2) {
-            alert('Ukuran file maksimal 2MB!');
-            input.value = '';
-            fileNameDisplay.classList.add('hidden');
-            clearBtn.classList.add('hidden');
-            return;
-        }
-        
-        fileNameDisplay.textContent = `✓ ${file.name} (${fileSize} MB)`;
+function displayFileName(input) {
+    const fileNameDisplay = document.getElementById('fileName');
+    if (input.files && input.files.length > 0) {
+        const names = Array.from(input.files).map(f => f.name).join(', ');
+        fileNameDisplay.textContent = `✓ ${names}`;
         fileNameDisplay.classList.remove('hidden');
-        clearBtn.classList.remove('hidden');
+    } else {
+        fileNameDisplay.classList.add('hidden');
     }
 }
 
-// Clear file
-function clearFile(index) {
-    const fileInput = document.getElementById('document' + index);
-    const fileNameDisplay = document.getElementById('fileName' + index);
-    const clearBtn = document.getElementById('clearBtn' + index);
-    
-    fileInput.value = '';
-    fileNameDisplay.classList.add('hidden');
-    clearBtn.classList.add('hidden');
-}
-
-// Show success modal with ticket number
 function showSuccessModal(ticketNumber) {
     document.getElementById('ticketNumber').textContent = ticketNumber;
     document.getElementById('successModal').classList.remove('hidden');
 }
 
-// Copy ticket number to clipboard
 function copyTicket() {
     const ticketNumber = document.getElementById('ticketNumber').textContent;
     navigator.clipboard.writeText(ticketNumber).then(() => {
@@ -322,11 +318,10 @@ function copyTicket() {
     });
 }
 
-// Show error modal with error messages
 function showErrorModal(errors) {
     const errorList = document.getElementById('errorList');
     errorList.innerHTML = '';
-    
+
     if (Array.isArray(errors)) {
         errors.forEach(error => {
             const li = document.createElement('li');
@@ -342,21 +337,18 @@ function showErrorModal(errors) {
             });
         });
     }
-    
+
     document.getElementById('errorModal').classList.remove('hidden');
 }
 
-// Close error modal
 function closeErrorModal() {
     document.getElementById('errorModal').classList.add('hidden');
 }
 
-// Check for session success message
 @if(session('success'))
     showSuccessModal('{{ session('ticket_id') ?? 'N/A' }}');
 @endif
 
-// Check for validation errors
 @if($errors->any())
     const errors = @json($errors->all());
     showErrorModal(errors);

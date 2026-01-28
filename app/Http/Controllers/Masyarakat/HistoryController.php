@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
 use App\Models\Submission;
@@ -9,7 +9,6 @@ use App\Models\Complaint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 
 class HistoryController extends Controller
 {
@@ -25,7 +24,7 @@ class HistoryController extends Controller
         $complaints = Complaint::where('user_id', $user->id)->with('category')->get();
 
         /* =============================
-         * HITUNG STATISTIK)
+         * HITUNG STATISTIK
          * ============================= */
         $totalPending =
             $submissions->whereIn('status', ['pending'])->count() +
@@ -66,7 +65,7 @@ class HistoryController extends Controller
                 'title'       => $item->title,
                 'date'        => Carbon::parse($item->submitted_at),
                 'status'      => $item->status,
-                'route'       => route('user.submissions.show', ['submission' => $item->id, 'from' => 'history']),
+                'route'       => route('masyarakat.submissions.show', ['submission' => $item->id, 'from' => 'history']),
             ]);
         }
 
@@ -79,7 +78,7 @@ class HistoryController extends Controller
                 'title'       => $item->subject,
                 'date'        => Carbon::parse($item->created_at),
                 'status'      => $item->status,
-                'route'       => route('user.consultations.show', ['consultation' => $item->id, 'from' => 'history']),
+                'route'       => route('masyarakat.consultations.show', ['consultation' => $item->id, 'from' => 'history']),
             ]);
         }
 
@@ -92,7 +91,7 @@ class HistoryController extends Controller
                 'title'       => $item->subject,
                 'date'        => Carbon::parse($item->created_at),
                 'status'      => $item->status,
-                'route'       => route('user.complaints.show', ['complaint' => $item->id, 'from' => 'history']),
+                'route'       => route('masyarakat.complaints.show', ['complaint' => $item->id, 'from' => 'history']),
             ]);
         }
 
@@ -144,7 +143,7 @@ class HistoryController extends Controller
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
-        return view('user.history.index', [
+        return view('masyarakat.history.index', [
             'submissions'      => $paginated,
             'totalSubmissions' => $totalSubmissions,
             'totalPending'     => $totalPending,

@@ -165,7 +165,7 @@ class ConsultationController extends Controller
             \Log::error('Failed to send consultation email: ' . $e->getMessage());
         }
 
-        return redirect()->route('masyarakat.consultations.create')
+        return redirect()->route('masyarakat.consultations.create', ['from' => $from])
             ->with('success', true)
             ->with('ticket_id', $consultation->ticket_number)
             ->with('consultation_id', $consultation->id);
