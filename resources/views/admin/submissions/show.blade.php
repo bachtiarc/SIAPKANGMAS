@@ -313,14 +313,14 @@
                                 <span class="absolute flex items-center justify-center w-4 h-4 bg-blue-600 rounded-full -left-2 ring-4 ring-white"></span>
 
                                 <h3 class="font-bold text-gray-900 text-sm">
-                                    Status diubah menjadi
-                                    '{{ match($history->new_status) {
+                                    Status:
+                                    {{ match($history->new_status) {
                                         'pending' => 'Pending',
                                         'in_progress' => 'Sedang Diproses',
                                         'completed' => 'Selesai',
                                         'rejected' => 'Ditolak',
                                         default => ucfirst($history->new_status)
-                                    } }}'
+                                    } }}
                                 </h3>
 
                                 <p class="text-xs text-gray-500 mt-1">
@@ -340,7 +340,7 @@
 
                         <li class="mb-6 ml-6">
                             <span class="absolute flex items-center justify-center w-4 h-4 bg-gray-200 rounded-full -left-2 ring-4 ring-white"></span>
-                            <h3 class="font-bold text-gray-900 text-sm">Tiket Dibuat oleh Pemohon</h3>
+                            <h3 class="font-bold text-gray-900 text-sm">Permohonan Informasi Diajukan</h3>
                             <time class="block mb-1 text-xs font-normal text-gray-400">{{ $submission->created_at->format('d M Y, H:i') }} WIB</time>
                         </li>
                     </ol>

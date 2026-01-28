@@ -12,6 +12,7 @@ class Category extends Model
     protected $fillable = [
         'name',
         'type',
+        'user_type',
         'description',
         'is_active',
     ];
@@ -58,5 +59,13 @@ class Category extends Model
     public function scopeOfType($query, $type)
     {
         return $query->where('type', $type);
+    }
+
+    /**
+     * Scope for specific actor/user type
+     */
+    public function scopeOfUserType($query, $userType)
+    {
+        return $query->where('user_type', $userType);
     }
 }

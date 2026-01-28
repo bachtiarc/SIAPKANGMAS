@@ -15,12 +15,19 @@ class CategoryStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'user_type' => ['required', Rule::in(['pegawai', 'masyarakat_umum'])],
+
             'type' => ['required', Rule::in(['konsultasi', 'pengaduan', 'permohonan'])],
+
             'name' => [
                 'required', 'string', 'max:120',
-                // unik per type
-                Rule::unique('categories')->where(fn ($q) => $q->where('type', $this->type)),
+                // unik per type + user_type
+                Rule::unique('categories')->where(fn ($q) => $q
+                    ->where('type', $this->type)
+                    ->where('user_type', $this->user_type)
+                ),
             ],
+
             'description' => ['nullable', 'string', 'max:255'],
         ];
     }
@@ -28,9 +35,10 @@ class CategoryStoreRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'user_type.required' => 'Aktor wajib dipilih.',
             'type.required' => 'Nama layanan wajib dipilih.',
             'name.required' => 'Nama kategori wajib diisi.',
-            'name.unique' => 'Kategori dengan layanan yang sama sudah ada.',
+            'name.unique' => 'Kategori dengan layanan dan aktor yang sama sudah ada.',
         ];
     }
 }

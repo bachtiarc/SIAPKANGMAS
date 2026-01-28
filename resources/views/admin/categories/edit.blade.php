@@ -18,12 +18,33 @@
 
     <h2 class="font-montserrat font-bold text-2xl text-gray-900 mb-6">Edit Kategori</h2>
 
+    @php
+        // safety default kalau belum dipassing
+        $actorOptions = $actorOptions ?? [
+            'pegawai' => 'Pegawai',
+            'masyarakat_umum' => 'Masyarakat Umum',
+        ];
+    @endphp
+
     <form id="edit-category-form"
           method="POST"
           action="{{ route('admin.categories.update', $category->id) }}"
           class="space-y-5">
         @csrf
         @method('PUT')
+
+        {{-- NEW: Aktor --}}
+        <div>
+            <label class="block font-montserrat font-semibold text-gray-700 mb-2">Aktor</label>
+            <select name="user_type"
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+                @foreach($actorOptions as $key => $label)
+                    <option value="{{ $key }}" {{ old('user_type', $category->user_type) === $key ? 'selected' : '' }}>
+                        {{ $label }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
 
         <div>
             <label class="block font-montserrat font-semibold text-gray-700 mb-2">Nama Layanan</label>
@@ -59,7 +80,7 @@
         </div>
 
         <div class="flex gap-3 pt-2">
-            <a href="{{ route('admin.categories.kategori', ['type' => $category->type]) }}"
+            <a href="{{ route('admin.categories.kategori', ['type' => $category->type, 'user_type' => $category->user_type]) }}"
                class="px-5 py-3 rounded-xl border border-blue-600 text-blue-700 font-montserrat font-semibold hover:bg-blue-50 transition">
                 Kembali
             </a>
@@ -80,13 +101,10 @@
 
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-center">
         <div class="mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-full bg-blue-100">
-            {{-- icon dokumen --}}
+            {{-- icon centang --}}
             <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M7 3h7l3 3v15a2 2 0 01-2 2H7.862
-                      a2 2 0 01-1.995-1.858L5 7V5a2 2 0 012-2z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 3v4a2 2 0 002 2h4"/>
+                    d="M5 13l4 4L19 7" />
             </svg>
         </div>
 

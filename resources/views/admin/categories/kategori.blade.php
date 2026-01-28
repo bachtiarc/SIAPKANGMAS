@@ -42,8 +42,16 @@
                         'pengaduan'  => 'Pengaduan',
                         'permohonan' => 'Permohonan Informasi',
                     ];
+
+                    $actorOptions = $actorOptions ?? [
+                        'pegawai' => 'Pegawai',
+                        'masyarakat_umum' => 'Masyarakat Umum',
+                    ];
+
                     $type = $type ?? request('type', 'konsultasi');
                     $q = $q ?? request('q', '');
+                    $userType = $userType ?? request('user_type', 'masyarakat_umum');
+
                     $tabBase = 'text-center px-4 py-3 rounded-2xl font-montserrat font-semibold text-sm transition ring-1 ring-transparent';
                     $tabOff  = 'text-gray-600 bg-white/60 ring-gray-200/70 hover:bg-gray-50/70 hover:text-blue-600 hover:ring-gray-200/80';
                     $tabOn   = 'text-blue-700 bg-blue-50/70 ring-blue-200/70 shadow-sm';
@@ -51,7 +59,7 @@
 
                 <div class="grid grid-cols-3 gap-2">
                     @foreach($serviceOptions as $key => $label)
-                        <a href="{{ route('admin.categories.kategori', ['type' => $key, 'q' => request('q')]) }}"
+                        <a href="{{ route('admin.categories.kategori', ['type' => $key, 'q' => request('q'), 'user_type' => $userType]) }}"
                            class="{{ $tabBase }} {{ $type === $key ? $tabOn : $tabOff }}">
                             {{ $label }}
                         </a>
@@ -59,10 +67,24 @@
                 </div>
             </div>
 
-            {{-- Search --}}
+            {{-- Search + Filter Aktor --}}
             <div class="p-4 border-b border-gray-200/70">
                 <form method="GET" action="{{ route('admin.categories.kategori') }}" class="flex flex-col sm:flex-row gap-3">
                     <input type="hidden" name="type" value="{{ $type }}">
+
+                    {{-- Filter Aktor --}}
+                    <div class="sm:w-56">
+                        <select name="user_type"
+                            class="w-full px-4 py-2.5 rounded-2xl border border-gray-300/80 text-sm
+                                   focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500/60
+                                   text-gray-700 bg-white/70 shadow-sm">
+                            @foreach($actorOptions as $k => $label)
+                                <option value="{{ $k }}" {{ ($userType ?? 'masyarakat_umum') === $k ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
                     <div class="flex-1 relative">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -87,7 +109,7 @@
                         Cari
                     </button>
 
-                    <a href="{{ route('admin.categories.kategori', ['type' => $type]) }}"
+                    <a href="{{ route('admin.categories.kategori', ['type' => $type, 'user_type' => $userType]) }}"
                        class="px-4 py-2.5 rounded-2xl border border-blue-600/80 text-blue-700 text-sm font-semibold hover:bg-blue-50/70 transition text-center bg-white/70 shadow-sm active:scale-[.99]">
                         Reset
                     </a>
@@ -165,7 +187,7 @@
                         @empty
                             <tr>
                                 <td colspan="5" class="px-5 py-10 text-center text-gray-500">
-                                    Tidak ada kategori untuk layanan ini.
+                                    Tidak ada kategori untuk layanan & aktor ini.
                                 </td>
                             </tr>
                         @endforelse
@@ -175,7 +197,7 @@
 
             {{-- Pagination --}}
             <div class="p-4 border-t border-gray-200/70">
-                {{ $categories->appends(['type' => $type, 'q' => request('q')])->links() }}
+                {{ $categories->appends(['type' => $type, 'q' => request('q'), 'user_type' => $userType])->links() }}
             </div>
         </div>
 
@@ -192,6 +214,27 @@
 
             <form method="POST" action="{{ route('admin.categories.store') }}" class="space-y-5">
                 @csrf
+
+                {{-- Aktor --}}
+                <div>
+                    <label class="block font-montserrat font-semibold text-gray-700 mb-2">Aktor</label>
+                    <div class="relative">
+                        <select name="user_type"
+                            class="w-full appearance-none px-4 py-3 pr-10 rounded-2xl border border-gray-300/80 text-sm
+                                   focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500/60 bg-white/70 text-gray-700 shadow-sm">
+                            @foreach($actorOptions as $key => $label)
+                                <option value="{{ $key }}" {{ old('user_type', $userType) === $key ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
 
                 <div>
                     <label class="block font-montserrat font-semibold text-gray-700 mb-2">Nama Layanan</label>
@@ -230,7 +273,7 @@
                 </div>
 
                 <div class="flex gap-3 pt-2">
-                    <a href="{{ route('admin.categories.kategori', ['type' => $type]) }}"
+                    <a href="{{ route('admin.categories.kategori', ['type' => $type, 'user_type' => $userType]) }}"
                        class="flex-1 text-center px-4 py-3 rounded-2xl border border-blue-600/80 text-blue-700 font-montserrat font-semibold hover:bg-blue-50/70 transition shadow-sm bg-white/70 active:scale-[.99]">
                         Batal
                     </a>
