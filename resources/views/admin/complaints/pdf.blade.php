@@ -216,7 +216,7 @@
 
 <!-- Section A: Identitas Pemohon -->
 <div class="section">
-    <div class="section-title">A. Identitas Pemohon Pengaduan</div>
+    <div class="section-title">A. Identitas Pemohon Permohonan</div>
 
     <table class="info-table">
         <tr>
@@ -273,38 +273,42 @@
                 <td>{{ $subbagBalai ?? '-' }}</td>
             </tr>
         @endif
-
-        <tr class="divider">
-            <td>Tanggal Pengajuan</td>
-            <td>:</td>
-            <td>{{ $complaint->created_at->format('d F Y') }}</td>
-        </tr>
-        <tr class="divider">
-            <td>Status</td>
-            <td>:</td>
-            <td><span class="status-text">{{ $statusLabel }}</span></td>
-        </tr>
     </table>
 
     {{-- FOTO KTP hanya untuk masyarakat_umum --}}
     @if($userType === 'masyarakat_umum')
         <div class="ktp-wrap">
             <div class="ktp-title">Foto KTP</div>
-                tidak disertakan dalam berkas PDF ini, dapat 
-                <strong>diunduh secara terpisah</strong> melalui sistem aplikasi SIAPKANGMAS.
+            tidak disertakan dalam berkas PDF ini, dapat
+            <strong>diunduh secara terpisah</strong> melalui sistem aplikasi SIAPKANGMAS.
         </div>
     @endif
 </div>
 
-<!-- Section B: Rincian Pengaduan -->
+<!-- Section B: Rincian Permohonan -->
 <div class="section">
-    <div class="section-title">B. Rincian Pengaduan</div>
+    <div class="section-title">B. Rincian Formulir Permohonan</div>
 
     <table class="info-table">
         <tr>
-            <td>Judul / Subjek</td>
+            <td>Judul</td>
             <td>:</td>
-            <td>{{ $complaint->title ?? $complaint->subject ?? '-' }}</td>
+            <td>{{ $complaint->title ?? '-' }}</td>
+        </tr>
+        <tr class="divider">
+            <td>Kategori</td>
+            <td>:</td>
+            <td>{{ $complaint->category->name ?? '-' }}</td>
+        </tr>
+        <tr class="divider">
+            <td>Tanggal Pengajuan</td>
+            <td>:</td>
+            <td>{{ $complaint->created_at->format('d F Y, H:i') }} WIB</td>
+        </tr>
+        <tr class="divider">
+            <td>Status</td>
+            <td>:</td>
+            <td><span class="status-text">{{ $statusLabel }}</span></td>
         </tr>
     </table>
 

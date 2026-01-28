@@ -25,6 +25,9 @@
 
     $waText = rawurlencode("Halo {$submission->user->name}, kami dari Admin SIAPKANGMAS terkait Pengajuan {$submission->ticket_id}.");
     $waLink = $waPhone ? "https://wa.me/{$waPhone}?text={$waText}" : null;
+
+    // aman kalau controller belum kirim
+    $ktpPublicUrl = $ktpPublicUrl ?? null;
 @endphp
 
 <div class="space-y-6">
@@ -147,41 +150,109 @@
                     <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                     <h3 class="font-montserrat font-bold text-gray-900">Data Pemohon</h3>
                 </div>
+
+                @php
+                    $user = $submission->user;
+                    $userType = $user->user_type ?? null;
+
+                    $nik = $user->nik ?? null;
+                    $alamat = $user->address ?? null;
+                    $fotoKtp = $user->foto_ktp ?? null;
+                @endphp
+
                 <div class="p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-lato">
+
                         <div class="col-span-2">
                             <p class="text-xs text-gray-500 uppercase tracking-wide font-bold mb-1">Jenis Pelapor</p>
                             <p class="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded inline-block">
-                                {{ ucfirst($submission->user->user_type ?? '-') }}
+                                {{ $userType ? ucwords(str_replace('_', ' ', $userType)) : '-' }}
                             </p>
                         </div>
 
                         <div>
                             <p class="text-xs text-gray-500 mb-1">Nama Lengkap</p>
-                            <p class="font-bold text-gray-900">{{ $submission->user->name ?? '-' }}</p>
+                            <p class="font-bold text-gray-900">{{ $user->name ?? '-' }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-500 mb-1">Email</p>
-                            <p class="font-bold text-gray-900">{{ $submission->user->email ?? '-' }}</p>
+                            <p class="font-bold text-gray-900">{{ $user->email ?? '-' }}</p>
                         </div>
 
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">NIP / Identitas</p>
-                            <p class="font-bold text-gray-900">{{ $submission->user->nip ?? '-' }}</p>
-                        </div>
                         <div>
                             <p class="text-xs text-gray-500 mb-1">Nomor Telepon</p>
-                            <p class="font-bold text-gray-900">{{ $submission->user->phone ?? '-' }}</p>
+                            <p class="font-bold text-gray-900">{{ $user->phone ?? '-' }}</p>
                         </div>
 
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">Bidang / Balai</p>
-                            <p class="font-bold text-gray-900">{{ $submission->user->bidang ?? '-' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">Jabatan</p>
-                            <p class="font-bold text-gray-900">{{ $submission->user->jabatan ?? '-' }}</p>
-                        </div>
+                        {{-- =========================
+                            MASYARAKAT UMUM
+                            tampil: NIK + alamat + foto KTP
+                            hilang: bidang/balai + jabatan
+                        ========================= --}}
+                        @if($userType === 'masyarakat_umum')
+                            <div>
+                                <p class="text-xs text-gray-500 mb-1">NIK</p>
+                                <p class="font-bold text-gray-900">{{ $nik ?? '-' }}</p>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <p class="text-xs text-gray-500 mb-1">Alamat Lengkap</p>
+                                <div class="p-3 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-800 leading-relaxed">
+                                    {{ $alamat ?: '-' }}
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <p class="text-xs text-gray-500 mb-2">Foto KTP</p>
+
+                                @if($ktpPublicUrl)
+                                    <div class="flex flex-col gap-3 max-w-md">
+                                        <a href="{{ $ktpPublicUrl }}" target="_blank" rel="noopener" class="block">
+                                            <img src="{{ $ktpPublicUrl }}" alt="Foto KTP"
+                                                class="w-full rounded-xl border border-gray-200 shadow-sm hover:opacity-95 transition">
+                                        </a>
+
+                                        <div class="flex gap-2">
+                                            <a href="{{ $ktpPublicUrl }}"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
+                                                Lihat
+                                            </a>
+
+                                            <a href="{{ route('admin.submissions.ktp.download', $submission->id) }}"
+                                            class="px-4 py-2 bg-gray-800 text-white text-sm font-semibold rounded-lg hover:bg-gray-900 transition">
+                                                Unduh
+                                            </a>
+                                        </div>
+                                    </div>
+                                @else
+                                    <p class="text-sm text-gray-500 italic">Foto KTP belum tersedia.</p>
+                                @endif
+                            </div>
+                        @endif
+
+                        {{-- =========================
+                            PEGAWAI
+                            tampil: nip + bidang/balai + jabatan
+                            (tidak tampil ktp/alamat)
+                        ========================= --}}
+                        @if($userType === 'pegawai')
+                            <div>
+                                <p class="text-xs text-gray-500 mb-1">NIP</p>
+                                <p class="font-bold text-gray-900">{{ $user->nip ?? '-' }}</p>
+                            </div>
+
+                            <div>
+                                <p class="text-xs text-gray-500 mb-1">Bidang / Balai</p>
+                                <p class="font-bold text-gray-900">{{ $user->bidang ?? '-' }}</p>
+                            </div>
+
+                            <div>
+                                <p class="text-xs text-gray-500 mb-1">Jabatan</p>
+                                <p class="font-bold text-gray-900">{{ $user->jabatan ?? '-' }}</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

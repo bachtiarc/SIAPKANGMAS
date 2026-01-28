@@ -74,7 +74,26 @@ class SubmissionController extends Controller
         $submission = Submission::with(['user', 'category', 'documents', 'statusHistories.changedBy'])
             ->findOrFail($id);
 
-        return view('admin.submissions.show', compact('submission'));
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
+
+        $ktpPublicUrl = null;
+        $ktpRaw = $submission->user->foto_ktp ?? null;
+
+        if ($ktpRaw && $supabaseUrl) {
+            $ktpRaw = ltrim($ktpRaw, '/');
+
+            if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
+                $ktpPublicUrl = $ktpRaw;
+            } else {
+                if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
+                    $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
+                }
+                $ktpPublicUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
+            }
+        }
+
+        return view('admin.submissions.show', compact('submission', 'ktpPublicUrl'));
     }
 
     public function update(Request $request, $id)
@@ -164,5 +183,54 @@ class SubmissionController extends Controller
             ->setPaper('A4', 'portrait');
 
         return $pdf->download('Pengajuan-' . $submission->ticket_id . '.pdf');
+    }
+
+    public function downloadKtp($id)
+    {
+        $submission = Submission::with('user')->findOrFail($id);
+
+        $user = $submission->user;
+        if (!$user || ($user->user_type ?? null) !== 'masyarakat_umum') {
+            abort(404);
+        }
+
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
+
+        $ktpRaw = $user->foto_ktp ?? null;
+        if (!$ktpRaw || !$supabaseUrl) {
+            abort(404);
+        }
+
+        $ktpRaw = ltrim($ktpRaw, '/');
+
+        if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
+            $fileUrl = $ktpRaw;
+        } else {
+            if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
+                $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
+            }
+            $fileUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
+        }
+
+        $res = Http::get($fileUrl);
+        if (!$res->successful()) {
+            abort(404);
+        }
+
+        $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
+
+        $ext = match (true) {
+            str_contains($contentType, 'png') => 'png',
+            str_contains($contentType, 'jpeg'), str_contains($contentType, 'jpg') => 'jpg',
+            default => pathinfo(parse_url($fileUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION) ?: 'jpg',
+        };
+
+        $filename = 'KTP-' . ($user->nik ?? $user->id) . '.' . $ext;
+
+        return response($res->body(), 200, [
+            'Content-Type' => $contentType,
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 }

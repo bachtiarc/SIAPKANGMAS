@@ -134,6 +134,17 @@
             text-transform: uppercase;
         }
 
+        .ktp-wrap {
+            margin-top: 10px;
+            border: 1px solid #000;
+            padding: 10px;
+        }
+
+        .ktp-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
         .footer {
             margin-top: 50px;
             text-align: center;
@@ -157,6 +168,20 @@
         'ditolak'     => 'Ditolak',
         default       => ucfirst($submission->status),
     };
+
+    $user = $submission->user;
+    $userType = $user->user_type ?? null;
+
+    // masyarakat
+    $nik = $user->nik ?? null;
+    $alamat = $user->address ?? null;
+
+    // pegawai
+    $nip = $user->nip ?? null;
+    $jabatan = $user->jabatan ?? null;
+    $subbagBalai = $user->bidang ?? null;
+
+    $ktpPublicUrl = $ktpPublicUrl ?? null;
 @endphp
 
 <!-- Header -->
@@ -188,21 +213,69 @@
 
     <table class="info-table">
         <tr>
+            <td>Jenis Pelapor</td>
+            <td>:</td>
+            <td>{{ $userType ? ucwords(str_replace('_', ' ', $userType)) : '-' }}</td>
+        </tr>
+
+        <tr class="divider">
             <td>Nama</td>
             <td>:</td>
-            <td>{{ $submission->user->name ?? '-' }}</td>
+            <td>{{ $user->name ?? '-' }}</td>
         </tr>
         <tr class="divider">
             <td>Email</td>
             <td>:</td>
-            <td>{{ $submission->user->email ?? '-' }}</td>
+            <td>{{ $user->email ?? '-' }}</td>
         </tr>
         <tr class="divider">
             <td>Telepon</td>
             <td>:</td>
-            <td>{{ $submission->user->phone ?? '-' }}</td>
+            <td>{{ $user->phone ?? '-' }}</td>
         </tr>
+
+        {{-- ===== MASYARAKAT UMUM ===== --}}
+        @if($userType === 'masyarakat_umum')
+            <tr class="divider">
+                <td>NIK</td>
+                <td>:</td>
+                <td>{{ $nik ?? '-' }}</td>
+            </tr>
+            <tr class="divider">
+                <td>Alamat</td>
+                <td>:</td>
+                <td style="white-space: pre-line;">{{ $alamat ?: '-' }}</td>
+            </tr>
+        @endif
+
+        {{-- ===== PEGAWAI ===== --}}
+        @if($userType === 'pegawai')
+            <tr class="divider">
+                <td>NIP</td>
+                <td>:</td>
+                <td>{{ $nip ?? '-' }}</td>
+            </tr>
+            <tr class="divider">
+                <td>Jabatan</td>
+                <td>:</td>
+                <td>{{ $jabatan ?? '-' }}</td>
+            </tr>
+            <tr class="divider">
+                <td>Subbag / Balai</td>
+                <td>:</td>
+                <td>{{ $subbagBalai ?? '-' }}</td>
+            </tr>
+        @endif
     </table>
+
+    {{-- FOTO KTP hanya untuk masyarakat_umum --}}
+    @if($userType === 'masyarakat_umum')
+        <div class="ktp-wrap">
+            <div class="ktp-title">Foto KTP</div>
+            tidak disertakan dalam berkas PDF ini, dapat
+            <strong>diunduh secara terpisah</strong> melalui sistem aplikasi SIAPKANGMAS.
+        </div>
+    @endif
 </div>
 
 <!-- Section B: Rincian Permohonan -->

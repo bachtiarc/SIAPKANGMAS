@@ -76,12 +76,32 @@ class ConsultationController extends Controller
 
     public function show($id)
     {
-        // Ambil data konsultasi dengan relasi yang diperlukan
-        // Asumsi: Model Consultation memiliki relasi yang sama dengan Submission
         $consultation = Consultation::with(['user', 'category', 'documents', 'statusHistories.changedBy'])
             ->findOrFail($id);
 
-        return view('admin.consultations.show', compact('consultation'));
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
+
+        $ktpPublicUrl = null;
+        $ktpRaw = $consultation->user->foto_ktp ?? null;
+
+        if ($ktpRaw && $supabaseUrl) {
+            $ktpRaw = ltrim($ktpRaw, '/');
+
+            // kalau udah full URL
+            if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
+                $ktpPublicUrl = $ktpRaw;
+            } else {
+                // kalau masih nyimpen "ktp-photos/<path>"
+                if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
+                    $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
+                }
+
+                $ktpPublicUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
+            }
+        }
+
+        return view('admin.consultations.show', compact('consultation', 'ktpPublicUrl'));
     }
 
     public function update(Request $request, $id)
@@ -171,5 +191,58 @@ class ConsultationController extends Controller
             ->setPaper('A4', 'portrait');
 
         return $pdf->download('Konsultasi-' . $consultation->ticket_id . '.pdf');
+    }
+
+    public function downloadKtp($id)
+    {
+        $consultation = Consultation::with('user')->findOrFail($id);
+
+        $user = $consultation->user;
+        if (!$user || ($user->user_type ?? null) !== 'masyarakat_umum') {
+            abort(404);
+        }
+
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
+
+        $ktpRaw = $user->foto_ktp ?? null;
+        if (!$ktpRaw || !$supabaseUrl) {
+            abort(404);
+        }
+
+        $ktpRaw = ltrim($ktpRaw, '/');
+
+        // full URL
+        if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
+            $fileUrl = $ktpRaw;
+        } else {
+            // kalau masih nyimpen "ktp-photos/<path>"
+            if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
+                $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
+            }
+            $fileUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
+        }
+
+        // ambil konten file (stream)
+        $res = Http::get($fileUrl);
+        if (!$res->successful()) {
+            abort(404);
+        }
+
+        $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
+
+        // tentukan ekstensi dari content-type / url
+        $ext = match (true) {
+            str_contains($contentType, 'png') => 'png',
+            str_contains($contentType, 'jpeg'), str_contains($contentType, 'jpg') => 'jpg',
+            default => pathinfo(parse_url($fileUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION) ?: 'jpg',
+        };
+
+        $filename = 'KTP-' . ($user->nik ?? $user->id) . '.' . $ext;
+
+        return response($res->body(), 200, [
+            'Content-Type' => $contentType,
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 }

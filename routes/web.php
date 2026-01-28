@@ -183,37 +183,43 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         ->name('tickets.search');
 
     // Route Manajemen Pengajuan
-    Route::get('/manajemen-pengajuan/permohonan', [App\Http\Controllers\Admin\SubmissionController::class, 'index'])
+    Route::get('/manajemen-pengajuan/permohonan', [AdminSubmissionController::class, 'index'])
         ->name('submissions.permohonan');
 
-    Route::get('/manajemen-pengajuan/permohonan/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'show'])
+    Route::get('/manajemen-pengajuan/permohonan/{id}', [AdminSubmissionController::class, 'show'])
         ->name('submissions.show');
         
-    Route::put('/manajemen-pengajuan/permohonan/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'update'])
+    Route::put('/manajemen-pengajuan/permohonan/{id}', [AdminSubmissionController::class, 'update'])
         ->name('submissions.update');
 
-    Route::get('/manajemen-pengajuan/dokumen/{id}', [App\Http\Controllers\Admin\SubmissionController::class, 'downloadDocument'])
+    Route::get('/manajemen-pengajuan/dokumen/{id}', [AdminSubmissionController::class, 'downloadDocument'])
         ->name('submissions.document');
 
     Route::get('/manajemen-pengajuan/permohonan/{id}/pdf', [AdminSubmissionController::class, 'downloadPdf'])
         ->name('submissions.pdf');
+    
+    Route::get('/manajemen-pengajuan/permohonan/{id}/ktp/download', [AdminSubmissionController::class, 'downloadKtp'])
+        ->name('submissions.ktp.download');
 
 
     // Route Manajemen Konsultasi
-    Route::get('/manajemen-pengajuan/konsultasi', [App\Http\Controllers\Admin\ConsultationController::class, 'index'])
+    Route::get('/manajemen-pengajuan/konsultasi', [AdminConsultationController::class, 'index'])
         ->name('consultations.konsultasi');
 
-    Route::get('/manajemen-pengajuan/konsultasi/{id}', [App\Http\Controllers\Admin\ConsultationController::class, 'show'])
+    Route::get('/manajemen-pengajuan/konsultasi/{id}', [AdminConsultationController::class, 'show'])
         ->name('consultations.show');
 
-    Route::put('/manajemen-pengajuan/konsultasi/{id}', [App\Http\Controllers\Admin\ConsultationController::class, 'update'])
+    Route::put('/manajemen-pengajuan/konsultasi/{id}', [AdminConsultationController::class, 'update'])
         ->name('consultations.update');
 
-    Route::get('/manajemen-pengajuan/konsultasi/dokumen/{id}', [App\Http\Controllers\Admin\ConsultationController::class, 'downloadDocument'])
+    Route::get('/manajemen-pengajuan/konsultasi/dokumen/{id}', [AdminConsultationController::class, 'downloadDocument'])
         ->name('consultations.document');
     
     Route::get('/manajemen-pengajuan/konsultasi/{id}/pdf', [AdminConsultationController::class, 'downloadPdf'])
         ->name('consultations.pdf');
+
+    Route::get('/manajemen-pengajuan/konsultasi/{id}/ktp/download', [AdminConsultationController::class, 'downloadKtp'])
+        ->name('consultations.ktp.download');
 
     // Route Manajemen Pengaduan
     Route::get('/manajemen-pengajuan/pengaduan', [AdminComplaintController::class, 'index'])
