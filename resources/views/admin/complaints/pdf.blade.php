@@ -204,7 +204,7 @@
 <!-- Note -->
 <div class="note">
     <strong>Catatan:</strong>
-    Dokumen pendukung selain identitas (mis. lampiran pengaduan) <u>tidak disertakan dalam berkas PDF ini</u> dan
+    Dokumen pendukung tidak disertakan dalam berkas PDF ini dan
     <strong>diunduh secara terpisah</strong> melalui sistem aplikasi SIAPKANGMAS.
 </div>
 
