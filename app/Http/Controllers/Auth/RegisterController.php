@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use App\Notifications\CustomVerifyEmail;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class RegisterController extends Controller
 {
@@ -232,41 +234,63 @@ class RegisterController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'nik' => 'required|string|size:16|unique:users', 
+            'nik' => 'required|string|size:16|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => ['required', 'string', 'regex:/^62[0-9]{9,13}$/'],
-            'address' => 'required|string', 
+            'address' => 'required|string',
             'foto_ktp' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'password' => 'required|string|min:8|confirmed',
         ], [
-            'name.required' => 'Nama lengkap wajib diisi.',
-            'nik.required' => 'NIK wajib diisi.',
-            'nik.size' => 'NIK harus 16 digit.',
-            'nik.unique' => 'NIK sudah terdaftar.',
-            'address.required' => 'Alamat lengkap wajib diisi.',
             'foto_ktp.required' => 'Foto KTP wajib diunggah.',
         ]);
 
         if ($validator->fails()) {
-            return redirect()->route('register')->withErrors($validator)->withInput();
+            return redirect()->route('register')
+                ->withErrors($validator)
+                ->withInput();
         }
 
         $fotoKtpPath = null;
+
         if ($request->hasFile('foto_ktp')) {
-            $fotoKtpPath = $request->file('foto_ktp')->store('ktp-photos', 'public');
+            $file = $request->file('foto_ktp');
+
+            $ext = strtolower($file->getClientOriginalExtension());
+            $fileName = 'ktp_' . $request->nik . '_' . Str::uuid() . '.' . $ext;
+
+            // folder per NIK biar rapi
+            $objectPath = $request->nik . '/' . $fileName; // contoh: 3318.../ktp_3318_uuid.jpg
+
+            try {
+                Storage::disk('supabase_ktp')->put(
+                    $objectPath,
+                    file_get_contents($file->getRealPath()),
+                    [
+                        'ContentType' => $file->getMimeType(),
+                        // kalau mau public-read (tergantung policy bucket kamu)
+                        // 'ACL' => 'public-read',
+                    ]
+                );
+            } catch (\Throwable $e) {
+                return redirect()->route('register')
+                    ->withErrors(['foto_ktp' => 'Gagal upload KTP ke Supabase: ' . $e->getMessage()])
+                    ->withInput();
+            }
+
+            // simpan path RELATIF aja (tanpa bucket)
+            $fotoKtpPath = $objectPath;
         }
 
-        // PROSES INSERT
         $user = User::create([
-            'name' => $request->name,
-            'nik' => $request->nik,  
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'address' => $request->address, 
-            'foto_ktp' => $fotoKtpPath,
-            'password' => Hash::make($request->password),
-            'role' => 'user', 
-            'user_type' => 'masyarakat_umum', 
+            'name'      => $request->name,
+            'nik'       => $request->nik,
+            'email'     => $request->email,
+            'phone'     => $request->phone,
+            'address'   => $request->address,
+            'foto_ktp'  => $fotoKtpPath, // contoh: 3318.../ktp_3318_uuid.jpg
+            'password'  => Hash::make($request->password),
+            'role'      => 'user',
+            'user_type' => 'masyarakat_umum',
         ]);
 
         $user->notify(new \App\Notifications\CustomVerifyEmail);

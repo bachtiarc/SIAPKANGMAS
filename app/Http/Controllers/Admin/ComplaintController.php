@@ -72,7 +72,30 @@ class ComplaintController extends Controller
             'statusHistories.changedBy',
         ])->findOrFail($id);
 
-        return view('admin.complaints.show', compact('complaint'));
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
+
+        $ktpPublicUrl = null;
+        $ktpRaw = $complaint->user->foto_ktp ?? null;
+
+        if ($ktpRaw && $supabaseUrl) {
+            $ktpRaw = ltrim($ktpRaw, '/');
+
+            // kalau udah full URL
+            if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
+                $ktpPublicUrl = $ktpRaw;
+            } else {
+                // kalau masih nyimpen "ktp-photos/<path>"
+                if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
+                    $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
+                }
+
+                // sekarang ktpRaw = path relatif "3318.../ktp_xxx.png"
+                $ktpPublicUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
+            }
+        }
+
+        return view('admin.complaints.show', compact('complaint', 'ktpPublicUrl'));
     }
 
     public function update(Request $request, $id)
@@ -80,45 +103,52 @@ class ComplaintController extends Controller
         $request->validate([
             'status'      => 'required|in:pending,diproses,selesai,ditolak',
             'admin_notes' => 'nullable|string',
-            'notify_user' => 'nullable',
         ]);
 
         $complaint = Complaint::with('user')->findOrFail($id);
+
         $oldStatus = $complaint->status;
+        $oldNotes  = $complaint->admin_response ?? $complaint->admin_notes;
+
+        $newStatus = $request->status;
+        $newNotes  = $request->admin_notes;
+
+        $statusChanged = ($oldStatus !== $newStatus);
+        $notesChanged  = ((string)($oldNotes ?? '') !== (string)($newNotes ?? ''));
 
         $complaint->update([
-            'status'         => $request->status,
-            'admin_response' => $request->admin_notes, // field complaint
+            'status'         => $newStatus,
+            'admin_response' => $newNotes,
             'handled_by'     => Auth::id(),
-            'completed_at'   => $request->status === 'selesai' ? now() : null,
+            'completed_at'   => $newStatus === 'selesai' ? now() : null,
         ]);
 
-        // Simpan status history SETIAP perubahan status
-        if ($oldStatus !== $request->status) {
+        // History kalau ada perubahan status ATAU catatan
+        if ($statusChanged || $notesChanged) {
             try {
                 $complaint->statusHistories()->create([
                     'changed_by' => Auth::id(),
-                    'new_status' => $request->status,
+                    'new_status' => $newStatus,
                     'old_status' => $oldStatus,
-                    'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin',
+                    'notes'      => $newNotes ?? 'Perubahan disimpan oleh Admin',
                 ]);
             } catch (\Exception $e) {
                 Log::error('Gagal simpan status history pengaduan: ' . $e->getMessage());
             }
         }
 
-        // Kirim email jika dicentang & status berubah
-        if ($request->has('notify_user') && $oldStatus !== $request->status) {
+        // EMAIL: otomatis terkirim kalau ada perubahan status/catatan
+        if (($statusChanged || $notesChanged) && !empty($complaint->user->email)) {
             try {
                 Mail::to($complaint->user->email)->send(
-                    new \App\Mail\ComplaintStatusUpdated($complaint, $request->admin_notes)
+                    new \App\Mail\ComplaintStatusUpdated($complaint->fresh(), $newNotes)
                 );
             } catch (\Exception $e) {
                 Log::error('Email pengaduan gagal dikirim: ' . $e->getMessage());
             }
         }
 
-        return redirect()->back()->with('success', 'Status pengaduan berhasil diperbarui.');
+        return redirect()->back()->with('success', 'Perubahan pengaduan berhasil disimpan.');
     }
 
     public function downloadDocument($id)
