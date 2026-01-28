@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Formulir Pengajuan Pengaduan')
+@section('title', 'Formulir Pengajuan Konsultasi')
 
 @section('content')
 <div class="p-6">
@@ -9,23 +9,23 @@
         <ol class="flex items-center space-x-2">
             <li><a href="{{ route('masyarakat.dashboard') }}" class="text-blue-600 hover:text-blue-800">Beranda</a></li>
             <li class="text-gray-400">/</li>
-            <li><a href="{{ route('masyarakat.complaints.index') }}" class="text-blue-600 hover:text-blue-800">Pengaduan</a></li>
+            <li><a href="{{ route('masyarakat.consultations.index') }}" class="text-blue-600 hover:text-blue-800">Konsultasi</a></li>
             <li class="text-gray-400">/</li>
-            <li class="text-gray-600">Formulir Pengajuan Pengaduan</li>
+            <li class="text-gray-600">Formulir Pengajuan Konsultasi</li>
         </ol>
     </nav>
 
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h1 class="font-montserrat text-3xl font-bold text-gray-900 mb-2">Formulir Pengajuan Pengaduan</h1>
+        <h1 class="font-montserrat text-3xl font-bold text-gray-900 mb-2">Formulir Pengajuan Konsultasi</h1>
         <p class="text-gray-600">
-            Silakan lengkapi formulir di bawah ini untuk mengajukan pengaduan kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah.
+            Silakan lengkapi formulir di bawah ini untuk mengajukan konsultasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah.
             Estimasi respon waktu 1x24 jam.
         </p>
     </div>
 
     <!-- Form -->
-    <form action="{{ route('masyarakat.complaints.store') }}" method="POST" enctype="multipart/form-data" id="complaintForm">
+    <form action="{{ route('masyarakat.consultations.store') }}" method="POST" enctype="multipart/form-data" id="complaintForm">
         @csrf
 
         <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
@@ -33,31 +33,31 @@
                 <svg class="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                 </svg>
-                <h2 class="font-montserrat text-xl font-bold text-gray-900">Detail Pengaduan</h2>
+                <h2 class="font-montserrat text-xl font-bold text-gray-900">Detail Konsultasi</h2>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Subjek Pengaduan -->
+                <!-- Subjek Konsultasi -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Subjek Pengaduan <span class="text-red-500">*</span>
+                        Subjek Konsultasi <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="subject" value="{{ old('subject') }}" required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Contoh: Pengaduan Layanan - Gangguan Sistem">
+                        placeholder="Contoh: Konsultasi Layanan - Gangguan Sistem">
                     @error('subject')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Kategori Pengaduan -->
+                <!-- Kategori Konsultasi -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Kategori Pengaduan <span class="text-red-500">*</span>
+                        Kategori Konsultasi <span class="text-red-500">*</span>
                     </label>
                     <select name="category_id" required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Pilih Kategori Pengaduan</option>
+                        <option value="">Pilih Kategori Konsultasi</option>
                         @foreach($categories as $category)
                             <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
                                 {{ $category->name }}
@@ -68,28 +68,15 @@
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
-
-                <!-- Lokasi Kejadian -->
+                
+                <!-- Deskripsi Konsultasi -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Lokasi Kejadian <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="location" value="{{ old('location') }}" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Contoh: Semarang, Jawa Tengah">
-                    @error('location')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Deskripsi Pengaduan -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Deskripsi Pengaduan <span class="text-red-500">*</span>
+                        Deskripsi Konsultasi <span class="text-red-500">*</span>
                     </label>
                     <textarea name="description" rows="6" required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Jelaskan secara detail pengaduan Anda...">{{ old('description') }}</textarea>
+                        placeholder="Jelaskan secara detail konsultasi Anda...">{{ old('description') }}</textarea>
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -101,9 +88,9 @@
                         Dokumen Pendukung <span class="text-gray-500">(Maksimal 3 file)</span>
                     </label>
                     
-                    <!-- Upload Area 1 -->
                     <div class="space-y-4">
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <!-- Upload Area 1 -->
+                        <div id="docBox1" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
                             onclick="document.getElementById('document1').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,6 +100,7 @@
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 1 <span class="text-gray-400">(Opsional)</span></p>
                                     <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
                                     <p id="fileName1" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
+                                    <p id="fileErr1" class="text-sm text-red-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(1)" id="clearBtn1" class="hidden text-red-500 hover:text-red-700">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +113,7 @@
                         </div>
 
                         <!-- Upload Area 2 -->
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <div id="docBox2" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
                             onclick="document.getElementById('document2').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,6 +123,7 @@
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 2 <span class="text-gray-400">(Opsional)</span></p>
                                     <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
                                     <p id="fileName2" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
+                                    <p id="fileErr2" class="text-sm text-red-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(2)" id="clearBtn2" class="hidden text-red-500 hover:text-red-700">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,7 +136,7 @@
                         </div>
 
                         <!-- Upload Area 3 -->
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <div id="docBox3" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
                             onclick="document.getElementById('document3').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,6 +146,7 @@
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 3 <span class="text-gray-400">(Opsional)</span></p>
                                     <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
                                     <p id="fileName3" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
+                                    <p id="fileErr3" class="text-sm text-red-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(3)" id="clearBtn3" class="hidden text-red-500 hover:text-red-700">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,8 +159,11 @@
                         </div>
                     </div>
 
+                    @error('documents')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                     @error('documents.*')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
             </div>
@@ -196,11 +189,10 @@
         <!-- Action Buttons -->
         <div class="flex items-center justify-between">
             @php
-                // FIX BACK: TANPA nambah field apapun
                 $from = request()->query('from', 'index');
                 $backUrl = $from === 'dashboard'
                     ? route('masyarakat.dashboard')
-                    : route('masyarakat.complaints.index');
+                    : route('masyarakat.consultations.index');
             @endphp
 
             <a href="{{ $backUrl }}"
@@ -231,7 +223,7 @@
             <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Formulir Anda Berhasil Terkirim!</h3>
             <div class="mt-4 px-7 py-3">
                 <p class="text-sm text-gray-600 mb-4">
-                    Terima kasih telah mengirimkan pengaduan. Pengajuan Anda akan segera ditinjau. Silakan cek Email untuk melihat bukti konfirmasi formulir telah terkirim.
+                    Terima kasih telah mengirimkan konsultasi. Pengajuan Anda akan segera ditinjau. Silakan cek Email untuk melihat bukti konfirmasi formulir telah terkirim.
                 </p>
                 <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
                     <p class="text-xs text-gray-600 mb-1">Nomor Tiket Anda</p>
@@ -246,15 +238,15 @@
                 </div>
             </div>
             <div class="items-center px-4 py-3 space-y-2">
-                @if(session('complaint_id'))
-                <button type="button" onclick="window.location.href='{{ route('masyarakat.complaints.show', session('complaint_id')) }}'"
+                @if(session('consultation_id'))
+                <button type="button" onclick="window.location.href='{{ route('masyarakat.consultations.show', session('consultation_id')) }}'"
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
-                    Lihat Detail Pengaduan
+                    Lihat Detail Konsultasi
                 </button>
                 @endif
-                <button type="button" onclick="window.location.href='{{ route('masyarakat.complaints.index') }}'"
+                <button type="button" onclick="window.location.href='{{ route('masyarakat.consultations.index') }}'"
                     class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
-                    Lihat Daftar Pengaduan
+                    Lihat Daftar Konsultasi
                 </button>
                 <button type="button" onclick="window.location.href='{{ route('masyarakat.dashboard') }}'"
                     class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
@@ -295,16 +287,94 @@
 </div>
 
 <script>
-function displayFileName(input) {
-    const fileNameDisplay = document.getElementById('fileName');
-    if (input.files && input.files.length > 0) {
-        const names = Array.from(input.files).map(f => f.name).join(', ');
-        fileNameDisplay.textContent = `✓ ${names}`;
-        fileNameDisplay.classList.remove('hidden');
-    } else {
-        fileNameDisplay.classList.add('hidden');
+// ==== FIX DOKUMEN PENDUKUNG ONLY ====
+function formatFileSize(bytes) {
+    if (!bytes) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+}
+
+function setDocBoxState(idx, state) {
+    const box = document.getElementById('docBox' + idx);
+    if (!box) return;
+
+    box.classList.remove('border-green-400', 'bg-green-50', 'border-red-400', 'bg-red-50');
+    box.classList.add('border-gray-300');
+    box.style.borderLeftWidth = '';
+
+    if (state === 'ok') {
+        box.classList.remove('border-gray-300');
+        box.classList.add('border-green-400', 'bg-green-50');
+        box.style.borderLeftWidth = '6px';
+    }
+
+    if (state === 'err') {
+        box.classList.remove('border-gray-300');
+        box.classList.add('border-red-400', 'bg-red-50');
+        box.style.borderLeftWidth = '6px';
     }
 }
+
+function displayFileName(idx, input) {
+    const nameEl = document.getElementById('fileName' + idx);
+    const errEl  = document.getElementById('fileErr' + idx);
+    const clearBtn = document.getElementById('clearBtn' + idx);
+
+    if (errEl) {
+        errEl.classList.add('hidden');
+        errEl.textContent = '';
+    }
+
+    if (!input.files || !input.files[0]) {
+        nameEl.classList.add('hidden');
+        nameEl.textContent = '';
+        clearBtn.classList.add('hidden');
+        setDocBoxState(idx, null);
+        return;
+    }
+
+    const f = input.files[0];
+    const maxBytes = 2 * 1024 * 1024; // 2MB
+
+    if (f.size > maxBytes) {
+        nameEl.classList.add('hidden');
+        nameEl.textContent = '';
+        if (errEl) {
+            errEl.textContent = 'Ukuran file melebihi 2MB.';
+            errEl.classList.remove('hidden');
+        }
+        clearBtn.classList.remove('hidden');
+        setDocBoxState(idx, 'err');
+        return;
+    }
+
+    nameEl.textContent = `${f.name} (${formatFileSize(f.size)})`;
+    nameEl.classList.remove('hidden');
+    clearBtn.classList.remove('hidden');
+    setDocBoxState(idx, 'ok');
+}
+
+function clearFile(idx) {
+    const input = document.getElementById('document' + idx);
+    const nameEl = document.getElementById('fileName' + idx);
+    const errEl  = document.getElementById('fileErr' + idx);
+    const clearBtn = document.getElementById('clearBtn' + idx);
+
+    input.value = '';
+    nameEl.textContent = '';
+    nameEl.classList.add('hidden');
+
+    if (errEl) {
+        errEl.textContent = '';
+        errEl.classList.add('hidden');
+    }
+
+    clearBtn.classList.add('hidden');
+    setDocBoxState(idx, null);
+}
+// ==== END FIX DOKUMEN PENDUKUNG ====
 
 function showSuccessModal(ticketNumber) {
     document.getElementById('ticketNumber').textContent = ticketNumber;

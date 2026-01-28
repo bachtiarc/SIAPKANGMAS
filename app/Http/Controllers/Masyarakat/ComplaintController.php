@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Complaint;
 use App\Models\ComplaintDocument;
-use App\Models\Category;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use App\Mail\ComplaintCreated;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ComplaintController extends Controller
 {
@@ -28,7 +27,7 @@ class ComplaintController extends Controller
         $query = Complaint::where('user_id', $user->id)
             ->with(['category', 'handler']);
 
-        if ($request->has('search') && $request->search) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('ticket_number', 'ilike', "%{$search}%")
@@ -36,7 +35,7 @@ class ComplaintController extends Controller
             });
         }
 
-        if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
+        if ($request->filled('status') && $request->status !== 'semua') {
             $statusFilter = strtolower($request->status);
 
             $query->where(function ($q) use ($statusFilter) {
@@ -82,12 +81,25 @@ class ComplaintController extends Controller
     {
         $user = auth()->user();
 
+        $from = $request->input('from', $request->query('from', 'index'));
+
         $request->validate([
             'subject' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+
+            'documents' => 'nullable|array|max:3',
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', 
         ]);
+
+        $nik = (string) ($user->nik ?? '');
+        if (strlen($nik) < 16) {
+            return back()
+                ->withErrors(['nik' => 'NIK user belum ada / tidak valid (minimal 16 digit) untuk generate tiket.'])
+                ->withInput();
+        }
+
+        $tempTicket = 'TEMP-' . now()->format('YmdHis') . '-' . bin2hex(random_bytes(3));
 
         $complaint = Complaint::create([
             'user_id' => $user->id,
@@ -95,13 +107,12 @@ class ComplaintController extends Controller
             'subject' => $request->subject,
             'description' => $request->description,
             'status' => 'pending',
-            'ticket_number' => 'TEMP', 
+            'ticket_number' => $tempTicket,
         ]);
 
-        $nik = (string) $user->nik; // pastikan ini ada
-        $nikPart = substr($nik, 10, 6); // digit 11–16
+        $nikPart = substr($nik, 10, 6); 
         $datePart = now()->format('dmY');
-        $counterPart = str_pad((string)$complaint->id, 3, '0', STR_PAD_LEFT);
+        $counterPart = str_pad((string) $complaint->id, 3, '0', STR_PAD_LEFT); 
 
         $ticketNumber = "PD.{$nikPart}.{$datePart}_{$counterPart}";
 
@@ -109,8 +120,42 @@ class ComplaintController extends Controller
             'ticket_number' => $ticketNumber,
         ]);
 
+        if ($request->hasFile('documents')) {
+            foreach ((array) $request->file('documents') as $document) {
+                if (!$document) continue;
+                if (!$document->isValid()) continue;
+
+                $filename = time() . '_' . preg_replace('/\s+/', '_', $document->getClientOriginalName());
+
+                // Jangan utak-atik supabase: tetap pakai disk yang kamu sudah punya
+                $path = Storage::disk('supabase_complaints')
+                    ->putFileAs((string) $complaint->id, $document, $filename);
+
+                if (!$path) {
+                    return back()
+                        ->withErrors(['documents' => 'Upload gagal (path kosong). Cek batas upload PHP: upload_max_filesize & post_max_size.'])
+                        ->withInput();
+                }
+
+                ComplaintDocument::create([
+                    'complaint_id' => $complaint->id,
+                    'original_name' => $document->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_type' => $document->getClientOriginalExtension(),
+                    'file_size' => $document->getSize(),
+                ]);
+            }
+        }
+
+        // email notif (opsional)
+        try {
+            Mail::to($user->email)->send(new ComplaintCreated($complaint));
+        } catch (\Throwable $e) {
+            \Log::error('Failed to send complaint email: ' . $e->getMessage());
+        }
+
         return redirect()
-            ->route('masyarakat.complaints.create')
+            ->route('masyarakat.complaints.create', ['from' => $from])
             ->with('success', true)
             ->with('ticket_id', $ticketNumber)
             ->with('complaint_id', $complaint->id);
@@ -181,38 +226,41 @@ class ComplaintController extends Controller
         $request->validate([
             'subject' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
-            'location' => 'nullable|string|max:255',
-            'incident_date' => 'nullable|date',
-            'incident_time' => 'nullable',
             'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+
+            'documents' => 'nullable|array|max:3',
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
         $complaint->update([
             'category_id' => $request->category_id,
             'subject' => $request->subject,
             'description' => $request->description,
-            'location' => $request->location,
-            'incident_date' => $request->incident_date,
-            'incident_time' => $request->incident_time,
         ]);
 
         if ($request->hasFile('documents')) {
-            foreach ($request->file('documents') as $document) {
-                if ($document && $document->isValid()) {
-                    $filename = time() . '_' . $document->getClientOriginalName();
+            foreach ((array) $request->file('documents') as $document) {
+                if (!$document) continue;
+                if (!$document->isValid()) continue;
 
-                    $path = Storage::disk('supabase_complaints')
-                        ->putFileAs("{$complaint->id}", $document, $filename);
+                $filename = time() . '_' . preg_replace('/\s+/', '_', $document->getClientOriginalName());
 
-                    ComplaintDocument::create([
-                        'complaint_id' => $complaint->id,
-                        'original_name' => $document->getClientOriginalName(),
-                        'file_path' => $path,
-                        'file_type' => $document->getClientOriginalExtension(),
-                        'file_size' => $document->getSize(),
-                    ]);
+                $path = Storage::disk('supabase_complaints')
+                    ->putFileAs((string) $complaint->id, $document, $filename);
+
+                if (!$path) {
+                    return back()
+                        ->withErrors(['documents' => 'Upload gagal (path kosong). Cek batas upload PHP: upload_max_filesize & post_max_size.'])
+                        ->withInput();
                 }
+
+                ComplaintDocument::create([
+                    'complaint_id' => $complaint->id,
+                    'original_name' => $document->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_type' => $document->getClientOriginalExtension(),
+                    'file_size' => $document->getSize(),
+                ]);
             }
         }
 
@@ -245,56 +293,5 @@ class ComplaintController extends Controller
 
         return redirect()->route('masyarakat.complaints.index')
             ->with('success', 'Pengaduan berhasil dihapus.');
-    }
-
-    /**
-     * Generate ticket:
-     * PD.{nik[11..16]}.{ddmmyyyy}_{sequence_in_month}
-     */
-    private function generateComplaintTicket($user): string
-    {
-        $nik = (string) ($user->nik ?? '');
-
-        if (strlen($nik) < 16) {
-            // Kalau field NIK kamu beda, ganti $user->nik di atas.
-            throw new \RuntimeException('NIK user tidak valid / belum tersedia untuk generate ticket.');
-        }
-
-        $nikPart = substr($nik, 10, 6); // digit ke-11 s/d 16
-        $datePart = now()->format('dmY'); // 28012026
-        $monthKey = now()->format('Y-m'); // 2026-01
-        $seqKey = "PD-{$monthKey}";
-
-        $counter = DB::transaction(function () use ($seqKey) {
-            $row = DB::table('ticket_sequences')
-                ->where('key', $seqKey)
-                ->lockForUpdate()
-                ->first();
-
-            if (!$row) {
-                DB::table('ticket_sequences')->insert([
-                    'key' => $seqKey,
-                    'last_number' => 1,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                return 1;
-            }
-
-            $next = ((int) $row->last_number) + 1;
-
-            DB::table('ticket_sequences')
-                ->where('key', $seqKey)
-                ->update([
-                    'last_number' => $next,
-                    'updated_at' => now(),
-                ]);
-
-            return $next;
-        });
-
-        $counterPart = str_pad((string) $counter, 3, '0', STR_PAD_LEFT); // 001,002,...
-
-        return "PD.{$nikPart}.{$datePart}_{$counterPart}";
     }
 }

@@ -93,7 +93,7 @@
                     
                     <!-- Upload Area 1 -->
                     <div class="space-y-4">
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <div id="docBox1" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
                             onclick="document.getElementById('document1').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,7 +102,8 @@
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 1 <span class="text-gray-400">(Opsional)</span></p>
                                     <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
-                                    <p id="fileName1" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
+                                    <p id="fileName1" class="text-sm text-green-700 font-semibold mt-1 hidden"></p>
+                                    <p id="fileErr1" class="text-sm text-red-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(1)" id="clearBtn1" class="hidden text-red-500 hover:text-red-700">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +116,7 @@
                         </div>
 
                         <!-- Upload Area 2 -->
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <div id="docBox2" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
                             onclick="document.getElementById('document2').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,7 +125,8 @@
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 2 <span class="text-gray-400">(Opsional)</span></p>
                                     <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
-                                    <p id="fileName2" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
+                                    <p id="fileName2" class="text-sm text-green-700 font-semibold mt-1 hidden"></p>
+                                    <p id="fileErr2" class="text-sm text-red-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(2)" id="clearBtn2" class="hidden text-red-500 hover:text-red-700">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +139,7 @@
                         </div>
 
                         <!-- Upload Area 3 -->
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <div id="docBox3" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
                             onclick="document.getElementById('document3').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +148,8 @@
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 3 <span class="text-gray-400">(Opsional)</span></p>
                                     <p class="text-xs text-gray-500">PDF, JPG, PNG (Max 2MB)</p>
-                                    <p id="fileName3" class="text-sm text-green-600 font-semibold mt-1 hidden"></p>
+                                    <p id="fileName3" class="text-sm text-green-700 font-semibold mt-1 hidden"></p>
+                                    <p id="fileErr3" class="text-sm text-red-600 font-semibold mt-1 hidden"></p>
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(3)" id="clearBtn3" class="hidden text-red-500 hover:text-red-700">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,6 +160,13 @@
                             <input id="document3" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
                                 onchange="displayFileName(3, this)">
                         </div>
+
+                        @error('documents')
+                            <p class="text-red-600 text-sm mt-2">{{ $message }}</p>
+                        @enderror
+                        @error('documents.*')
+                            <p class="text-red-600 text-sm mt-2">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
             </div>
@@ -274,40 +284,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // File upload preview
-    const fileInput = document.getElementById('documents');
-    const fileList = document.getElementById('fileList');
-
-    if (fileInput) {
-        fileInput.addEventListener('change', function() {
-            fileList.innerHTML = '';
-            
-            Array.from(this.files).forEach((file, index) => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
-                
-                fileItem.innerHTML = `
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-gray-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">${file.name}</p>
-                            <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
-                        </div>
-                    </div>
-                    <button type="button" onclick="removeFile(${index})" class="text-red-600 hover:text-red-800">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                `;
-                
-                fileList.appendChild(fileItem);
-            });
-        });
-    }
-
     // Show success modal if session has success
     @if(session('success'))
         document.getElementById('successModal').classList.remove('hidden');
@@ -320,25 +296,90 @@ document.addEventListener('DOMContentLoaded', function() {
     @endif
 });
 
+// ==== FIX DOKUMEN PENDUKUNG ONLY ====
 function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
+    if (!bytes) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
 }
 
-function removeFile(index) {
-    const fileInput = document.getElementById('documents');
-    const dt = new DataTransfer();
-    
-    Array.from(fileInput.files).forEach((file, i) => {
-        if (i !== index) dt.items.add(file);
-    });
-    
-    fileInput.files = dt.files;
-    fileInput.dispatchEvent(new Event('change'));
+function setDocBoxState(idx, state) {
+    const box = document.getElementById('docBox' + idx);
+    if (!box) return;
+
+    // reset
+    box.classList.remove('border-green-400', 'bg-green-50', 'border-red-400', 'bg-red-50');
+    box.classList.add('border-gray-300');
+    box.style.borderLeftWidth = '';
+
+    if (state === 'ok') {
+        box.classList.remove('border-gray-300');
+        box.classList.add('border-green-400', 'bg-green-50');
+        box.style.borderLeftWidth = '6px';
+    }
+
+    if (state === 'err') {
+        box.classList.remove('border-gray-300');
+        box.classList.add('border-red-400', 'bg-red-50');
+        box.style.borderLeftWidth = '6px';
+    }
 }
+
+function displayFileName(idx, input) {
+    const nameEl = document.getElementById('fileName' + idx);
+    const errEl  = document.getElementById('fileErr' + idx);
+    const clearBtn = document.getElementById('clearBtn' + idx);
+
+    // reset
+    errEl.classList.add('hidden');
+    errEl.textContent = '';
+
+    if (!input.files || !input.files[0]) {
+        nameEl.classList.add('hidden');
+        nameEl.textContent = '';
+        clearBtn.classList.add('hidden');
+        setDocBoxState(idx, null);
+        return;
+    }
+
+    const f = input.files[0];
+    const maxBytes = 2 * 1024 * 1024; // 2MB
+
+    if (f.size > maxBytes) {
+        nameEl.classList.add('hidden');
+        nameEl.textContent = '';
+        errEl.textContent = 'Ukuran file melebihi 2MB.';
+        errEl.classList.remove('hidden');
+        clearBtn.classList.remove('hidden');
+        setDocBoxState(idx, 'err');
+        return;
+    }
+
+    nameEl.textContent = `${f.name} (${formatFileSize(f.size)})`;
+    nameEl.classList.remove('hidden');
+    clearBtn.classList.remove('hidden');
+    setDocBoxState(idx, 'ok');
+}
+
+function clearFile(idx) {
+    const input = document.getElementById('document' + idx);
+    const nameEl = document.getElementById('fileName' + idx);
+    const errEl  = document.getElementById('fileErr' + idx);
+    const clearBtn = document.getElementById('clearBtn' + idx);
+
+    input.value = '';
+    nameEl.textContent = '';
+    nameEl.classList.add('hidden');
+
+    errEl.textContent = '';
+    errEl.classList.add('hidden');
+
+    clearBtn.classList.add('hidden');
+    setDocBoxState(idx, null);
+}
+// ==== END FIX DOKUMEN PENDUKUNG ====
 
 function closeErrorModal() {
     document.getElementById('errorModal').classList.add('hidden');

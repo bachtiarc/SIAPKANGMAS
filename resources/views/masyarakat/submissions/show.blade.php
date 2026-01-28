@@ -87,7 +87,7 @@
                                   d="M6 2h12M6 22h12M8 2v6l4 4-4 4v6M16 2v6l-4 4 4 4v6"/>
                         </svg>
                     </div>
-                    <p class="font-semibold text-sm mt-2">Menunggu Proses</p>
+                    <p class="font-semibold text-sm mt-2">Menunggu Diproses</p>
                     <p class="text-xs text-gray-500">
                         {{ $submission->waiting_at?->format('d M Y, H:i') ?? $submission->updated_at->format('d M Y, H:i') }}
                     </p>

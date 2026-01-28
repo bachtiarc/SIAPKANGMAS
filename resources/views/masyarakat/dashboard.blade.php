@@ -198,9 +198,9 @@
                                         @if($activity['status'] == 'completed')
                                             <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-green-100 text-green-800">Selesai</span>
                                         @elseif($activity['status'] == 'on_progress')
-                                            <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-yellow-100 text-yellow-800">Diproses</span>
+                                            <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-blue-100 text-blue-800">Diproses</span>
                                         @elseif($activity['status'] == 'pending')
-                                            <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-gray-100 text-gray-800">Pending</span>
+                                            <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-yellow-100 text-yellow-800">Menunggu Diproses</span>
                                         @else
                                             <span class="px-3 py-1 text-xs font-montserrat font-semibold rounded-full bg-red-100 text-red-800">Ditolak</span>
                                         @endif

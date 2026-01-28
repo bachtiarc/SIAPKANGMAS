@@ -8,32 +8,34 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ComplaintPdfController extends Controller
 {
-    /**
-     * Download complaint as PDF
-     */
     public function download(Complaint $complaint)
     {
         $user = auth()->user();
-        
-        // Authorization check
-        if ($complaint->user_id !== $user->id) {
+
+        if ((int) $complaint->user_id !== (int) $user->id) {
             abort(403, 'Unauthorized access.');
         }
 
-        // Load relationships
-        $complaint->load(['category', 'handler', 'user', 'documents']);
+        $complaint->load(['category', 'handler']);
 
-        // Generate PDF using the same view as pdfs.submission
-        $pdf = Pdf::loadView('pdfs.submission', [
-            'submission' => $complaint,  // Pakai variable 'submission' biar kompatibel
+        $statusRaw = strtolower((string) ($complaint->status ?? 'pending'));
+        $statusLabel = match ($statusRaw) {
+            'pending', 'belum diproses' => 'Menunggu Proses',
+            'diproses', 'in_progress', 'on_progress', 'sedang diproses' => 'Diproses',
+            'selesai', 'completed' => 'Selesai',
+            'ditolak', 'rejected' => 'Ditolak',
+            default => ucfirst($statusRaw),
+        };
+
+        $data = [
+            'serviceTitle' => 'PENGADUAN',
+            'complaint' => $complaint,
             'user' => $user,
-            'submissionType' => 'PENGADUAN'
-        ]);
+            'statusLabel' => $statusLabel,
+        ];
 
-        // Set paper size
-        $pdf->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView('pdfs.masyarakat-complaint', $data)->setPaper('a4', 'portrait');
 
-        // Download dengan nama file sesuai ticket_number
-        return $pdf->download($complaint->ticket_number . '.pdf');
+        return $pdf->download(($complaint->ticket_number ?? 'PENGADUAN') . '.pdf');
     }
 }

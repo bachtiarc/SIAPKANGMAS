@@ -30,17 +30,33 @@
             </a>
 
             <!-- Search -->
-            <form method="GET" action="{{ route('masyarakat.complaints.index') }}" class="flex space-x-2">
+            <form method="GET" action="{{ route('masyarakat.complaints.index') }}" class="flex space-x-2 items-center">
                 @if(request('status'))
                     <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
-                
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari ID tiket atau subjek..." 
+
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari ID tiket atau subjek..."
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition w-64">
-                
+
                 <button type="submit" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition">
                     Cari
                 </button>
+
+                @php
+                    $hasSearch = request()->filled('search');
+                    $hasStatusFilter = request('status') && request('status') !== 'semua';
+                @endphp
+
+                @if($hasSearch || $hasStatusFilter)
+                    <!-- Clear Filter Button (X) -->
+                    <a href="{{ route('masyarakat.complaints.index') }}"
+                       class="inline-flex items-center justify-center px-3 py-2 bg-red-200 hover:bg-red-300 text-red-700 font-semibold rounded-lg transition"
+                       title="Hapus filter">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </a>
+                @endif
             </form>
         </div>
     </div>
@@ -51,14 +67,14 @@
             @php
                 $currentStatus = request('status', 'semua');
             @endphp
-            
+
             <a href="{{ route('masyarakat.complaints.index', array_merge(request()->except('status'), ['status' => 'semua'])) }}"
                 class="px-4 py-2 rounded-lg font-medium transition {{ $currentStatus === 'semua' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 Semua
             </a>
             <a href="{{ route('masyarakat.complaints.index', array_merge(request()->except('status'), ['status' => 'pending'])) }}"
                 class="px-4 py-2 rounded-lg font-medium transition {{ $currentStatus === 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                Menunggu Proses
+                Menunggu Diproses
             </a>
             <a href="{{ route('masyarakat.complaints.index', array_merge(request()->except('status'), ['status' => 'diproses'])) }}"
                 class="px-4 py-2 rounded-lg font-medium transition {{ $currentStatus === 'diproses' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
@@ -90,7 +106,7 @@
                         @foreach($complaints as $complaint)
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="font-semibold text-blue-600">{{ $complaint->ticket_number }}</span>
+                                <span class="text-sm text-gray-900">{{ $complaint->ticket_number }}</span>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900">{{ Str::limit($complaint->subject, 50) }}</div>
@@ -107,10 +123,10 @@
                                     $status = strtolower($complaint->status);
                                     $statusClass = 'bg-gray-100 text-gray-800';
                                     $statusText = 'Unknown';
-                                    
+
                                     if (in_array($status, ['pending', 'belum diproses'])) {
                                         $statusClass = 'bg-yellow-100 text-yellow-800';
-                                        $statusText = 'Menunggu Proses';
+                                        $statusText = 'Menunggu Diproses';
                                     } elseif (in_array($status, ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])) {
                                         $statusClass = 'bg-blue-100 text-blue-800';
                                         $statusText = 'Diproses';

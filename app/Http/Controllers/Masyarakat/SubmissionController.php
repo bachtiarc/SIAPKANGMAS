@@ -80,29 +80,38 @@ class SubmissionController extends Controller
     {
         $user = auth()->user();
 
+        if ($user->user_type !== 'masyarakat_umum') {
+            abort(403, 'Unauthorized access.');
+        }
+
+        // ✅ FIX: ambil from dari query (?from=index/dashboard)
+        $from = $request->query('from', 'index');
+
         $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'category_id'  => 'required|exists:categories,id',
+            'title'        => 'required|string|max:255',
+            'description'  => 'required|string',
+            'documents.*'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
+        // Create Submission
         $submission = Submission::create([
-            'user_id' => $user->id,
+            'user_id'     => $user->id,
             'category_id' => $validated['category_id'],
-            'title' => $validated['title'],
-            'subject' => $validated['title'],
+            'title'       => $validated['title'],
+            'subject'     => $validated['title'],
             'description' => $validated['description'],
-            'status' => 'pending',
+            'status'      => 'pending',
+            // ticket_id biasanya digenerate di model observer / boot / accessor di project kamu
         ]);
 
+        // Upload documents (max 3)
         if ($request->hasFile('documents')) {
             foreach (array_slice($request->file('documents'), 0, 3) as $document) {
                 if ($document && $document->isValid()) {
+                    $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
 
-                    $filename = Str::random(40).'.'.$document->getClientOriginalExtension();
-
-                    // FIX: upload ke disk supabase (bucket submissions)
+                    // store to supabase disk
                     $path = $document->storeAs(
                         (string) $submission->id,
                         $filename,
@@ -110,25 +119,29 @@ class SubmissionController extends Controller
                     );
 
                     SubmissionDocument::create([
-                        'submission_id' => $submission->id,
-                        'original_name' => $document->getClientOriginalName(),
-                        'file_path' => $path, // contoh: "1/abcd.pdf"
-                        'file_type' => $document->getMimeType(),
-                        'file_size' => $document->getSize(),
+                        'submission_id'  => $submission->id,
+                        'original_name'  => $document->getClientOriginalName(),
+                        'file_path'      => $path,
+                        'file_type'      => $document->getMimeType(),
+                        'file_size'      => $document->getSize(),
                     ]);
                 }
             }
         }
 
+        // Email notif
         try {
             Mail::to($user->email)->send(new MasyarakatSubmissionCreated($submission));
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
         }
 
-        return redirect()->route('masyarakat.submissions.create', ['from' => $from])
+        // ✅ FIX: redirect balik ke create biar modal kebaca dari session
+        // ✅ FIX: ticket_id ambil dari kolom ticket_id (bukan ticket_number)
+        return redirect()
+            ->route('masyarakat.submissions.create', ['from' => $from])
             ->with('success', true)
-            ->with('ticket_id', $submission->ticket_number)
+            ->with('ticket_id', $submission->ticket_id)   // << ini yang bener
             ->with('submission_id', $submission->id);
     }
 
@@ -149,14 +162,11 @@ class SubmissionController extends Controller
             abort(403);
         }
 
-        // FIX: public bucket URL yang benar
         $base = rtrim(env('SUPABASE_URL'), '/');
         $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', 'submissions');
         $path = ltrim($document->file_path, '/');
 
-        return redirect()->away(
-            "{$base}/storage/v1/object/public/{$bucket}/{$path}"
-        );
+        return redirect()->away("{$base}/storage/v1/object/public/{$bucket}/{$path}");
     }
 
     public function downloadDocument(SubmissionDocument $document)
@@ -179,9 +189,6 @@ class SubmissionController extends Controller
 
         return response($response->body(), 200)
             ->header('Content-Type', $document->file_type)
-            ->header(
-                'Content-Disposition',
-                'attachment; filename="'.$document->original_name.'"'
-            );
+            ->header('Content-Disposition', 'attachment; filename="' . $document->original_name . '"');
     }
 }

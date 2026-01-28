@@ -63,7 +63,7 @@
             </a>
             <a href="{{ route('masyarakat.submissions.index', array_filter(['status' => 'pending', 'search' => request('search')])) }}" 
                class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                Menunggu Proses
+                Menunggu Diproses
             </a>
             <a href="{{ route('masyarakat.submissions.index', array_filter(['status' => 'diproses', 'search' => request('search')])) }}" 
                class="px-3 py-1 rounded-lg text-sm {{ request('status') == 'diproses' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
@@ -98,7 +98,7 @@
                         @foreach($submissions as $submission)
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-gray-900">{{ $submission->ticket_id }}</div>
+                                <div class="text-sm text-gray-900">{{ $submission->ticket_id }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm text-gray-900">{{ Str::limit($submission->title, 50) }}</div>

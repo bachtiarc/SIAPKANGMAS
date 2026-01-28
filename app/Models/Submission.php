@@ -311,7 +311,7 @@ class Submission extends Model
         }
 
         if (in_array($status, ['pending', 'belum diproses'])) {
-            return 'Menunggu Proses';
+            return 'Menunggu Diproses';
         }
 
         if (in_array($status, ['rejected', 'ditolak'])) {

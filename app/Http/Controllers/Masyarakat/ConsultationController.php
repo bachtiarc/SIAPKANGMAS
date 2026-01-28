@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
-use App\Models\Consultation;
 use App\Models\Category;
+use App\Models\Consultation;
 use App\Models\ConsultationDocument;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use App\Mail\ConsultationCreated;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ConsultationController extends Controller
 {
@@ -25,24 +25,24 @@ class ConsultationController extends Controller
         $query = Consultation::where('user_id', $user->id)->with(['category', 'handler']);
 
         // Search by ticket_number or subject (case-insensitive)
-        if ($request->has('search') && $request->search) {
+        if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('ticket_number', 'ilike', "%{$search}%")
                   ->orWhere('subject', 'ilike', "%{$search}%");
             });
         }
 
         // Filter by status
-        if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
+        if ($request->filled('status') && $request->status !== 'semua') {
             $statusFilter = strtolower($request->status);
-            
-            $query->where(function($q) use ($statusFilter) {
+
+            $query->where(function ($q) use ($statusFilter) {
                 // MENUNGGU PROSES
                 if ($statusFilter === 'pending') {
                     $q->whereIn('status', ['pending', 'belum diproses']);
                 }
-                // DIPROSES  
+                // DIPROSES
                 elseif ($statusFilter === 'diproses') {
                     $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
                 }
@@ -58,87 +58,103 @@ class ConsultationController extends Controller
         }
 
         $consultations = $query->latest()->paginate(10)->withQueryString();
+
         return view('masyarakat.consultations.index', compact('consultations'));
     }
 
     public function create()
     {
         $user = auth()->user();
-        
+
         if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
-        
+
         $userType = $user->user_type;
-        
-        // Filter kategori berdasarkan user type
+
         $categories = Category::active()
             ->ofType('konsultasi')
-            ->where(function($query) use ($userType) {
+            ->where(function ($query) use ($userType) {
                 $query->where('user_type', $userType)
                       ->orWhere('user_type', 'all');
             })
             ->orderBy('name')
             ->get();
-        
+
         return view('masyarakat.consultations.create', compact('categories'));
     }
 
     public function store(Request $request)
     {
         $user = auth()->user();
-        
+
         if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
-        
+
+        $from = $request->query('from', 'index');
+
         $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'subject' => 'required|string|max:255',
-            'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', 
+            'category_id'  => 'required|exists:categories,id',
+            'subject'      => 'required|string|max:255',
+            'description'  => 'required|string',
+            'documents.*'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
+        // Validasi total size max 6MB
         if ($request->hasFile('documents')) {
             $totalSize = 0;
+
             foreach ($request->file('documents') as $file) {
                 if ($file && $file->isValid()) {
                     $totalSize += $file->getSize();
                 }
             }
-            
-            if ($totalSize > 6291456) {
-                return back()->withErrors([
-                    'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
-                ])->withInput();
+
+            if ($totalSize > 6 * 1024 * 1024) {
+                return back()
+                    ->withErrors(['documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'])
+                    ->withInput();
             }
         }
 
+        // Generate Ticket Number
         $nik = $user->nik ?? '000000000000000000';
         $lastSixNik = substr($nik, 10, 6);
         $date = now()->format('dmY');
-        $sequence = str_pad(Consultation::count() + 1, 3, '0', STR_PAD_LEFT);
+
+        $todayPrefix = "KL.{$lastSixNik}.{$date}_";
+        $last = Consultation::where('ticket_number', 'like', $todayPrefix . '%')
+            ->orderBy('ticket_number', 'desc')
+            ->value('ticket_number');
+
+        $nextSeq = 1;
+        if ($last) {
+            $parts = explode('_', $last);
+            $lastSeq = (int)($parts[1] ?? 0);
+            $nextSeq = $lastSeq + 1;
+        }
+
+        $sequence = str_pad((string)$nextSeq, 3, '0', STR_PAD_LEFT);
         $ticketNumber = "KL.{$lastSixNik}.{$date}_{$sequence}";
 
         $consultation = DB::transaction(function () use ($user, $validated, $ticketNumber, $request) {
             $consultation = Consultation::create([
-                'user_id' => $user->id,
-                'category_id' => $validated['category_id'],
-                'consultation_type' => 'konsultasi', 
-                'subject' => $validated['subject'],
-                'description' => $validated['description'],
-                'ticket_number' => $ticketNumber,
-                'status' => 'pending',
-                'attachment' => null, 
+                'user_id'            => $user->id,
+                'category_id'        => $validated['category_id'],
+                'consultation_type'  => 'konsultasi',
+                'subject'            => $validated['subject'],
+                'description'        => $validated['description'],
+                'ticket_number'      => $ticketNumber,
+                'status'             => 'pending',
+                'attachment'         => null,
             ]);
-            
+
             // Upload multiple documents
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $file) {
-                    if ($file->isValid()) {
+                    if ($file && $file->isValid()) {
                         $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
-                        
-                        // Store file in consultations folder
                         $path = $consultation->id . '/' . $filename;
 
                         Storage::disk('supabase_consultations')->put(
@@ -148,14 +164,15 @@ class ConsultationController extends Controller
 
                         ConsultationDocument::create([
                             'consultation_id' => $consultation->id,
-                            'original_name' => $file->getClientOriginalName(),
-                            'file_path' => $path,
-                            'file_type' => $file->getClientOriginalExtension(),
-                            'file_size' => $file->getSize(),
+                            'original_name'   => $file->getClientOriginalName(),
+                            'file_path'       => $path,
+                            'file_type'       => $file->getClientOriginalExtension(),
+                            'file_size'       => $file->getSize(),
                         ]);
                     }
                 }
             }
+
             return $consultation;
         });
 
@@ -165,7 +182,8 @@ class ConsultationController extends Controller
             \Log::error('Failed to send consultation email: ' . $e->getMessage());
         }
 
-        return redirect()->route('masyarakat.consultations.create', ['from' => $from])
+        return redirect()
+            ->route('masyarakat.consultations.create', ['from' => $from])
             ->with('success', true)
             ->with('ticket_id', $consultation->ticket_number)
             ->with('consultation_id', $consultation->id);
@@ -174,7 +192,7 @@ class ConsultationController extends Controller
     public function show(Consultation $consultation)
     {
         $user = auth()->user();
-        
+
         if ($consultation->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
@@ -184,38 +202,36 @@ class ConsultationController extends Controller
         return view('masyarakat.consultations.show', compact('consultation'));
     }
 
-    /**
-     * Download consultation document
-     */
     public function downloadDocument(ConsultationDocument $document)
     {
         $user = auth()->user();
-        
+
         if ($document->consultation->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
-        
+
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $bucket = env('SUPABASE_CONSULTATIONS_BUCKET', 'consultations');
         $filePath = ltrim($document->file_path, '/');
-        
+
+        // kalau ada prefix "consultations/" hapus
         if (Str::startsWith($filePath, 'consultations/')) {
             $filePath = Str::after($filePath, 'consultations/');
         }
 
         $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
-        
+
         try {
             $response = \Illuminate\Support\Facades\Http::get($publicUrl);
-            
+
             if ($response->successful()) {
                 $fileName = $document->original_name ?? basename($document->file_path);
-                
+
                 return response($response->body(), 200)
                     ->header('Content-Type', $response->header('Content-Type') ?? 'application/octet-stream')
                     ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
             }
-            
+
             abort(404, 'File not found');
         } catch (\Exception $e) {
             \Log::error('Download error: ' . $e->getMessage());

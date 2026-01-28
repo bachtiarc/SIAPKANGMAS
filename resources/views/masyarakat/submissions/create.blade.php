@@ -79,7 +79,7 @@
     </div>
 
     <!-- Form -->
-    <form action="{{ route('masyarakat.submissions.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+    <form action="{{ route('masyarakat.submissions.store', ['from' => request('from', 'index')]) }}" method="POST" enctype="multipart/form-data">
         @csrf
 
         <!-- Main Form Card -->

@@ -91,7 +91,7 @@
                     </p>
                 </div>
 
-                <!-- STEP 2 : MENUNGGU PROSES (JAM PASIR SVG) -->
+                <!-- STEP 2 : MENUNGGU PROSES  -->
                 <div class="flex flex-col items-center w-1/4">
                     <div class="w-12 h-12 rounded-full {{ !$isPending ? 'bg-green-500' : 'bg-yellow-400' }}
                         flex items-center justify-center text-white z-10">
@@ -100,7 +100,7 @@
                                 d="M6 2h12M6 22h12M8 2v6l4 4-4 4v6M16 2v6l-4 4 4 4v6"/>
                         </svg>
                     </div>
-                    <p class="font-semibold text-sm">Menunggu Proses</p>
+                    <p class="font-semibold text-sm">Menunggu Diproses</p>
                     <p class="text-xs text-gray-500">
                         {{ $complaint->updated_at->format('d M Y, H:i') }}
                     </p>
