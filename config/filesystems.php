@@ -69,6 +69,7 @@ return [
             'secret' => env('SUPABASE_SECRET_ACCESS_KEY'),
             'region' => env('SUPABASE_DEFAULT_REGION', 'ap-southeast-1'),
             'bucket' => env('SUPABASE_CONSULTATIONS_BUCKET', 'consultations'),
+            'bucket_endpoint' => false,
             'endpoint' => env('SUPABASE_ENDPOINT'),
             'use_path_style_endpoint' => true,
             'throw' => true,
