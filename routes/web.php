@@ -256,3 +256,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::delete('/manajemen-kategori/{category}', [AdminCategoryController::class, 'destroy'])
         ->name('categories.destroy');
 });
+
+Route::get('/_test-mail', function () {
+    \Mail::raw('Test email dari Railway', function ($m) {
+        $m->to('cikalbachtiar19@gmail.com')->subject('Test Mail SIAPKANGMAS');
+    });
+    return 'sent';
+});
