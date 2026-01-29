@@ -286,6 +286,15 @@
     </div>
 </div>
 
+<!-- TOAST CONTAINER (TOP RIGHT) -->
+<div id="toast-container" class="fixed top-5 right-5 z-[9999] space-y-3"></div>
+
+<style>
+  .toast-enter { transform: translateX(120%); opacity: 0; }
+  .toast-enter-active { transform: translateX(0); opacity: 1; transition: all .25s ease; }
+  .toast-exit { transform: translateX(120%); opacity: 0; transition: all .25s ease; }
+</style>
+
 <script>
 // ==== FIX DOKUMEN PENDUKUNG ONLY ====
 function formatFileSize(bytes) {
@@ -317,6 +326,60 @@ function setDocBoxState(idx, state) {
     }
 }
 
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    let borderColor, iconColor, icon;
+
+    if (type === 'success') {
+        borderColor = 'border-green-500';
+        iconColor = 'text-green-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else if (type === 'error') {
+        borderColor = 'border-red-500';
+        iconColor = 'text-red-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else {
+        borderColor = 'border-blue-500';
+        iconColor = 'text-blue-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast-enter bg-white shadow-lg rounded-lg p-4 flex items-center space-x-3 min-w-[320px] border-l-4 ${borderColor}`;
+
+    toast.innerHTML = `
+        <div class="flex-shrink-0">
+            <svg class="w-6 h-6 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${icon}
+            </svg>
+        </div>
+        <div class="flex-1">
+            <p class="font-montserrat text-sm font-semibold text-gray-900">${message}</p>
+        </div>
+        <button type="button" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+
+    toast.querySelector('button').addEventListener('click', () => {
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 250);
+    });
+
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('toast-enter-active'));
+
+    setTimeout(() => {
+        toast.classList.remove('toast-enter-active');
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 250);
+    }, 4000);
+}
+
 function displayFileName(idx, input) {
     const nameEl = document.getElementById('fileName' + idx);
     const errEl  = document.getElementById('fileErr' + idx);
@@ -339,14 +402,13 @@ function displayFileName(idx, input) {
     const maxBytes = 2 * 1024 * 1024; // 2MB
 
     if (f.size > maxBytes) {
+        input.value = '';
         nameEl.classList.add('hidden');
         nameEl.textContent = '';
-        if (errEl) {
-            errEl.textContent = 'Ukuran file melebihi 2MB.';
-            errEl.classList.remove('hidden');
-        }
-        clearBtn.classList.remove('hidden');
-        setDocBoxState(idx, 'err');
+        clearBtn.classList.add('hidden');
+        setDocBoxState(idx, null);
+
+        showToast(`Dokumen ${idx}: ukuran file melebihi 2MB.`, 'error');
         return;
     }
 

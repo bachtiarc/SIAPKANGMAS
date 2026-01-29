@@ -282,6 +282,15 @@
     Nomor tiket berhasil disalin!
 </div>
 
+<!-- TOAST CONTAINER  -->
+<div id="toast-container" class="fixed top-5 right-5 z-[9999] space-y-3"></div>
+
+<style>
+  .toast-enter { transform: translateX(120%); opacity: 0; }
+  .toast-enter-active { transform: translateX(0); opacity: 1; transition: all .25s ease; }
+  .toast-exit { transform: translateX(120%); opacity: 0; transition: all .25s ease; }
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Show success modal if session has success
@@ -309,7 +318,6 @@ function setDocBoxState(idx, state) {
     const box = document.getElementById('docBox' + idx);
     if (!box) return;
 
-    // reset
     box.classList.remove('border-green-400', 'bg-green-50', 'border-red-400', 'bg-red-50');
     box.classList.add('border-gray-300');
     box.style.borderLeftWidth = '';
@@ -328,13 +336,15 @@ function setDocBoxState(idx, state) {
 }
 
 function displayFileName(idx, input) {
-    const nameEl = document.getElementById('fileName' + idx);
-    const errEl  = document.getElementById('fileErr' + idx);
+    const nameEl   = document.getElementById('fileName' + idx);
+    const errEl    = document.getElementById('fileErr' + idx);
     const clearBtn = document.getElementById('clearBtn' + idx);
 
     // reset
-    errEl.classList.add('hidden');
-    errEl.textContent = '';
+    if (errEl) {
+        errEl.classList.add('hidden');
+        errEl.textContent = '';
+    }
 
     if (!input.files || !input.files[0]) {
         nameEl.classList.add('hidden');
@@ -348,12 +358,15 @@ function displayFileName(idx, input) {
     const maxBytes = 2 * 1024 * 1024; // 2MB
 
     if (f.size > maxBytes) {
+        // batalin file + reset UI
+        input.value = '';
         nameEl.classList.add('hidden');
         nameEl.textContent = '';
-        errEl.textContent = 'Ukuran file melebihi 2MB.';
-        errEl.classList.remove('hidden');
-        clearBtn.classList.remove('hidden');
-        setDocBoxState(idx, 'err');
+        clearBtn.classList.add('hidden');
+        setDocBoxState(idx, null);
+
+        // toast notif kanan atas
+        showToast(`Dokumen ${idx}: ukuran file melebihi 2MB.`, 'error');
         return;
     }
 
@@ -369,31 +382,183 @@ function clearFile(idx) {
     const errEl  = document.getElementById('fileErr' + idx);
     const clearBtn = document.getElementById('clearBtn' + idx);
 
-    input.value = '';
-    nameEl.textContent = '';
-    nameEl.classList.add('hidden');
+    if (input) input.value = '';
 
-    errEl.textContent = '';
-    errEl.classList.add('hidden');
+    if (nameEl) {
+        nameEl.textContent = '';
+        nameEl.classList.add('hidden');
+    }
 
-    clearBtn.classList.add('hidden');
+    if (errEl) {
+        errEl.textContent = '';
+        errEl.classList.add('hidden');
+    }
+
+    if (clearBtn) clearBtn.classList.add('hidden');
     setDocBoxState(idx, null);
 }
-// ==== END FIX DOKUMEN PENDUKUNG ====
+
+function showErrorModal(errors) {
+    const errorList = document.getElementById('errorList');
+    errorList.innerHTML = '';
+
+    if (Array.isArray(errors)) {
+        errors.forEach(error => {
+            const li = document.createElement('li');
+            li.textContent = error;
+            errorList.appendChild(li);
+        });
+    } else if (typeof errors === 'object') {
+        Object.values(errors).forEach(errorArray => {
+            errorArray.forEach(error => {
+                const li = document.createElement('li');
+                li.textContent = error;
+                errorList.appendChild(li);
+            });
+        });
+    }
+
+    document.getElementById('errorModal').classList.remove('hidden');
+}
 
 function closeErrorModal() {
     document.getElementById('errorModal').classList.add('hidden');
 }
 
+@if(session('success'))
+    showSuccessModal('{{ session('ticket_id') ?? 'N/A' }}');
+@endif
+
+@if($errors->any())
+    const errors = @json($errors->all());
+    showErrorModal(errors);
+@endif
+
+function showSuccessModal(ticketNumber) {
+    document.getElementById('ticketNumber').textContent = ticketNumber;
+    document.getElementById('successModal').classList.remove('hidden');
+}
+
 function copyTicket() {
     const ticketNumber = document.getElementById('ticketNumber').textContent;
     navigator.clipboard.writeText(ticketNumber).then(() => {
-        const toast = document.getElementById('copyToast');
-        toast.classList.remove('hidden');
-        setTimeout(() => {
-            toast.classList.add('hidden');
-        }, 2000);
+        alert('Nomor tiket berhasil disalin!');
     });
+}
+
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    let borderColor, iconColor, icon;
+
+    if (type === 'success') {
+        borderColor = 'border-green-500';
+        iconColor = 'text-green-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else if (type === 'error') {
+        borderColor = 'border-red-500';
+        iconColor = 'text-red-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else {
+        borderColor = 'border-blue-500';
+        iconColor = 'text-blue-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast-enter bg-white shadow-lg rounded-lg p-4 flex items-center space-x-3 min-w-[320px] border-l-4 ${borderColor}`;
+
+    toast.innerHTML = `
+        <div class="flex-shrink-0">
+            <svg class="w-6 h-6 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${icon}
+            </svg>
+        </div>
+        <div class="flex-1">
+            <p class="font-montserrat text-sm font-semibold text-gray-900">${message}</p>
+        </div>
+        <button type="button" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+
+    toast.querySelector('button').addEventListener('click', () => {
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 250);
+    });
+
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('toast-enter-active'));
+
+    setTimeout(() => {
+        toast.classList.remove('toast-enter-active');
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 250);
+    }, 4000);
+}
+
+function canUpload(idx) {
+    if (idx === 1) return true;
+
+    const prevInput = document.getElementById('document' + (idx - 1));
+    const prevHasFile = prevInput && prevInput.files && prevInput.files.length > 0;
+
+    if (!prevHasFile) {
+        showToast(`Mohon upload Dokumen ${idx - 1} dulu sebelum Dokumen ${idx}.`, 'error');
+        return false;
+    }
+    return true;
+}
+
+function displayFileName(idx, input) {
+    const nameEl   = document.getElementById('fileName' + idx);
+    const errEl    = document.getElementById('fileErr' + idx);
+    const clearBtn = document.getElementById('clearBtn' + idx);
+
+    if (errEl) {
+        errEl.classList.add('hidden');
+        errEl.textContent = '';
+    }
+
+    if (!canUpload(idx)) {
+        input.value = '';
+        if (nameEl) { nameEl.textContent = ''; nameEl.classList.add('hidden'); }
+        if (clearBtn) clearBtn.classList.add('hidden');
+        setDocBoxState(idx, null);
+        return;
+    }
+
+    if (!input.files || !input.files[0]) {
+        if (nameEl) { nameEl.classList.add('hidden'); nameEl.textContent = ''; }
+        if (clearBtn) clearBtn.classList.add('hidden');
+        setDocBoxState(idx, null);
+        return;
+    }
+
+    const f = input.files[0];
+    const maxBytes = 2 * 1024 * 1024; 
+
+    if (f.size > maxBytes) {
+        input.value = '';
+
+        if (nameEl) { nameEl.classList.add('hidden'); nameEl.textContent = ''; }
+        if (clearBtn) clearBtn.classList.add('hidden');
+        setDocBoxState(idx, null);
+
+        showToast(`Dokumen ${idx}: ukuran file melebihi 2MB.`, 'error');
+        return;
+    }
+
+    if (nameEl) {
+        nameEl.textContent = `${f.name} (${formatFileSize(f.size)})`;
+        nameEl.classList.remove('hidden');
+    }
+    if (clearBtn) clearBtn.classList.remove('hidden');
+    setDocBoxState(idx, 'ok');
 }
 </script>
 @endsection

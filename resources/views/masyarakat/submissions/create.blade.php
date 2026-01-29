@@ -15,7 +15,7 @@
         </ol>
     </nav>
 
-    <!-- SUCCESS MODAL (SAMA KAYAK CONSULTATION) -->
+    <!-- Success Modal -->
     @if(session('success') && session('ticket_id'))
     <div id="successModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -34,7 +34,7 @@
                         <p class="text-xs text-gray-600 mb-1">Nomor Tiket Anda</p>
                         <div class="flex items-center justify-between">
                             <p class="font-bold text-blue-900 text-lg" id="ticketNumber">{{ session('ticket_id') }}</p>
-                            <button onclick="copyTicket()" class="text-blue-600 hover:text-blue-800" title="Copy">
+                            <button type="button" onclick="copyTicket()" class="text-blue-600 hover:text-blue-800" title="Copy">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                                 </svg>
@@ -44,16 +44,16 @@
                 </div>
                 <div class="items-center px-4 py-3 space-y-2">
                     @if(session('submission_id'))
-                    <button onclick="window.location.href='{{ route('masyarakat.submissions.show', session('submission_id')) }}'" 
+                    <button type="button" onclick="window.location.href='{{ route('masyarakat.submissions.show', session('submission_id')) }}'"
                         class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
                         Lihat Detail Permohonan
                     </button>
                     @endif
-                    <button onclick="window.location.href='{{ route('masyarakat.submissions.index') }}'" 
+                    <button type="button" onclick="window.location.href='{{ route('masyarakat.submissions.index') }}'"
                         class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
                         Lihat Daftar Permohonan
                     </button>
-                    <button onclick="window.location.href='{{ route('masyarakat.dashboard') }}'" 
+                    <button type="button" onclick="window.location.href='{{ route('masyarakat.dashboard') }}'"
                         class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
                         Kembali ke Dashboard
                     </button>
@@ -138,15 +138,15 @@
                     @enderror
                 </div>
 
-                <!-- Document Upload (Multiple Upload) -->
+                <!-- Document Upload  -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
                         Dokumen Pendukung <span class="text-gray-500">(Maksimal 3 file)</span>
                     </label>
-                    
-                    <!-- Upload Area 1 -->
+
                     <div class="space-y-4">
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <!-- Upload Area 1 -->
+                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document1').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,12 +163,12 @@
                                     </svg>
                                 </button>
                             </div>
-                            <input id="document1" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
+                            <input id="document1" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
                                 onchange="displayFileName(1, this)">
                         </div>
 
                         <!-- Upload Area 2 -->
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document2').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,12 +185,12 @@
                                     </svg>
                                 </button>
                             </div>
-                            <input id="document2" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
+                            <input id="document2" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
                                 onchange="displayFileName(2, this)">
                         </div>
 
                         <!-- Upload Area 3 -->
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document3').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -207,7 +207,7 @@
                                     </svg>
                                 </button>
                             </div>
-                            <input id="document3" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
+                            <input id="document3" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
                                 onchange="displayFileName(3, this)">
                         </div>
                     </div>
@@ -216,6 +216,7 @@
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
+
             </div>
         </div>
 
@@ -242,11 +243,11 @@
                 $from = request()->query('from', 'index');
                 $backUrl = $from === 'dashboard' ? route('masyarakat.dashboard') : route('masyarakat.submissions.index');
             @endphp
-            <a href="{{ $backUrl }}" 
+            <a href="{{ $backUrl }}"
                 class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
                 Kembali
             </a>
-            <button type="submit" 
+            <button type="submit"
                 class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -277,7 +278,7 @@
                 </div>
             </div>
             <div class="items-center px-4 py-3">
-                <button onclick="closeErrorModal()" 
+                <button type="button" onclick="closeErrorModal()"
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
                     Kembali & Lengkapi
                 </button>
@@ -286,42 +287,125 @@
     </div>
 </div>
 
+<!-- TOAST CONTAINER -->
+<div id="toast-container" class="fixed top-5 right-5 z-[9999] space-y-3"></div>
+
+<style>
+  .toast-enter { transform: translateX(120%); opacity: 0; }
+  .toast-enter-active { transform: translateX(0); opacity: 1; transition: all .25s ease; }
+  .toast-exit { transform: translateX(120%); opacity: 0; transition: all .25s ease; }
+</style>
+
 <script>
-// Display file name
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    let borderColor, iconColor, icon;
+
+    if (type === 'success') {
+        borderColor = 'border-green-500';
+        iconColor = 'text-green-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else if (type === 'error') {
+        borderColor = 'border-red-500';
+        iconColor = 'text-red-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else {
+        borderColor = 'border-blue-500';
+        iconColor = 'text-blue-500';
+        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast-enter bg-white shadow-lg rounded-lg p-4 mb-3 flex items-center space-x-3 min-w-[320px] border-l-4 ${borderColor}`;
+
+    toast.innerHTML = `
+        <div class="flex-shrink-0">
+            <svg class="w-6 h-6 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${icon}
+            </svg>
+        </div>
+        <div class="flex-1">
+            <p class="font-montserrat text-sm font-semibold text-gray-900">${message}</p>
+        </div>
+        <button type="button" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+
+    toast.querySelector('button').addEventListener('click', () => {
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 250);
+    });
+
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('toast-enter-active'));
+
+    setTimeout(() => {
+        toast.classList.remove('toast-enter-active');
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 250);
+    }, 4000);
+}
+
+// harus urut 1 -> 2 -> 3
+function canUpload(idx) {
+    if (idx === 1) return true;
+
+    const prevInput = document.getElementById('document' + (idx - 1));
+    const prevHasFile = prevInput && prevInput.files && prevInput.files.length > 0;
+
+    if (!prevHasFile) {
+        showToast(`Mohon upload Dokumen ${idx - 1} dulu sebelum Dokumen ${idx}.`, 'error');
+        return false;
+    }
+    return true;
+}
+
+// Display file name + >2MB toast
 function displayFileName(index, input) {
     const fileNameDisplay = document.getElementById('fileName' + index);
     const clearBtn = document.getElementById('clearBtn' + index);
-    
+
+    if (!canUpload(index)) {
+        input.value = '';
+        if (fileNameDisplay) fileNameDisplay.classList.add('hidden');
+        if (clearBtn) clearBtn.classList.add('hidden');
+        return;
+    }
+
     if (input.files && input.files[0]) {
         const file = input.files[0];
-        const fileSize = (file.size / 1024 / 1024).toFixed(2); // Convert to MB
+        const maxBytes = 2 * 1024 * 1024;
 
-        if (fileSize > 2) {
-            alert('Ukuran file maksimal 2MB!');
+        if (file.size > maxBytes) {
             input.value = '';
-            fileNameDisplay.classList.add('hidden');
-            clearBtn.classList.add('hidden');
+            if (fileNameDisplay) fileNameDisplay.classList.add('hidden');
+            if (clearBtn) clearBtn.classList.add('hidden');
+            showToast(`Dokumen ${index}: ukuran file melebihi 2MB.`, 'error');
             return;
         }
-        
+
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
         fileNameDisplay.textContent = `✓ ${file.name} (${fileSize} MB)`;
         fileNameDisplay.classList.remove('hidden');
         clearBtn.classList.remove('hidden');
     }
 }
 
-// Clear file
 function clearFile(index) {
     const fileInput = document.getElementById('document' + index);
     const fileNameDisplay = document.getElementById('fileName' + index);
     const clearBtn = document.getElementById('clearBtn' + index);
-    
-    fileInput.value = '';
-    fileNameDisplay.classList.add('hidden');
-    clearBtn.classList.add('hidden');
+
+    if (fileInput) fileInput.value = '';
+    if (fileNameDisplay) fileNameDisplay.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
 }
 
-// Copy ticket number to clipboard
 function copyTicket() {
     const ticketNumber = document.getElementById('ticketNumber').textContent;
     navigator.clipboard.writeText(ticketNumber).then(() => {
@@ -329,11 +413,10 @@ function copyTicket() {
     });
 }
 
-// Show error modal with error messages
 function showErrorModal(errors) {
     const errorList = document.getElementById('errorList');
     errorList.innerHTML = '';
-    
+
     if (Array.isArray(errors)) {
         errors.forEach(error => {
             const li = document.createElement('li');
@@ -349,16 +432,14 @@ function showErrorModal(errors) {
             });
         });
     }
-    
+
     document.getElementById('errorModal').classList.remove('hidden');
 }
 
-// Close error modal
 function closeErrorModal() {
     document.getElementById('errorModal').classList.add('hidden');
 }
 
-// Check for validation errors
 @if($errors->any())
     const errors = @json($errors->all());
     showErrorModal(errors);
