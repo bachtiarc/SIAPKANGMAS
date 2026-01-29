@@ -24,7 +24,6 @@
         .font-montserrat { font-family: 'Montserrat', sans-serif; }
         .font-lato { font-family: 'Lato', sans-serif; }
 
-        /* soft, modern, gen-z background (palette tetap biru) */
         .app-bg {
             background:
                 radial-gradient(1100px 600px at 18% 8%, rgba(37, 99, 235, .14), transparent 62%),
@@ -33,12 +32,10 @@
                 linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
         }
 
-        /* nicer scrollbar */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.55); border-radius: 999px; border: 2px solid rgba(255,255,255,.7); }
         ::-webkit-scrollbar-track { background: transparent; }
 
-        /* subtle grain (gen-z texture), super ringan */
         .grain::before{
             content:"";
             position:fixed;
@@ -278,17 +275,14 @@
         document.getElementById('logout-form').submit();
     }
 
-    // Close when clicking outside
     document.getElementById('logoutModal')?.addEventListener('click', function(e) {
         if (e.target === this) hideLogoutModal();
     });
 
-    // Close with ESC
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') hideLogoutModal();
     });
 
-    // ===== GLOBAL TICKET SEARCH (AUTOCOMPLETE) =====
     (function () {
         const input = document.getElementById('globalTicketSearch');
         const dropdown = document.getElementById('ticketSearchDropdown');

@@ -183,14 +183,8 @@
     // fields pegawai
     $nip = $user->nip ?? null;
     $jabatan = $user->jabatan ?? null;
-    // di DB kamu: $user->bidang (di UI kamu ditulis Bidang/Balai)
     $subbagBalai = $user->bidang ?? null;
 
-    /**
-     * FOTO KTP URL
-     * - Kalau di controller/view show kamu sudah ada $ktpPublicUrl, pakai itu.
-     * - Kalau belum ada, kamu bisa isi sendiri sesuai storage kamu.
-     */
     $ktpPublicUrl = $ktpPublicUrl ?? null;
 @endphp
 
@@ -275,7 +269,6 @@
         @endif
     </table>
 
-    {{-- FOTO KTP hanya untuk masyarakat_umum --}}
     @if($userType === 'masyarakat_umum')
         <div class="ktp-wrap">
             <div class="ktp-title">Foto KTP</div>

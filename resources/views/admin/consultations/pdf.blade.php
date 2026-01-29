@@ -265,7 +265,6 @@
         @endif
     </table>
 
-    {{-- FOTO KTP hanya untuk masyarakat_umum --}}
     @if($userType === 'masyarakat_umum')
         <div class="ktp-wrap">
             <div class="ktp-title">Foto KTP</div>

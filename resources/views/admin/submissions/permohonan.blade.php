@@ -10,7 +10,6 @@
         <p class="font-lato text-gray-600">Kelola dan unduh laporan pengajuan layanan bantuan Dinas Perindustrian dan Perdagangan Jawa Tengah.</p>
     </div>
 
-    {{-- STATS (samakan dengan konsultasi) --}}
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div class="bg-white/75 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div class="w-10 h-10 bg-blue-50/80 ring-1 ring-blue-200/60 rounded-2xl flex items-center justify-center mb-4">
@@ -56,9 +55,7 @@
         </div>
     </div>
 
-    {{-- WRAPPER (samakan dengan konsultasi) --}}
     <div class="bg-white/75 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/70 overflow-hidden">
-    {{-- TABS (lebih lega kayak kategori) --}}
     <div class="p-4 border-b border-gray-200/70">
         @php
             $tabBase = 'flex-1 text-center px-6 py-3 font-montserrat font-semibold text-sm transition rounded-2xl ring-1 ring-transparent';
@@ -66,7 +63,6 @@
             $tabOn   = 'text-blue-700 bg-blue-100/70 ring-blue-200/70 shadow-sm';
         @endphp
 
-        {{-- “tray” biar ada margin lega kiri kanan atas bawah --}}
         <div class="bg-gray-50/70 p-2 rounded-3xl ring-1 ring-gray-200/60">
             <div class="flex w-full gap-3">
                 <a href="{{ route('admin.management.semua') }}"
@@ -92,13 +88,11 @@
         </div>
     </div>
 
-        {{-- FILTER (styling samakan dengan konsultasi) --}}
         <form action="{{ route('admin.submissions.permohonan') }}" method="GET" class="w-full">
             <div class="p-4 border-b border-gray-200/70">
                 <div class="overflow-x-auto">
                     <div class="min-w-max flex items-end gap-4">
 
-                        {{-- Rentang tanggal --}}
                         <div class="shrink-0">
                             <label class="block text-xs font-semibold text-gray-600 mb-2">Rentang Tanggal :</label>
                             <div class="flex items-center gap-2">
@@ -186,7 +180,6 @@
                             </div>
                         </div>
 
-                        {{-- Actions --}}
                         <div class="shrink-0 flex items-center gap-2 ml-2">
                             <button type="submit"
                                     class="px-4 py-2 bg-blue-700 text-white text-sm font-semibold rounded-2xl hover:bg-blue-800 transition shadow-sm whitespace-nowrap active:scale-[.99]">
@@ -213,7 +206,6 @@
             </div>
         </form>
 
-        {{-- TABLE (samakan dengan konsultasi: sticky head + bg glass + min width) --}}
         <div class="overflow-x-auto">
             <div class="min-w-[1200px]">
                 <table class="w-full text-left border-collapse">

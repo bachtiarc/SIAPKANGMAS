@@ -140,10 +140,8 @@
 
 @push('scripts')
 <script>
-    // Ambil data dari Controller
     const chartData = @json($chartData);
 
-    // Chart.js Configuration
     const ctx = document.getElementById('monthlyChart');
 
     new Chart(ctx, {
@@ -153,7 +151,6 @@
             datasets: [
                 {
                     label: 'Selesai',
-                    // Gunakan data real dari controller
                     data: chartData.completed, 
                     backgroundColor: 'rgba(34, 197, 94, 0.8)',
                     borderColor: 'rgb(34, 197, 94)',
@@ -161,7 +158,6 @@
                 },
                 {
                     label: 'Sedang Diproses',
-                    // Gunakan data real dari controller
                     data: chartData.processing,
                     backgroundColor: 'rgba(234, 179, 8, 0.8)',
                     borderColor: 'rgb(234, 179, 8)',
@@ -169,7 +165,6 @@
                 },
                 {
                     label: 'Belum Diproses',
-                    // Gunakan data real dari controller
                     data: chartData.pending,
                     backgroundColor: 'rgba(239, 68, 68, 0.8)',
                     borderColor: 'rgb(239, 68, 68)',
@@ -206,7 +201,6 @@
                     },
                     cornerRadius: 8,
                     callbacks: {
-                        // Tambahkan ini agar tooltip tidak menampilkan 0 jika data kosong (opsional)
                         label: function(context) {
                             let label = context.dataset.label || '';
                             if (label) {
@@ -227,7 +221,7 @@
                         color: 'rgba(0, 0, 0, 0.05)'
                     },
                     ticks: {
-                        stepSize: 1, // Agar sumbu Y bilangan bulat (tidak pecahan)
+                        stepSize: 1,
                         font: {
                             family: 'Lato',
                             size: 11

@@ -10,7 +10,6 @@
     // =========================
     $rawPhone = $consultation->user->phone ?? '';
 
-    // Ambil angka saja (hapus spasi, +, -, dll)
     $phoneDigits = preg_replace('/\D+/', '', $rawPhone);
 
     // Normalisasi ke format 62xxxxxxxxxx
@@ -24,13 +23,11 @@
         $waPhone = $phoneDigits; // fallback
     }
 
-    // Simple validation minimal (biar gak wa.me/ kosong)
     $waPhone = (strlen($waPhone) >= 10) ? $waPhone : null;
 
     $waText = rawurlencode("Halo {$consultation->user->name}, kami dari Admin SIAPKANGMAS terkait Konsultasi {$consultation->ticket_id}.");
     $waLink = $waPhone ? "https://wa.me/{$waPhone}?text={$waText}" : null;
 
-    // aman kalau controller belum kirim
     $ktpPublicUrl = $ktpPublicUrl ?? null;
 @endphp
 
@@ -169,7 +166,6 @@
                     $user = $consultation->user;
                     $userType = $user->user_type ?? null;
 
-                    // sesuai DB kamu
                     $nik = $user->nik ?? null;
                     $alamat = $user->address ?? null;
                     $fotoKtp = $user->foto_ktp ?? null;
@@ -200,11 +196,7 @@
                             <p class="font-bold text-gray-900">{{ $user->phone ?? '-' }}</p>
                         </div>
 
-                        {{-- =========================
-                            MASYARAKAT UMUM
-                            tampil: NIK + alamat + foto KTP
-                            hilang: bidang/balai + jabatan
-                        ========================= --}}
+                        {{-- MASYARAKAT UMUM --}}
                         @if($userType === 'masyarakat_umum')
                             <div>
                                 <p class="text-xs text-gray-500 mb-1">NIK</p>
@@ -249,11 +241,7 @@
                             </div>
                         @endif
 
-                        {{-- =========================
-                            PEGAWAI
-                            tampil: nip + bidang/balai + jabatan
-                            (tidak tampil ktp/alamat)
-                        ========================= --}}
+                        {{-- PEGAWAI --}}
                         @if($userType === 'pegawai')
                             <div>
                                 <p class="text-xs text-gray-500 mb-1">NIP</p>
@@ -308,7 +296,6 @@
                             <label for="notify_user" class="ml-2 text-xs text-gray-500">Kirim notifikasi email balasan ke pemohon</label>
                         </div>
 
-                        {{-- tombol simpan -> modal --}}
                         <button type="button"
                                 onclick="openSaveModalConsultation()"
                                 class="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-lg transition shadow-sm text-sm">
@@ -369,12 +356,10 @@
     </div>
 </div>
 
-{{-- Modal Konfirmasi Simpan --}}
 <div id="saveModalConsultation"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-center">
 
-        <!-- ICON CHECK -->
         <div class="mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-full bg-blue-100">
             <svg class="w-9 h-9 text-blue-600"
                  fill="none"
@@ -431,12 +416,10 @@
         if (form) form.submit();
     }
 
-    // backdrop
     document.getElementById('saveModalConsultation').addEventListener('click', function (e) {
         if (e.target === this) closeSaveModalConsultation();
     });
 
-    // ESC
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') closeSaveModalConsultation();
     });

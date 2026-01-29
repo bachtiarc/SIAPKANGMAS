@@ -26,7 +26,6 @@
     $waText = rawurlencode("Halo {$submission->user->name}, kami dari Admin SIAPKANGMAS terkait Pengajuan {$submission->ticket_id}.");
     $waLink = $waPhone ? "https://wa.me/{$waPhone}?text={$waText}" : null;
 
-    // aman kalau controller belum kirim
     $ktpPublicUrl = $ktpPublicUrl ?? null;
 @endphp
 
@@ -184,11 +183,7 @@
                             <p class="font-bold text-gray-900">{{ $user->phone ?? '-' }}</p>
                         </div>
 
-                        {{-- =========================
-                            MASYARAKAT UMUM
-                            tampil: NIK + alamat + foto KTP
-                            hilang: bidang/balai + jabatan
-                        ========================= --}}
+                        {{-- MASYARAKAT UMUM --}}
                         @if($userType === 'masyarakat_umum')
                             <div>
                                 <p class="text-xs text-gray-500 mb-1">NIK</p>
@@ -232,11 +227,7 @@
                             </div>
                         @endif
 
-                        {{-- =========================
-                            PEGAWAI
-                            tampil: nip + bidang/balai + jabatan
-                            (tidak tampil ktp/alamat)
-                        ========================= --}}
+                        {{-- PEGAWAI --}}
                         @if($userType === 'pegawai')
                             <div>
                                 <p class="text-xs text-gray-500 mb-1">NIP</p>
@@ -290,7 +281,6 @@
                             <label for="notify_user" class="ml-2 text-xs text-gray-500">Kirim notifikasi email kepada pemohon</label>
                         </div>
 
-                        {{-- tombol simpan -> modal --}}
                         <button type="button"
                                 onclick="openSaveModalSubmission()"
                                 class="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-lg transition shadow-sm text-sm">
@@ -351,7 +341,6 @@
     </div>
 </div>
 
-{{-- Modal Konfirmasi Simpan --}}
 <div id="saveModalSubmission"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-center">
@@ -413,12 +402,10 @@
         if (form) form.submit();
     }
 
-    // backdrop
     document.getElementById('saveModalSubmission').addEventListener('click', function (e) {
         if (e.target === this) closeSaveModalSubmission();
     });
 
-    // ESC
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') closeSaveModalSubmission();
     });

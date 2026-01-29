@@ -1,4 +1,3 @@
-{{-- resources/views/admin/categories/kategori.blade.php --}}
 @extends('layouts.admin')
 
 @section('header_title', 'Manajemen Kategori')
@@ -30,13 +29,10 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {{-- LEFT: TABLE --}}
         <div class="lg:col-span-8 bg-white/75 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/70 overflow-hidden">
 
-            {{-- Tabs --}}
             <div class="p-4 border-b border-gray-200/70">
                 @php
-                    // safety default biar ga undefined di blade
                     $serviceOptions = $serviceOptions ?? [
                         'konsultasi' => 'Konsultasi',
                         'pengaduan'  => 'Pengaduan',
@@ -67,12 +63,10 @@
                 </div>
             </div>
 
-            {{-- Search + Filter Aktor --}}
             <div class="p-4 border-b border-gray-200/70">
                 <form method="GET" action="{{ route('admin.categories.kategori') }}" class="flex flex-col sm:flex-row gap-3">
                     <input type="hidden" name="type" value="{{ $type }}">
 
-                    {{-- Filter Aktor --}}
                     <div class="sm:w-56">
                         <select name="user_type"
                             class="w-full px-4 py-2.5 rounded-2xl border border-gray-300/80 text-sm
@@ -116,7 +110,6 @@
                 </form>
             </div>
 
-            {{-- Table scrollable --}}
             <div class="overflow-x-auto">
                 <table class="min-w-[980px] w-full text-left border-collapse">
                     <thead class="bg-gray-50/70 backdrop-blur sticky top-0 z-10">
@@ -195,13 +188,11 @@
                 </table>
             </div>
 
-            {{-- Pagination --}}
             <div class="p-4 border-t border-gray-200/70">
                 {{ $categories->appends(['type' => $type, 'q' => request('q'), 'user_type' => $userType])->links() }}
             </div>
         </div>
 
-        {{-- RIGHT: FORM --}}
         <div class="lg:col-span-4 bg-white/75 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/70 p-6">
             <div class="flex items-center gap-3 mb-6">
                 <div class="w-12 h-12 rounded-2xl bg-blue-50/80 ring-1 ring-blue-200/70 flex items-center justify-center">
@@ -215,9 +206,8 @@
             <form method="POST" action="{{ route('admin.categories.store') }}" class="space-y-5">
                 @csrf
 
-                {{-- Aktor --}}
                 <div>
-                    <label class="block font-montserrat font-semibold text-gray-700 mb-2">Aktor</label>
+                    <label class="block font-montserrat font-semibold text-gray-700 mb-2">Pengguna</label>
                     <div class="relative">
                         <select name="user_type"
                             class="w-full appearance-none px-4 py-3 pr-10 rounded-2xl border border-gray-300/80 text-sm
@@ -288,7 +278,6 @@
     </div>
 </div>
 
-{{-- Modal Konfirmasi Hapus (custom) --}}
 <div id="deleteModal"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
 
@@ -352,12 +341,10 @@
         if (form) form.submit();
     }
 
-    // klik backdrop untuk tutup
     document.getElementById('deleteModal').addEventListener('click', function (e) {
         if (e.target === this) closeDeleteModal();
     });
 
-    // ESC untuk tutup
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') closeDeleteModal();
     });

@@ -19,7 +19,6 @@
     <h2 class="font-montserrat font-bold text-2xl text-gray-900 mb-6">Edit Kategori</h2>
 
     @php
-        // safety default kalau belum dipassing
         $actorOptions = $actorOptions ?? [
             'pegawai' => 'Pegawai',
             'masyarakat_umum' => 'Masyarakat Umum',
@@ -33,7 +32,6 @@
         @csrf
         @method('PUT')
 
-        {{-- NEW: Aktor --}}
         <div>
             <label class="block font-montserrat font-semibold text-gray-700 mb-2">Aktor</label>
             <select name="user_type"
@@ -85,7 +83,6 @@
                 Kembali
             </a>
 
-            {{-- tombol simpan -> buka modal konfirmasi --}}
             <button type="button"
                     onclick="openSaveModal()"
                     class="px-5 py-3 rounded-xl bg-blue-700 text-white font-montserrat font-semibold hover:bg-blue-800 transition">
@@ -95,7 +92,6 @@
     </form>
 </div>
 
-{{-- Modal Konfirmasi Simpan (SAMA UKURAN & STYLE KAYA MODAL HAPUS) --}}
 <div id="saveModal"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
 
@@ -152,12 +148,10 @@
         if (form) form.submit();
     }
 
-    // klik backdrop untuk tutup
     document.getElementById('saveModal').addEventListener('click', function (e) {
         if (e.target === this) closeSaveModal();
     });
 
-    // ESC untuk tutup
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') closeSaveModal();
     });
