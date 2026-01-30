@@ -1,3 +1,4 @@
+{{-- resources/views/layouts/admin.blade.php --}}
 @php
     $user = auth()->user();
     $initial = $user?->name ? strtoupper(substr($user->name, 0, 1)) : 'A';
@@ -48,6 +49,22 @@
         @media (prefers-reduced-motion: reduce) {
             * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
         }
+
+        /* ===== Sidebar Collapse Mode ===== */
+        .sidebar-collapsed { width: 88px !important; }
+        .sidebar-collapsed .sidebar-text { display: none !important; }
+        .sidebar-collapsed .sidebar-pad { padding: 16px !important; }
+        .sidebar-collapsed .sidebar-navpad { padding-left: 12px !important; padding-right: 12px !important; }
+        .sidebar-collapsed .nav-item { justify-content: center !important; padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+        .sidebar-collapsed .sidebar-avatar { width: 44px !important; height: 44px !important; border-radius: 18px !important; }
+
+        /* Toggle button positioning */
+        #sidebarToggle {
+            position: absolute;
+            right: -18px;
+            top: 24px;
+            z-index: 50;
+        }
     </style>
 
     @stack('styles')
@@ -57,15 +74,16 @@
 <div class="flex h-screen overflow-hidden">
 
     <!-- SIDEBAR -->
-    <aside class="w-64 flex-shrink-0 relative">
-        <div class="h-full bg-white/75 backdrop-blur-xl border-r border-gray-200/70 shadow-[0_1px_0_rgba(15,23,42,.04)]">
-            <div class="p-6">
+    <aside id="sidebar" class="w-64 flex-shrink-0 relative transition-all duration-200">
+        <div class="h-full bg-white/75 backdrop-blur-xl border-r border-gray-200/70 shadow-[0_1px_0_rgba(15,23,42,.04)] flex flex-col">
+
+            <div class="p-6 sidebar-pad transition-all duration-200">
                 <div class="flex items-center gap-3">
                     <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg
-                                bg-gradient-to-br from-blue-600 to-blue-500 shadow-sm ring-1 ring-white/50">
+                                bg-gradient-to-br from-blue-600 to-blue-500 shadow-sm ring-1 ring-white/50 sidebar-avatar">
                         {{ $initial }}
                     </div>
-                    <div class="min-w-0">
+                    <div class="min-w-0 sidebar-text">
                         <h3 class="text-sm font-montserrat font-semibold text-gray-900 truncate">
                             {{ $user->name ?? 'Admin' }}
                         </h3>
@@ -74,8 +92,8 @@
                 </div>
             </div>
 
-            <nav class="pb-6">
-                <div class="px-4 space-y-2">
+            <nav class="pb-6 flex-1">
+                <div class="px-4 space-y-2 sidebar-navpad transition-all duration-200">
 
                     @php
                         $navBase = "nav-item group relative flex items-center px-3 py-3 text-sm font-montserrat font-semibold rounded-2xl transition-all duration-200";
@@ -85,12 +103,13 @@
 
                     <!-- Dashboard -->
                     <a href="{{ route('admin.dashboard') }}"
-                       class="{{ $navBase }} {{ request()->routeIs('admin.dashboard') ? $navOn : $navOff }}">
+                       class="{{ $navBase }} {{ request()->routeIs('admin.dashboard') ? $navOn : $navOff }}"
+                       data-tooltip="Dashboard">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                         </svg>
-                        <span class="ml-2 whitespace-nowrap">Dashboard</span>
+                        <span class="ml-2 whitespace-nowrap sidebar-text">Dashboard</span>
                     </a>
 
                     <!-- Manajemen Pengajuan -->
@@ -102,12 +121,13 @@
                             || request()->routeIs('admin.complaints.*')
                             || request()->routeIs('admin.management.*')
                             ? $navOn : $navOff
-                       }}">
+                       }}"
+                       data-tooltip="Manajemen Pengajuan">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
-                        <span class="ml-2 whitespace-nowrap">Manajemen Pengajuan</span>
+                        <span class="ml-2 whitespace-nowrap sidebar-text">Manajemen Pengajuan</span>
                     </a>
 
                     <!-- Manajemen Kategori -->
@@ -117,33 +137,46 @@
                             request()->routeIs('admin.categories.*')
                             || request()->routeIs('admin.categories.kategori')
                             ? $navOn : $navOff
-                       }}">
+                       }}"
+                       data-tooltip="Manajemen Kategori">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                         </svg>
-                        <span class="ml-2 whitespace-nowrap">Manajemen Kategori</span>
+                        <span class="ml-2 whitespace-nowrap sidebar-text">Manajemen Kategori</span>
                     </a>
 
                 </div>
             </nav>
 
-            <div class="absolute bottom-0 w-64 p-4">
+            <div class="p-4 sidebar-navpad transition-all duration-200">
                 <button type="button" onclick="showLogoutModal()"
-                        class="w-full group flex items-center px-4 py-3 text-sm font-montserrat font-semibold rounded-2xl transition-all
-                               text-red-600 hover:bg-red-50/70 active:scale-[.99]">
+                        class="w-full group relative flex items-center px-4 py-3 text-sm font-montserrat font-semibold rounded-2xl transition-all
+                               text-red-600 hover:bg-red-50/70 active:scale-[.99]"
+                        data-tooltip="Keluar">
                     <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                     </svg>
-                    <span class="ml-4 whitespace-nowrap">Keluar</span>
+                    <span class="ml-4 whitespace-nowrap sidebar-text">Keluar</span>
                 </button>
 
                 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
                     @csrf
                 </form>
             </div>
+
         </div>
+
+        <!-- TOGGLE SIDEBAR BUTTON -->
+        <button id="sidebarToggle"
+                type="button"
+                class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200
+                       shadow-lg hover:shadow-xl transition-all active:scale-95">
+            <svg id="chevronIcon" class="w-5 h-5 text-gray-700 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
     </aside>
 
     <!-- MAIN -->
@@ -283,6 +316,7 @@
         if (e.key === 'Escape') hideLogoutModal();
     });
 
+    // ===== GLOBAL SEARCH TICKET =====
     (function () {
         const input = document.getElementById('globalTicketSearch');
         const dropdown = document.getElementById('ticketSearchDropdown');
@@ -395,6 +429,34 @@
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeDropdown();
+        });
+    })();
+
+    // ===== SIDEBAR TOGGLE =====
+    (function () {
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('sidebarToggle');
+        const chevron = document.getElementById('chevronIcon');
+        if (!sidebar || !toggle) return;
+
+        const KEY = 'admin_sidebar_collapsed';
+
+        const apply = (collapsed) => {
+            sidebar.classList.toggle('sidebar-collapsed', collapsed);
+            if (collapsed) {
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        };
+
+        const saved = localStorage.getItem(KEY);
+        apply(saved === '1');
+
+        toggle.addEventListener('click', () => {
+            const nowCollapsed = !sidebar.classList.contains('sidebar-collapsed');
+            localStorage.setItem(KEY, nowCollapsed ? '1' : '0');
+            apply(nowCollapsed);
         });
     })();
 </script>
