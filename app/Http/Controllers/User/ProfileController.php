@@ -17,7 +17,6 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
 
-        // Get statistics (same as dashboard)
         $totalSubmissions = $this->getTotalSubmissions($user);
         $completedSubmissions = $this->getCompletedSubmissions($user);
 
@@ -80,7 +79,6 @@ class ProfileController extends Controller
     public function updatePhoto(Request $request)
     {
         try {
-            // Validate file with PROPER 2MB limit
             $request->validate([
                 'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048', // 2048 KB = 2 MB
             ], [
@@ -91,8 +89,6 @@ class ProfileController extends Controller
             ]);
 
             $user = auth()->user();
-
-            // Check if file was uploaded
             if (!$request->hasFile('profile_photo')) {
                 Log::error('Profile photo upload failed: No file in request');
                 return back()->with('photo_error', 'File foto tidak ditemukan. Silakan pilih foto terlebih dahulu.');
@@ -100,7 +96,6 @@ class ProfileController extends Controller
 
             $file = $request->file('profile_photo');
 
-            // Check if file is valid
             if (!$file->isValid()) {
                 Log::error('Profile photo upload failed: Invalid file', [
                     'error' => $file->getError(),
@@ -109,7 +104,6 @@ class ProfileController extends Controller
                 return back()->with('photo_error', 'File foto tidak valid atau rusak. Error: ' . $file->getErrorMessage());
             }
 
-            // Log file info for debugging
             Log::info('Uploading profile photo', [
                 'user_id' => $user->id,
                 'original_name' => $file->getClientOriginalName(),
@@ -117,7 +111,6 @@ class ProfileController extends Controller
                 'size' => $file->getSize(),
             ]);
 
-            // Delete old photo if exists
             if ($user->profile_photo) {
                 if (Storage::disk('public')->exists($user->profile_photo)) {
                     Storage::disk('public')->delete($user->profile_photo);
@@ -125,7 +118,6 @@ class ProfileController extends Controller
                 }
             }
 
-            // Store new photo
             $path = $file->store('profile-photos', 'public');
 
             if (!$path) {
@@ -133,13 +125,11 @@ class ProfileController extends Controller
                 return back()->with('photo_error', 'Gagal menyimpan foto ke storage. Periksa permission folder storage/app/public.');
             }
 
-            // Verify file was actually saved
             if (!Storage::disk('public')->exists($path)) {
                 Log::error('Profile photo upload failed: File not found after save', ['path' => $path]);
                 return back()->with('photo_error', 'Foto tidak ditemukan setelah disimpan. Periksa konfigurasi storage.');
             }
 
-            // Update user profile_photo field
             $user->profile_photo = $path;
             $user->save();
 
@@ -151,7 +141,7 @@ class ProfileController extends Controller
             return back()->with('photo_success', 'Foto profil berhasil diperbarui!');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Get first validation error message
+
             $errorMessage = $e->validator->errors()->first('profile_photo');
             return back()->with('photo_error', $errorMessage);
         } catch (\Exception $e) {
@@ -183,17 +173,14 @@ class ProfileController extends Controller
 
             $user = auth()->user();
 
-            // Check if current password is correct
             if (!Hash::check($request->current_password, $user->password)) {
                 return back()->with('password_error', 'Password saat ini tidak sesuai.');
             }
 
-            // FIX: Check if new password is SAME as old password
             if (Hash::check($request->password, $user->password)) {
                 return back()->with('password_error', 'Password baru harus berbeda dari password lama.');
             }
 
-            // Update password
             $user->password = Hash::make($request->password);
             $user->save();
 
@@ -202,7 +189,6 @@ class ProfileController extends Controller
             return back()->with('password_success', 'Password berhasil diubah!');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Get first validation error message
             $errorMessage = $e->validator->errors()->first();
             return back()->with('password_error', $errorMessage);
         } catch (\Exception $e) {

@@ -37,10 +37,6 @@ class Consultation extends Model
         return $this->hasMany(ConsultationDocument::class, 'consultation_id');
     }
 
-    /**
-     * PERBAIKAN: Menggunakan morphMany karena tabel status_histories 
-     * menggunakan trackable_type dan trackable_id
-     */
     public function statusHistories()
     {
         return $this->morphMany(ConsultationStatusHistory::class, 'trackable')->latest();

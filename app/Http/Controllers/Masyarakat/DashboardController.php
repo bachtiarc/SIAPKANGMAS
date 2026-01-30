@@ -14,18 +14,15 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        // Check if user is masyarakat_umum
         if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
 
-        // Get statistics (Logika tetap sama)
         $totalSubmissions = $this->getTotalSubmissions($user);
-        $completedCount = $this->getCompletedSubmissions($user); // Nama diubah agar sinkron dengan blade
-        $inProgressCount = $this->getPendingSubmissions($user);  // Nama disesuaikan untuk blade
-        $rejectedCount = $this->getRejectedSubmissions($user);   // Nama diubah agar sinkron dengan blade
+        $completedCount = $this->getCompletedSubmissions($user); 
+        $inProgressCount = $this->getPendingSubmissions($user);  
+        $rejectedCount = $this->getRejectedSubmissions($user);
 
-        // Get recent activities
         $recentActivities = $this->getRecentActivities($user);
 
         return view('masyarakat.dashboard', compact(
@@ -124,7 +121,7 @@ class DashboardController extends Controller
         
         if (class_exists('App\Models\Submission')) {
             $total += \App\Models\Submission::where('user_id', $user->id)
-                ->whereIn('status', ['rejected', 'ditolak']) // Menyesuaikan dengan status database
+                ->whereIn('status', ['rejected', 'ditolak']) 
                 ->count();
         }
         
@@ -150,7 +147,6 @@ class DashboardController extends Controller
     {
         $activities = collect();
 
-        // Get from Submissions
         if (class_exists('App\Models\Submission')) {
             $submissions = \App\Models\Submission::where('user_id', $user->id)
                 ->latest()
@@ -168,7 +164,6 @@ class DashboardController extends Controller
             $activities = $activities->merge($submissions);
         }
 
-        // Get from Consultations
         if (class_exists('App\Models\Consultation')) {
             $consultations = \App\Models\Consultation::where('user_id', $user->id)
                 ->latest()
@@ -186,7 +181,6 @@ class DashboardController extends Controller
             $activities = $activities->merge($consultations);
         }
 
-        // Get from Complaints
         if (class_exists('App\Models\Complaint')) {
             $complaints = \App\Models\Complaint::where('user_id', $user->id)
                 ->latest()

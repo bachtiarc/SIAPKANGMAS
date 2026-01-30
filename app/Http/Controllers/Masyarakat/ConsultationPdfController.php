@@ -15,7 +15,6 @@ class ConsultationPdfController extends Controller
     {
         $user = auth()->user();
         
-        // Authorization check
         if ($consultation->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
@@ -24,20 +23,16 @@ class ConsultationPdfController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // Load relationships
         $consultation->load(['category', 'handler', 'user']);
 
-        // Generate PDF using the submission template
         $pdf = Pdf::loadView('pdfs.submission', [
             'submission' => $consultation, 
             'user' => $user,
             'submissionType' => 'KONSULTASI'
         ]);
 
-        // Set paper size
         $pdf->setPaper('a4', 'portrait');
 
-        // Download dengan nama file sesuai ticket_number
         return $pdf->download($consultation->ticket_number . '.pdf');
     }
 }

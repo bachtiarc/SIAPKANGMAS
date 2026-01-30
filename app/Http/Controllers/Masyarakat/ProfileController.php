@@ -17,12 +17,10 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
 
-        // Check if user is masyarakat_umum
         if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
 
-        // Get statistics (same as pegawai)
         $totalSubmissions = $this->getTotalSubmissions($user);
         $completedSubmissions = $this->getCompletedSubmissions($user);
 
@@ -106,19 +104,16 @@ class ProfileController extends Controller
                 return back()->with('photo_error', 'File foto tidak valid.');
             }
 
-            // Delete old photo
             if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
                 Storage::disk('public')->delete($user->profile_photo);
             }
 
-            // Store new photo
             $path = $file->store('profile-photos', 'public');
 
             if (!$path) {
                 return back()->with('photo_error', 'Gagal menyimpan foto.');
             }
 
-            // Update user profile_photo field
             $user->profile_photo = $path;
             $user->save();
 

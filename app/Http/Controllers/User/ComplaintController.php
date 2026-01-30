@@ -22,7 +22,6 @@ class ComplaintController extends Controller
     {
         $user = auth()->user();
         
-        // Check if user is pegawai
         if ($user->user_type !== 'pegawai') {
             abort(403, 'Unauthorized access.');
         }
@@ -30,7 +29,6 @@ class ComplaintController extends Controller
         $query = Complaint::where('user_id', $user->id)
             ->with(['category', 'handler']);
 
-        // Search by ticket_number or subject (case-insensitive)
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -39,7 +37,6 @@ class ComplaintController extends Controller
             });
         }
 
-        // Filter by status
         if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
             $statusFilter = strtolower($request->status);
             
@@ -76,7 +73,6 @@ class ComplaintController extends Controller
         $user = auth()->user();
         $userType = $user->user_type;
         
-        // Filter kategori berdasarkan user type
         $categories = Category::active()
             ->ofType('pengaduan')
             ->where(function($query) use ($userType) {
@@ -110,7 +106,6 @@ class ComplaintController extends Controller
             'documents.*.max' => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
 
-        // Validasi total ukuran file maksimal 6MB
         if ($request->hasFile('documents')) {
             $totalSize = 0;
             foreach ($request->file('documents') as $file) {
@@ -118,8 +113,6 @@ class ComplaintController extends Controller
                     $totalSize += $file->getSize();
                 }
             }
-            
-            // 6MB = 6291456 bytes
             if ($totalSize > 6291456) {
                 return back()->withErrors([
                     'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
@@ -127,14 +120,12 @@ class ComplaintController extends Controller
             }
         }
 
-        // Generate ticket number dengan format: PD.XX.YY.DDMMYYYY_***
-        $kodeLayanan = "PD"; // Pengaduan
+        $kodeLayanan = "PD";
         $kodeBalai = $user->bidang_code ?? "01";
         $kodeSubBagian = $user->sub_bagian_code ?? "106";
         
         $tanggal = now()->format('dmY');
         
-        // Hitung urutan pengaduan bulan ini
         $count = Complaint::whereMonth('created_at', now()->month)
                     ->whereYear('created_at', now()->year)
                     ->count() + 1;
@@ -143,7 +134,6 @@ class ComplaintController extends Controller
         
         $ticketNumber = "{$kodeLayanan}.{$kodeBalai}.{$kodeSubBagian}.{$tanggal}_{$urutan}";
 
-        // Create complaint (TANPA PRIORITY)
         $complaint = Complaint::create([
             'user_id' => $user->id,
             'category_id' => $validated['category_id'],
@@ -153,23 +143,18 @@ class ComplaintController extends Controller
             'status' => 'pending',
         ]);
 
-        // UPLOAD MULTIPLE FILES (Max 3)
         if ($request->hasFile('documents')) {
             $documents = $request->file('documents');
             
-            // Limit to 3 files
             $documents = array_slice($documents, 0, 3);
             
             foreach ($documents as $document) {
                 if ($document->isValid()) {
-                    // Generate unique filename
                     $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
                     
-                    // Store file in complaints folder
                     $path = Storage::disk('supabase_complaints')
                         ->putFileAs("{$complaint->id}", $document, $filename);
                     
-                    // Save document info to database
                     ComplaintDocument::create([
                         'complaint_id' => $complaint->id,
                         'original_name' => $document->getClientOriginalName(),
@@ -181,7 +166,6 @@ class ComplaintController extends Controller
             }
         }
 
-        // Send email notification
         try {
             Mail::to($user->email)->send(new ComplaintCreated($complaint));
         } catch (\Exception $e) {
@@ -203,12 +187,9 @@ class ComplaintController extends Controller
     {
         $user = auth()->user();
         
-        // Authorization check
         if ($complaint->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
-
-        // Load relationships including documents
         $complaint->load(['category', 'handler', 'statusHistories', 'documents']);
 
         return view('user.complaints.show', compact('complaint'));
@@ -221,7 +202,6 @@ class ComplaintController extends Controller
     {
         $user = auth()->user();
 
-        // Authorization check
         if ($document->complaint->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
@@ -234,16 +214,13 @@ class ComplaintController extends Controller
             $path = Str::after($path, 'complaints/');
         }
 
-        // normal: bucket/{path}
         $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
 
-        // legacy fallback: bucket/complaints/{path}
         $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/complaints/{$path}";
 
         $res = Http::get($urlNormal);
         $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
 
-        // tampilkan di browser (tanpa download)
         return redirect()->away($finalUrl);
     }
 
@@ -268,7 +245,6 @@ class ComplaintController extends Controller
 
         $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
         
-        // Fetch file dari Supabase
         try {
             $response = Http::get($publicUrl);
             

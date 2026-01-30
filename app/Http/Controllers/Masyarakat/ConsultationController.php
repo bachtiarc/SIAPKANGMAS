@@ -24,7 +24,6 @@ class ConsultationController extends Controller
 
         $query = Consultation::where('user_id', $user->id)->with(['category', 'handler']);
 
-        // Search by ticket_number or subject (case-insensitive)
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -101,7 +100,6 @@ class ConsultationController extends Controller
             'documents.*'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
-        // Validasi total size max 6MB
         if ($request->hasFile('documents')) {
             $totalSize = 0;
 
@@ -118,7 +116,6 @@ class ConsultationController extends Controller
             }
         }
 
-        // Generate Ticket Number
         $nik = $user->nik ?? '000000000000000000';
         $lastSixNik = substr($nik, 10, 6);
         $date = now()->format('dmY');
@@ -150,7 +147,6 @@ class ConsultationController extends Controller
                 'attachment'         => null,
             ]);
 
-            // Upload multiple documents
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $file) {
                     if ($file && $file->isValid()) {
@@ -214,7 +210,6 @@ class ConsultationController extends Controller
         $bucket = env('SUPABASE_CONSULTATIONS_BUCKET', 'consultations');
         $filePath = ltrim($document->file_path, '/');
 
-        // kalau ada prefix "consultations/" hapus
         if (Str::startsWith($filePath, 'consultations/')) {
             $filePath = Str::after($filePath, 'consultations/');
         }

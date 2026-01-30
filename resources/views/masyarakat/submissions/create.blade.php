@@ -351,7 +351,6 @@ function showToast(message, type = 'success') {
     }, 4000);
 }
 
-// harus urut 1 -> 2 -> 3
 function canUpload(idx) {
     if (idx === 1) return true;
 
@@ -365,7 +364,7 @@ function canUpload(idx) {
     return true;
 }
 
-// Display file name + >2MB toast
+// Display file name 
 function displayFileName(index, input) {
     const fileNameDisplay = document.getElementById('fileName' + index);
     const clearBtn = document.getElementById('clearBtn' + index);

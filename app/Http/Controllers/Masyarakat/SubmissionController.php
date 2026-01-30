@@ -84,7 +84,6 @@ class SubmissionController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // ✅ FIX: ambil from dari query (?from=index/dashboard)
         $from = $request->query('from', 'index');
 
         $validated = $request->validate([
@@ -94,7 +93,6 @@ class SubmissionController extends Controller
             'documents.*'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
-        // Create Submission
         $submission = Submission::create([
             'user_id'     => $user->id,
             'category_id' => $validated['category_id'],
@@ -102,16 +100,13 @@ class SubmissionController extends Controller
             'subject'     => $validated['title'],
             'description' => $validated['description'],
             'status'      => 'pending',
-            // ticket_id biasanya digenerate di model observer / boot / accessor di project kamu
         ]);
 
-        // Upload documents (max 3)
         if ($request->hasFile('documents')) {
             foreach (array_slice($request->file('documents'), 0, 3) as $document) {
                 if ($document && $document->isValid()) {
                     $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
 
-                    // store to supabase disk
                     $path = $document->storeAs(
                         (string) $submission->id,
                         $filename,
@@ -129,19 +124,16 @@ class SubmissionController extends Controller
             }
         }
 
-        // Email notif
         try {
             Mail::to($user->email)->send(new MasyarakatSubmissionCreated($submission));
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
         }
 
-        // ✅ FIX: redirect balik ke create biar modal kebaca dari session
-        // ✅ FIX: ticket_id ambil dari kolom ticket_id (bukan ticket_number)
         return redirect()
             ->route('masyarakat.submissions.create', ['from' => $from])
             ->with('success', true)
-            ->with('ticket_id', $submission->ticket_id)   // << ini yang bener
+            ->with('ticket_id', $submission->ticket_id)
             ->with('submission_id', $submission->id);
     }
 

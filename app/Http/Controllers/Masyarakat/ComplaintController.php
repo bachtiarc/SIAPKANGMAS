@@ -126,8 +126,6 @@ class ComplaintController extends Controller
                 if (!$document->isValid()) continue;
 
                 $filename = time() . '_' . preg_replace('/\s+/', '_', $document->getClientOriginalName());
-
-                // Jangan utak-atik supabase: tetap pakai disk yang kamu sudah punya
                 $path = Storage::disk('supabase_complaints')
                     ->putFileAs((string) $complaint->id, $document, $filename);
 
@@ -147,7 +145,6 @@ class ComplaintController extends Controller
             }
         }
 
-        // email notif (opsional)
         try {
             Mail::to($user->email)->send(new ComplaintCreated($complaint));
         } catch (\Throwable $e) {

@@ -31,7 +31,6 @@ class SubmissionController extends Controller
         $query = Submission::where('user_id', $user->id)
             ->with(['category', 'handler']);
 
-        // Search by ticket_id or title (case-insensitive menggunakan ILIKE untuk PostgreSQL)
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -41,7 +40,6 @@ class SubmissionController extends Controller
             });
         }
 
-        // Filter by status
         if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
             $statusFilter = strtolower($request->status);
             
@@ -65,7 +63,6 @@ class SubmissionController extends Controller
             });
         }
 
-        // Penambahan withQueryString() agar pagination tetap membawa filter search/status
         $submissions = $query->latest()->paginate(10)->withQueryString();
 
         return view('user.submissions.index', compact('submissions'));
@@ -82,7 +79,6 @@ class SubmissionController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // Filter kategori untuk pegawai saja
         $categories = Category::active()
             ->ofType('permohonan')
             ->where(function($query) {
@@ -106,7 +102,7 @@ class SubmissionController extends Controller
             'category_id' => 'required|exists:categories,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', // Max 2MB per file
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ], [
             'category_id.required' => 'Kategori informasi wajib dipilih.',
             'category_id.exists' => 'Kategori tidak valid.',
@@ -116,7 +112,6 @@ class SubmissionController extends Controller
             'documents.*.max' => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
 
-        // Validasi total ukuran file maksimal 6MB
         if ($request->hasFile('documents')) {
             $totalSize = 0;
             foreach ($request->file('documents') as $file) {
@@ -125,7 +120,6 @@ class SubmissionController extends Controller
                 }
             }
             
-            // 6MB = 6291456 bytes
             if ($totalSize > 6291456) {
                 return back()->withErrors([
                     'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
@@ -150,11 +144,9 @@ class SubmissionController extends Controller
 
                     $bucket = env('SUPABASE_BUCKET', 'submissions');
                     $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-                    $token = env('SUPABASE_SERVICE_ROLE_KEY'); // WAJIB
+                    $token = env('SUPABASE_SERVICE_ROLE_KEY');
 
                     $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
-
-                    // Simpan dengan format yang kamu pakai di DB sekarang: submissions/{id}/{filename}
                     $path = $document->storeAs($submission->id, $filename, 'supabase');
 
                     SubmissionDocument::create([
@@ -240,7 +232,6 @@ class SubmissionController extends Controller
 
         $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
         
-        // Fetch file dari Supabase
         try {
             $response = Http::get($publicUrl);
             

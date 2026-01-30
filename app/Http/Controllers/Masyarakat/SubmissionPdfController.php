@@ -15,28 +15,22 @@ class SubmissionPdfController extends Controller
     {
         $user = auth()->user();
         
-        // Check authorization - user harus pemilik submission
         if ($submission->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
 
-        // Load relationships
         $submission->load(['category', 'user']);
 
-        // Determine submission type based on category type
         $submissionType = $this->getSubmissionType($submission->category->type);
 
-        // Generate PDF
         $pdf = Pdf::loadView('pdfs.masyarakat-submission', [
             'submission' => $submission,
             'user' => $user,
             'submissionType' => $submissionType
         ]);
 
-        // Set paper size dan orientation
         $pdf->setPaper('a4', 'portrait');
 
-        // Download dengan nama file sesuai ticket_id
         return $pdf->download($submission->ticket_id . '.pdf');
     }
 
