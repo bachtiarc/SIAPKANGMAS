@@ -23,9 +23,6 @@ class HistoryController extends Controller
         $consultations = Consultation::where('user_id', $user->id)->with('category')->get();
         $complaints = Complaint::where('user_id', $user->id)->with('category')->get();
 
-        /* =============================
-         * HITUNG STATISTIK
-         * ============================= */
         $totalPending =
             $submissions->whereIn('status', ['pending'])->count() +
             $consultations->whereIn('status', ['pending'])->count() +
@@ -51,9 +48,6 @@ class HistoryController extends Controller
             $consultations->count() +
             $complaints->count();
 
-        /* =============================
-         * GABUNG DATA KE SATU LIST
-         * ============================= */
         $merged = collect();
 
         foreach ($submissions as $item) {

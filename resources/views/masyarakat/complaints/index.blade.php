@@ -48,7 +48,7 @@
                 @endphp
 
                 @if($hasSearch || $hasStatusFilter)
-                    <!-- Clear Filter Button (X) -->
+                    <!-- Clear Filter Button  -->
                     <a href="{{ route('masyarakat.complaints.index') }}"
                        class="inline-flex items-center justify-center px-3 py-2 bg-red-200 hover:bg-red-300 text-red-700 font-semibold rounded-lg transition"
                        title="Hapus filter">

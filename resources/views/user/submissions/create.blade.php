@@ -1,5 +1,3 @@
-<!-- resources/views/user/submissions/create.blade.php -->
-
 @extends('layouts.dashboard')
 
 @section('title', 'Formulir Permohonan Informasi')
@@ -340,7 +338,6 @@ function showToast(message, type = 'success') {
     }, 4000);
 }
 
-// ========= RULE: HARUS URUT 1->2->3 =========
 function canUpload(idx) {
     if (idx === 1) return true;
 
@@ -354,7 +351,6 @@ function canUpload(idx) {
     return true;
 }
 
-// ========= Display file name + >2MB toast =========
 function displayFileName(index, input) {
     const fileNameDisplay = document.getElementById('fileName' + index);
     const clearBtn = document.getElementById('clearBtn' + index);
@@ -385,7 +381,6 @@ function displayFileName(index, input) {
     }
 }
 
-// Clear file
 function clearFile(index) {
     const fileInput = document.getElementById('document' + index);
     const fileNameDisplay = document.getElementById('fileName' + index);
@@ -396,13 +391,11 @@ function clearFile(index) {
     if (clearBtn) clearBtn.classList.add('hidden');
 }
 
-// Show success modal with ticket number
 function showSuccessModal(ticketNumber) {
     document.getElementById('ticketNumber').textContent = ticketNumber;
     document.getElementById('successModal').classList.remove('hidden');
 }
 
-// Copy ticket number to clipboard
 function copyTicket() {
     const ticketNumber = document.getElementById('ticketNumber').textContent;
     navigator.clipboard.writeText(ticketNumber).then(() => {
@@ -410,7 +403,6 @@ function copyTicket() {
     });
 }
 
-// Show error modal with error messages
 function showErrorModal(errors) {
     const errorList = document.getElementById('errorList');
     errorList.innerHTML = '';
@@ -434,17 +426,14 @@ function showErrorModal(errors) {
     document.getElementById('errorModal').classList.remove('hidden');
 }
 
-// Close error modal
 function closeErrorModal() {
     document.getElementById('errorModal').classList.add('hidden');
 }
 
-// Check for session success message
 @if(session('success'))
     showSuccessModal('{{ session('ticket_id') ?? 'N/A' }}');
 @endif
 
-// Check for validation errors
 @if($errors->any())
     const errors = @json($errors->all());
     showErrorModal(errors);

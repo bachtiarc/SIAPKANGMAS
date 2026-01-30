@@ -186,16 +186,13 @@ class Complaint extends Model
 
     /**
      * Accessor: documents (untuk kompatibilitas PDF view)
-     * Prioritaskan real documents, fallback ke attachment
      */
     public function getDocumentsAttribute()
     {
-        // Jika ada relationship documents yang loaded
         if ($this->relationLoaded('documents') && $this->getRelation('documents')->count() > 0) {
             return $this->getRelation('documents');
         }
         
-        // Fallback: Return collection dengan 1 item jika ada attachment
         if ($this->attributes['attachment'] ?? null) {
             return collect([
                 (object)[
@@ -212,7 +209,7 @@ class Complaint extends Model
     }
 
     /**
-     * Accessor: admin_notes -> admin_response (untuk backward compatibility)
+     * Accessor: admin_notes -> admin_response 
      */
     public function getAdminNotesAttribute()
     {

@@ -24,7 +24,6 @@ class ConsultationController extends Controller
 
         $query = Consultation::where('user_id', $user->id)->with(['category', 'handler']);
 
-        // Search by ticket_number or subject (case-insensitive)
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -33,7 +32,6 @@ class ConsultationController extends Controller
             });
         }
 
-        // Filter by status
         if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
             $statusFilter = strtolower($request->status);
             
@@ -66,7 +64,6 @@ class ConsultationController extends Controller
         $user = auth()->user();
         $userType = $user->user_type;
         
-        // Filter kategori berdasarkan user type
         $categories = Category::active()
             ->ofType('konsultasi')
             ->where(function($query) use ($userType) {
@@ -86,10 +83,9 @@ class ConsultationController extends Controller
             'category_id' => 'required|exists:categories,id',
             'subject' => 'required|string|max:255',
             'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', // Max 2MB per file
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', 
         ]);
 
-        // Validasi total ukuran file maksimal 6MB
         if ($request->hasFile('documents')) {
             $totalSize = 0;
             foreach ($request->file('documents') as $file) {
@@ -98,7 +94,6 @@ class ConsultationController extends Controller
                 }
             }
             
-            // 6MB = 6291456 bytes
             if ($totalSize > 6291456) {
                 return back()->withErrors([
                     'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
@@ -192,7 +187,6 @@ class ConsultationController extends Controller
 
         $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
         
-        // Fetch file dari Supabase
         try {
             $response = \Illuminate\Support\Facades\Http::get($publicUrl);
             

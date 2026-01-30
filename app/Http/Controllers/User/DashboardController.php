@@ -14,12 +14,10 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // Hitung total submissions
         $totalSubmissions = Submission::where('user_id', $user->id)->count() +
                            Consultation::where('user_id', $user->id)->count() +
                            Complaint::where('user_id', $user->id)->count();
         
-        // Hitung yang sedang diproses (pending, in_progress, on_progress, diproses)
         $inProgressCount = Submission::where('user_id', $user->id)
                                     ->where(function($query) {
                                         $query->where('status', 'LIKE', 'pending')
@@ -57,7 +55,6 @@ class DashboardController extends Controller
                                    })
                                    ->count();
         
-        // Hitung yang selesai
         $completedCount = Submission::where('user_id', $user->id)
                                    ->where(function($query) {
                                        $query->where('status', 'LIKE', 'completed')
@@ -83,7 +80,6 @@ class DashboardController extends Controller
                                   })
                                   ->count();
         
-        // Hitung yang ditolak
         $rejectedCount = Submission::where('user_id', $user->id)
                                   ->where(function($query) {
                                       $query->where('status', 'LIKE', 'rejected')
@@ -109,7 +105,6 @@ class DashboardController extends Controller
                                  })
                                  ->count();
         
-        // Ambil aktivitas terkini (10 terbaru)
         $submissions = Submission::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->take(10)
@@ -155,7 +150,6 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Gabungkan dan sort by date
         $recentActivities = collect()
             ->concat(collect($submissions))
             ->concat(collect($consultations))

@@ -282,7 +282,6 @@
     Nomor tiket berhasil disalin!
 </div>
 
-<!-- TOAST CONTAINER  -->
 <div id="toast-container" class="fixed top-5 right-5 z-[9999] space-y-3"></div>
 
 <style>
@@ -305,7 +304,6 @@ document.addEventListener('DOMContentLoaded', function() {
     @endif
 });
 
-// ==== FIX DOKUMEN PENDUKUNG ONLY ====
 function formatFileSize(bytes) {
     if (!bytes) return '0 Bytes';
     const k = 1024;
@@ -355,17 +353,15 @@ function displayFileName(idx, input) {
     }
 
     const f = input.files[0];
-    const maxBytes = 2 * 1024 * 1024; // 2MB
+    const maxBytes = 2 * 1024 * 1024; 
 
     if (f.size > maxBytes) {
-        // batalin file + reset UI
         input.value = '';
         nameEl.classList.add('hidden');
         nameEl.textContent = '';
         clearBtn.classList.add('hidden');
         setDocBoxState(idx, null);
 
-        // toast notif kanan atas
         showToast(`Dokumen ${idx}: ukuran file melebihi 2MB.`, 'error');
         return;
     }

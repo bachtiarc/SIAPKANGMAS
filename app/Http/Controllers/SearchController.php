@@ -66,7 +66,7 @@ class SearchController extends Controller
     }
 
     /**
-     * AJAX PREVIEW (LOGIN)
+     * AJAX PREVIEW 
      */
     public function preview(Request $request)
     {
@@ -76,37 +76,53 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
+        $user = auth()->user();
+        $userId = $user->id;
+        $userType = $user->user_type;
+
+        $isPegawai = $userType === 'pegawai';
+        $routePrefix = $isPegawai ? '/user' : '/masyarakat';
+
         $complaints = DB::table('complaints')
             ->select(
                 'ticket_number as ticket',
                 'subject as title',
-                DB::raw("'/user/complaints/' || id as url"),
+                DB::raw("'{$routePrefix}/pengaduan/' || id as url"),
                 DB::raw("'complaint' as type")
             )
-            ->where('ticket_number', 'ILIKE', "%{$q}%")
-            ->orWhere('subject', 'ILIKE', "%{$q}%")
+            ->where('user_id', $userId)
+            ->where(function($query) use ($q) {
+                $query->where('ticket_number', 'ILIKE', "%{$q}%")
+                      ->orWhere('subject', 'ILIKE', "%{$q}%");
+            })
             ->limit(5);
 
         $consultations = DB::table('consultations')
             ->select(
                 'ticket_number as ticket',
                 'subject as title',
-                DB::raw("'/user/consultations/' || id as url"),
+                DB::raw("'{$routePrefix}/konsultasi/' || id as url"),
                 DB::raw("'consultation' as type")
             )
-            ->where('ticket_number', 'ILIKE', "%{$q}%")
-            ->orWhere('subject', 'ILIKE', "%{$q}%")
+            ->where('user_id', $userId) 
+            ->where(function($query) use ($q) {
+                $query->where('ticket_number', 'ILIKE', "%{$q}%")
+                      ->orWhere('subject', 'ILIKE', "%{$q}%");
+            })
             ->limit(5);
 
         $submissions = DB::table('submissions')
             ->select(
                 'ticket_id as ticket',
                 'title',
-                DB::raw("'/user/submissions/' || id as url"),
+                DB::raw("'{$routePrefix}/permohonan-informasi/' || id as url"),
                 DB::raw("'submission' as type")
             )
-            ->where('ticket_id', 'ILIKE', "%{$q}%")
-            ->orWhere('title', 'ILIKE', "%{$q}%")
+            ->where('user_id', $userId)
+            ->where(function($query) use ($q) {
+                $query->where('ticket_id', 'ILIKE', "%{$q}%")
+                      ->orWhere('title', 'ILIKE', "%{$q}%");
+            })
             ->limit(5);
 
         return response()->json(
@@ -118,12 +134,14 @@ class SearchController extends Controller
     }
 
     /**
-     * RESULT PAGE (LOGIN, ENTER)
+     * RESULT PAGE (LOGIN, ENTER) - SEPARATED BY USER TYPE
      */
     public function result(Request $request)
     {
         $q = trim((string) $request->q);
-        $userId = auth()->id();
+        $user = auth()->user();
+        $userId = $user->id;
+        $userType = $user->user_type;
 
         $submissions = Submission::where('user_id', $userId)
             ->where(fn ($x) =>
@@ -146,11 +164,20 @@ class SearchController extends Controller
                   ->orWhere('ticket_number', 'ILIKE', "%{$q}%")
             )->get();
 
-        return view('user.search.result', compact(
-            'q',
-            'submissions',
-            'consultations',
-            'complaints'
-        ));
+        if ($userType === 'pegawai') {
+            return view('user.search.result', compact(
+                'q',
+                'submissions',
+                'consultations',
+                'complaints'
+            ));
+        } else {
+            return view('masyarakat.search.result', compact(
+                'q',
+                'submissions',
+                'consultations',
+                'complaints'
+            ));
+        }
     }
 }

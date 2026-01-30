@@ -169,7 +169,7 @@
             </div>
         </div>
 
-        <!-- Important Info (KUNING) -->
+        <!-- Important Info  -->
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
             <div class="flex items-start">
                 <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,7 +286,7 @@
     </div>
 </div>
 
-<!-- TOAST CONTAINER (TOP RIGHT) -->
+<!-- TOAST CONTAINER  -->
 <div id="toast-container" class="fixed top-5 right-5 z-[9999] space-y-3"></div>
 
 <style>
@@ -296,7 +296,7 @@
 </style>
 
 <script>
-// ==== FIX DOKUMEN PENDUKUNG ONLY ====
+
 function formatFileSize(bytes) {
     if (!bytes) return '0 Bytes';
     const k = 1024;
@@ -436,7 +436,7 @@ function clearFile(idx) {
     clearBtn.classList.add('hidden');
     setDocBoxState(idx, null);
 }
-// ==== END FIX DOKUMEN PENDUKUNG ====
+
 
 function showSuccessModal(ticketNumber) {
     document.getElementById('ticketNumber').textContent = ticketNumber;

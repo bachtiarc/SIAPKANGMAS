@@ -285,7 +285,8 @@
 </style>
 
 <script>
-/* ========= TOAST ========= */
+
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -340,7 +341,6 @@ function showToast(message, type = 'success') {
     }, 4000);
 }
 
-/* ========= RULE: HARUS URUT 1->2->3 ========= */
 function canUpload(idx) {
     if (idx === 1) return true;
     const prevInput = document.getElementById('document' + (idx - 1));
@@ -353,7 +353,6 @@ function canUpload(idx) {
     return true;
 }
 
-/* ========= Display file name + >2MB toast ========= */
 function displayFileName(index, input) {
     const fileNameDisplay = document.getElementById('fileName' + index);
     const clearBtn = document.getElementById('clearBtn' + index);
@@ -367,7 +366,7 @@ function displayFileName(index, input) {
 
     if (input.files && input.files[0]) {
         const file = input.files[0];
-        const maxBytes = 2 * 1024 * 1024; // 2MB
+        const maxBytes = 2 * 1024 * 1024; 
 
         if (file.size > maxBytes) {
             input.value = '';
@@ -384,7 +383,6 @@ function displayFileName(index, input) {
     }
 }
 
-/* ========= Clear file ========= */
 function clearFile(index) {
     const fileInput = document.getElementById('document' + index);
     const fileNameDisplay = document.getElementById('fileName' + index);
@@ -395,13 +393,11 @@ function clearFile(index) {
     if (clearBtn) clearBtn.classList.add('hidden');
 }
 
-/* ========= Success modal ========= */
 function showSuccessModal(ticketNumber) {
     document.getElementById('ticketNumber').textContent = ticketNumber;
     document.getElementById('successModal').classList.remove('hidden');
 }
 
-/* ========= Copy ticket ========= */
 function copyTicket() {
     const ticketNumber = document.getElementById('ticketNumber').textContent;
     navigator.clipboard.writeText(ticketNumber).then(() => {
@@ -409,7 +405,6 @@ function copyTicket() {
     });
 }
 
-/* ========= Error modal ========= */
 function showErrorModal(errors) {
     const errorList = document.getElementById('errorList');
     errorList.innerHTML = '';
@@ -437,7 +432,6 @@ function closeErrorModal() {
     document.getElementById('errorModal').classList.add('hidden');
 }
 
-/* ========= Session hooks ========= */
 @if(session('success'))
     showSuccessModal('{{ session('ticket_id') ?? 'N/A' }}');
 @endif
