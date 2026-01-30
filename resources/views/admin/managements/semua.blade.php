@@ -1,4 +1,3 @@
-{{-- resources/views/admin/managements/semua.blade.php --}}
 @extends('layouts.admin')
 
 @section('header_title', 'Manajemen Pengajuan')
@@ -58,7 +57,7 @@
     </div>
 
     <div class="bg-white/75 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/70 overflow-hidden">
-    {{-- TABS (lebih lega kayak kategori) --}}
+
     <div class="p-4 border-b border-gray-200/70">
         @php
             $tabBase = 'flex-1 text-center px-6 py-3 font-montserrat font-semibold text-sm transition rounded-2xl ring-1 ring-transparent';
@@ -66,7 +65,6 @@
             $tabOn   = 'text-blue-700 bg-blue-100/70 ring-blue-200/70 shadow-sm';
         @endphp
 
-        {{-- “tray” biar ada margin lega kiri kanan atas bawah --}}
         <div class="bg-gray-50/70 p-2 rounded-3xl ring-1 ring-gray-200/60">
             <div class="flex w-full gap-3">
                 <a href="{{ route('admin.management.semua') }}"
@@ -93,11 +91,9 @@
     </div>
 
         <form action="{{ route('admin.management.semua') }}" method="GET" class="w-full">
-            {{-- filter kamu biarin (nggak aku ubah) --}}
             <div class="p-4 border-b border-gray-200/70">
                 <div class="overflow-x-auto">
                     <div class="min-w-max flex items-end gap-4">
-                        {{-- (isi filter sama seperti punyamu) --}}
                         <div class="shrink-0">
                             <label class="block text-xs font-semibold text-gray-600 mb-2">Rentang Tanggal :</label>
                             <div class="flex items-center gap-2">
@@ -181,7 +177,6 @@
             </div>
         </form>
 
-        {{-- TABLE (RAPI + SCROLL) --}}
         <div class="overflow-x-auto">
             <div class="min-w-[1350px]">
                 <table class="w-full text-left border-collapse">
