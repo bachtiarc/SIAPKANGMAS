@@ -51,7 +51,6 @@
         }
         .info-value { color: #111827; }
 
-        /* ✅ Badge base */
         .status-badge {
             display: inline-block;
             padding: 6px 12px;
@@ -59,7 +58,7 @@
             font-size: 14px;
             font-weight: 700;
         }
-        /* ✅ warna */
+
         .badge-yellow { background: #fef3c7; color: #92400e; } /* diproses */
         .badge-green  { background: #dcfce7; color: #166534; } /* selesai */
         .badge-red    { background: #fee2e2; color: #991b1b; } /* ditolak */
