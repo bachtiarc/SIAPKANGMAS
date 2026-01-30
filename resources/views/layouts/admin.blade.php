@@ -1,4 +1,3 @@
-{{-- resources/views/layouts/admin.blade.php --}}
 @php
     $user = auth()->user();
     $initial = $user?->name ? strtoupper(substr($user->name, 0, 1)) : 'A';
