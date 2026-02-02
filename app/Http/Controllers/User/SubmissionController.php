@@ -170,7 +170,7 @@ class SubmissionController extends Controller
 
         return redirect()->route('user.submissions.create', ['from' => $from])
             ->with('success', true)
-            ->with('ticket_id', $submission->ticket_number)
+            ->with('ticket_id', $submission->ticket_id)
             ->with('submission_id', $submission->id);
     }
 
