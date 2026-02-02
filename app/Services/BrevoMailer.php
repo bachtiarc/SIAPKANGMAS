@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class BrevoMailer
 {
-    /**
-     * Kirim email transactional via Brevo API (HTTPS).
-     * Return: array response dari Brevo (biasanya ada messageId)
-     */
     public function sendTransactional(
         string $toEmail,
         ?string $toName,
@@ -43,14 +41,14 @@ class BrevoMailer
             'htmlContent' => $htmlContent,
         ];
 
+        /** @var Response $res */
         $res = Http::withHeaders([
             'api-key' => $apiKey,
             'accept' => 'application/json',
             'content-type' => 'application/json',
         ])->post('https://api.brevo.com/v3/smtp/email', $payload);
 
-        // Log response biar gampang debug kalau "OK tapi email ga masuk"
-        \Log::info('Brevo API response', [
+        Log::info('Brevo API response', [
             'status' => $res->status(),
             'body' => $res->body(),
         ]);
