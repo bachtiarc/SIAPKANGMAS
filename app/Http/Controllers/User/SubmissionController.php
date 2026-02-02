@@ -171,7 +171,7 @@ class SubmissionController extends Controller
                 'app_env' => config('app.env'),
             ]);
 
-            Mail::to($user->email)->send(new MasyarakatSubmissionCreated($submission));
+            Mail::to($user->email)->send(new SubmissionCreated($submission));
 
             Log::info('MAIL DEBUG (masyarakat) - sent OK', ['to' => $user->email]);
         } catch (\Throwable $e) {
@@ -181,7 +181,7 @@ class SubmissionController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
         }
-        
+
         $from = $request->query('from', 'index');
 
         return redirect()->route('user.submissions.create', ['from' => $from])
