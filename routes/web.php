@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\TicketSearchController;
 use App\Http\Controllers\ContactController;
+use App\Services\BrevoMailer;
 
 // Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -257,9 +258,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         ->name('categories.destroy');
 });
 
-Route::get('/_test-mail', function () {
-    \Mail::raw('Test email dari Railway', function ($m) {
-        $m->to('cikalbachtiar19@gmail.com')->subject('Test Mail SIAPKANGMAS');
-    });
-    return 'sent';
+Route::get('/test-brevo', function (BrevoMailer $brevo) {
+    $out = $brevo->sendTransactional(
+        toEmail: 'unsanasyta@gmail.com',
+        toName: 'Evia',
+        subject: 'Test Brevo API dari Localhost',
+        htmlContent: '<h3>Halo</h3><p>Ini test Brevo API berhasil.</p>'
+    );
+
+    // tampilkan response Brevo di browser (biasanya ada messageId)
+    return response()->json($out);
 });
