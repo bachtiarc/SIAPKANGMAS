@@ -16,28 +16,20 @@ class SubmissionCreated extends Mailable
 
     public $submission;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(Submission $submission)
     {
         $this->submission = $submission;
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address('siapkangmasdisperindag@gmail.com', 'SIAPKANGMAS DISPERINDAG'),
+            // pakai FROM dari config/.env biar SMTP ga nolak
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
             subject: 'Permohonan Informasi Berhasil - ' . $this->submission->ticket_id,
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
@@ -50,11 +42,6 @@ class SubmissionCreated extends Mailable
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
     public function attachments(): array
     {
         return [];

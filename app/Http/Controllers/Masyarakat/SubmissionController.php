@@ -8,11 +8,9 @@ use App\Models\SubmissionDocument;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
-use App\Mail\MasyarakatSubmissionCreated;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use App\Services\BrevoMailer;
 
 class SubmissionController extends Controller
 {
@@ -31,8 +29,8 @@ class SubmissionController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('ticket_id', 'ilike', "%{$search}%")
-                  ->orWhere('title', 'ilike', "%{$search}%")
-                  ->orWhere('subject', 'ilike', "%{$search}%");
+                    ->orWhere('title', 'ilike', "%{$search}%")
+                    ->orWhere('subject', 'ilike', "%{$search}%");
             });
         }
 
@@ -68,7 +66,7 @@ class SubmissionController extends Controller
             ->ofType('permohonan')
             ->where(function ($q) {
                 $q->where('user_type', 'masyarakat_umum')
-                  ->orWhere('user_type', 'all');
+                    ->orWhere('user_type', 'all');
             })
             ->orderBy('name')
             ->get();
@@ -76,7 +74,7 @@ class SubmissionController extends Controller
         return view('masyarakat.submissions.create', compact('categories'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, BrevoMailer $brevo)
     {
         $user = auth()->user();
 
@@ -124,10 +122,42 @@ class SubmissionController extends Controller
             }
         }
 
+        // =========================
+        // SEND EMAIL VIA BREVO API
+        // =========================
         try {
-            Mail::to($user->email)->send(new MasyarakatSubmissionCreated($submission));
+            $category = Category::find($submission->category_id);
+            $submission->refresh();
+
+            $html = view('emails.submission_created', [
+                'user' => $user,
+                'submission' => $submission,
+                'category' => $category,
+            ])->render();
+
+            Log::info('BREVO DEBUG (masyarakat) - about to send', [
+                'to' => $user->email,
+                'from' => config('mail.from.address'),
+                'from_name' => config('mail.from.name'),
+                'has_api_key' => (bool) env('BREVO_API_KEY'),
+                'app_env' => config('app.env'),
+            ]);
+
+            $brevo->sendTransactional(
+                toEmail: $user->email,
+                toName: $user->name ?? null,
+                subject: "Permohonan Informasi Diterima ({$submission->ticket_id})",
+                htmlContent: $html
+            );
+
+            Log::info('BREVO DEBUG (masyarakat) - sent OK', ['to' => $user->email]);
+
         } catch (\Throwable $e) {
-            Log::error($e->getMessage());
+            Log::error('BREVO DEBUG (masyarakat) - failed', [
+                'to' => $user->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
 
         return redirect()
@@ -155,7 +185,7 @@ class SubmissionController extends Controller
         }
 
         $base = rtrim(env('SUPABASE_URL'), '/');
-        $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', 'submissions');
+        $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', env('SUPABASE_BUCKET', 'submissions'));
         $path = ltrim($document->file_path, '/');
 
         return redirect()->away("{$base}/storage/v1/object/public/{$bucket}/{$path}");
@@ -168,7 +198,7 @@ class SubmissionController extends Controller
         }
 
         $base = rtrim(env('SUPABASE_URL'), '/');
-        $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', 'submissions');
+        $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', env('SUPABASE_BUCKET', 'submissions'));
         $path = ltrim($document->file_path, '/');
 
         $url = "{$base}/storage/v1/object/public/{$bucket}/{$path}";
@@ -181,6 +211,6 @@ class SubmissionController extends Controller
 
         return response($response->body(), 200)
             ->header('Content-Type', $document->file_type)
-            ->header('Content-Disposition', 'attachment; filename="' . $document->original_name . '"');
+            ->header('Content-Disposition', 'attachment; filename="' . ($document->original_name ?? basename($path)) . '"');
     }
 }
