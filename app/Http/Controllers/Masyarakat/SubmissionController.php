@@ -125,9 +125,25 @@ class SubmissionController extends Controller
         }
 
         try {
-            Mail::to($user->email)->send(new MasyarakatSubmissionCreated($submission));
+            Log::info('MAIL DEBUG (pegawai) - about to send', [
+                'to' => $user->email,
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host'),
+                'port' => config('mail.mailers.smtp.port'),
+                'encryption' => config('mail.mailers.smtp.encryption'),
+                'from' => config('mail.from.address'),
+                'app_env' => config('app.env'),
+            ]);
+
+            Mail::to($user->email)->send(new SubmissionCreated($submission));
+
+            Log::info('MAIL DEBUG (pegawai) - sent OK', ['to' => $user->email]);
         } catch (\Throwable $e) {
-            Log::error($e->getMessage());
+            Log::error('MAIL DEBUG (pegawai) - failed', [
+                'to' => $user->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
 
         return redirect()

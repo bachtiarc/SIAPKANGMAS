@@ -161,11 +161,27 @@ class SubmissionController extends Controller
         }
 
         try {
-            Mail::to($user->email)->send(new SubmissionCreated($submission));
-        } catch (\Exception $e) {
-            Log::error('Failed to send submission email: ' . $e->getMessage());
-        }
+            Log::info('MAIL DEBUG (masyarakat) - about to send', [
+                'to' => $user->email,
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host'),
+                'port' => config('mail.mailers.smtp.port'),
+                'encryption' => config('mail.mailers.smtp.encryption'),
+                'from' => config('mail.from.address'),
+                'app_env' => config('app.env'),
+            ]);
 
+            Mail::to($user->email)->send(new MasyarakatSubmissionCreated($submission));
+
+            Log::info('MAIL DEBUG (masyarakat) - sent OK', ['to' => $user->email]);
+        } catch (\Throwable $e) {
+            Log::error('MAIL DEBUG (masyarakat) - failed', [
+                'to' => $user->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+        
         $from = $request->query('from', 'index');
 
         return redirect()->route('user.submissions.create', ['from' => $from])
