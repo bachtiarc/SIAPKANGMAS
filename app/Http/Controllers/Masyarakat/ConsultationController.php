@@ -6,12 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Consultation;
 use App\Models\ConsultationDocument;
-use App\Mail\ConsultationCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\BrevoMailer;
+use Illuminate\Support\Facades\Log;
 
 class ConsultationController extends Controller
 {
@@ -83,7 +83,7 @@ class ConsultationController extends Controller
         return view('masyarakat.consultations.create', compact('categories'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, BrevoMailer $brevo)
     {
         $user = auth()->user();
 
@@ -172,10 +172,36 @@ class ConsultationController extends Controller
             return $consultation;
         });
 
+        // =========================
+        // BREVO EMAIL INTEGRATION
+        // =========================
         try {
-            Mail::to($user->email)->send(new ConsultationCreated($consultation));
-        } catch (\Exception $e) {
-            \Log::error('Failed to send consultation email: ' . $e->getMessage());
+            $consultation->load(['category', 'user']);
+
+            $html = view('emails.consultation-created', [
+                'consultation' => $consultation,
+            ])->render();
+
+            Log::info('BREVO DEBUG (masyarakat) - about to send', [
+                'to' => $user->email,
+                'has_api_key' => (bool) config('brevo.api_key'),
+                'ticket_number' => $consultation->ticket_number,
+            ]);
+
+            $brevo->sendTransactional(
+                toEmail: $user->email,
+                toName: $user->name ?? null,
+                subject: "Konfirmasi Pengajuan Konsultasi - {$consultation->ticket_number}",
+                htmlContent: $html
+            );
+
+            Log::info('BREVO DEBUG (masyarakat) - sent OK', ['to' => $user->email]);
+        } catch (\Throwable $e) {
+            Log::error('BREVO DEBUG (masyarakat) - failed', [
+                'to' => $user->email,
+                'ticket_number' => $consultation->ticket_number,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return redirect()

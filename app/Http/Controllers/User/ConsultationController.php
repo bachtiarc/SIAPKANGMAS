@@ -9,9 +9,9 @@ use App\Models\ConsultationDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
-use App\Mail\ConsultationCreated;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use App\Services\BrevoMailer;
+use Illuminate\Support\Facades\Log;
 
 class ConsultationController extends Controller
 {
@@ -34,13 +34,13 @@ class ConsultationController extends Controller
 
         if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
             $statusFilter = strtolower($request->status);
-            
+
             $query->where(function($q) use ($statusFilter) {
                 // MENUNGGU PROSES
                 if ($statusFilter === 'pending') {
                     $q->whereIn('status', ['pending', 'belum diproses']);
                 }
-                // DIPROSES  
+                // DIPROSES
                 elseif ($statusFilter === 'diproses') {
                     $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
                 }
@@ -63,7 +63,7 @@ class ConsultationController extends Controller
     {
         $user = auth()->user();
         $userType = $user->user_type;
-        
+
         $categories = Category::active()
             ->ofType('konsultasi')
             ->where(function($query) use ($userType) {
@@ -72,18 +72,19 @@ class ConsultationController extends Controller
             })
             ->orderBy('name')
             ->get();
-        
+
         return view('user.consultations.create', compact('categories'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, BrevoMailer $brevo)
     {
         $user = auth()->user();
+
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'subject' => 'required|string|max:255',
             'description' => 'required|string',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', 
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
         if ($request->hasFile('documents')) {
@@ -93,7 +94,7 @@ class ConsultationController extends Controller
                     $totalSize += $file->getSize();
                 }
             }
-            
+
             if ($totalSize > 6291456) {
                 return back()->withErrors([
                     'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
@@ -107,20 +108,19 @@ class ConsultationController extends Controller
             $consultation = Consultation::create([
                 'user_id' => $user->id,
                 'category_id' => $validated['category_id'],
-                'consultation_type' => 'konsultasi', 
+                'consultation_type' => 'konsultasi',
                 'subject' => $validated['subject'],
                 'description' => $validated['description'],
                 'ticket_number' => $ticketNumber,
                 'status' => 'pending',
-                'attachment' => null, 
+                'attachment' => null,
             ]);
-            
+
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $file) {
                     if ($file->isValid()) {
                         $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
-                        
-                        // Store file in consultations folder using public disk
+
                         $path = $consultation->id . '/' . $filename;
 
                         Storage::disk('supabase_consultations')->put(
@@ -138,13 +138,37 @@ class ConsultationController extends Controller
                     }
                 }
             }
+
             return $consultation;
         });
 
         try {
-            Mail::to($user->email)->send(new ConsultationCreated($consultation));
-        } catch (\Exception $e) {
-            \Log::error('Failed to send email: ' . $e->getMessage());
+            $consultation->load(['category', 'user']);
+
+            $html = view('emails.consultation-created', [
+                'consultation' => $consultation,
+            ])->render();
+
+            Log::info('BREVO DEBUG (pegawai) - about to send', [
+                'to' => $user->email,
+                'has_api_key' => (bool) config('brevo.api_key'),
+                'ticket_number' => $consultation->ticket_number,
+            ]);
+
+            $brevo->sendTransactional(
+                toEmail: $user->email,
+                toName: $user->name ?? null,
+                subject: "Konfirmasi Pengajuan Konsultasi - {$consultation->ticket_number}",
+                htmlContent: $html
+            );
+
+            Log::info('BREVO DEBUG (pegawai) - sent OK', ['to' => $user->email]);
+        } catch (\Throwable $e) {
+            Log::error('BREVO DEBUG (pegawai) - failed', [
+                'to' => $user->email,
+                'ticket_number' => $consultation->ticket_number,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         $from = $request->query('from', 'index');
@@ -160,44 +184,40 @@ class ConsultationController extends Controller
         $user = auth()->user();
         if ($consultation->user_id !== $user->id) abort(403);
 
-        // Load relasi
         $consultation->load(['category', 'handler', 'statusHistories', 'documents']);
 
         return view('user.consultations.show', compact('consultation'));
     }
 
-    /**
-     * Download consultation document
-     */
     public function downloadDocument(ConsultationDocument $document)
     {
         $user = auth()->user();
-        
+
         if ($document->consultation->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
-        
+
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $bucket = env('SUPABASE_CONSULTATIONS_BUCKET', 'consultations');
         $filePath = ltrim($document->file_path, '/');
-        
+
         if (Str::startsWith($filePath, 'consultations/')) {
             $filePath = Str::after($filePath, 'consultations/');
         }
 
         $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
-        
+
         try {
             $response = \Illuminate\Support\Facades\Http::get($publicUrl);
-            
+
             if ($response->successful()) {
                 $fileName = $document->original_name ?? basename($document->file_path);
-                
+
                 return response($response->body(), 200)
                     ->header('Content-Type', $response->header('Content-Type') ?? 'application/octet-stream')
                     ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
             }
-            
+
             abort(404, 'File not found');
         } catch (\Exception $e) {
             \Log::error('Download error: ' . $e->getMessage());
