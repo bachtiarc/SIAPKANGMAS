@@ -7,18 +7,8 @@ use Illuminate\Http\Request;
 
 class TrustProxies extends Middleware
 {
-    /**
-     * Trust all proxies (Railway/Reverse Proxy)
-     *
-     * @var array<int, string>|string|null
-     */
     protected $proxies = '*';
 
-    /**
-     * Trust all forwarded headers
-     *
-     * @var int
-     */
     protected $headers =
         Request::HEADER_X_FORWARDED_FOR |
         Request::HEADER_X_FORWARDED_HOST |
