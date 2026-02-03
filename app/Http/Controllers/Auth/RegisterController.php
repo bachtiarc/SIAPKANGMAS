@@ -10,8 +10,6 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Services\BrevoMailer;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\URL;
 
 class RegisterController extends Controller
 {
@@ -119,17 +117,17 @@ class RegisterController extends Controller
 
     /**
      * Kirim email verifikasi lewat Brevo API (Transactional Email)
+     * TANPA SIGNED, TANPA TOKEN, TANPA MIGRATION
      */
     private function sendBrevoVerificationEmail(User $user): void
     {
-        $verifyUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            Carbon::now()->addMinutes(config('auth.verification.expire', 60)),
-            [
-                'id' => $user->getKey(),
-                'hash' => sha1($user->getEmailForVerification()),
-            ]
-        );
+        $hash = sha1($user->getEmailForVerification());
+
+        // link ke route verification.verify (id/hash)
+        $verifyUrl = route('verification.verify', [
+            'id' => $user->getKey(),
+            'hash' => $hash,
+        ]);
 
         $subject = 'Verifikasi Email Akun SIAPKANGMAS';
 
@@ -147,10 +145,6 @@ class RegisterController extends Controller
                         <a href="'.$verifyUrl.'" style="background:#2563eb;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;display:inline-block">
                             Verifikasi Email
                         </a>
-                    </p>
-
-                    <p style="color:#6b7280;font-size:13px;margin-top:18px">
-                        Link ini akan kedaluwarsa dalam '.config('auth.verification.expire', 60).' menit.
                     </p>
 
                     <hr style="border:none;border-top:1px solid #e5e7eb;margin:18px 0" />
@@ -176,37 +170,16 @@ class RegisterController extends Controller
         );
     }
 
-    /**
-     * Handle PEGAWAI registration
-     */
     public function registerPegawai(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'nip' => 'required|string|max:18|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone' => [
-                'required',
-                'string',
-                'regex:/^62[0-9]{9,13}$/',
-            ],
+            'phone' => ['required', 'string', 'regex:/^62[0-9]{9,13}$/'],
             'bidang' => 'required|string|max:255',
             'jabatan' => 'required|string|max:255',
             'password' => 'required|string|min:8|confirmed',
-        ], [
-            'name.required' => 'Nama lengkap wajib diisi.',
-            'nip.required' => 'NIP wajib diisi.',
-            'nip.unique' => 'NIP sudah terdaftar.',
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Email sudah terdaftar.',
-            'phone.required' => 'Nomor telepon wajib diisi.',
-            'phone.regex' => 'Format nomor telepon harus 62xxxxxxxxx. Contoh: 628123456789',
-            'bidang.required' => 'Bidang/Balai wajib dipilih.',
-            'jabatan.required' => 'Jabatan/Seksi/Subbag wajib dipilih.',
-            'password.required' => 'Password wajib diisi.',
-            'password.min' => 'Password minimal 8 karakter.',
-            'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
         if ($validator->fails()) {
@@ -229,13 +202,9 @@ class RegisterController extends Controller
 
         $this->sendBrevoVerificationEmail($user);
 
-        return redirect()->route('register')
-            ->with('registration_success', true);
+        return redirect()->route('register')->with('registration_success', true);
     }
 
-    /**
-     * Handle MASYARAKAT UMUM registration
-     */
     public function registerMasyarakat(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -263,16 +232,13 @@ class RegisterController extends Controller
 
             $ext = strtolower($file->getClientOriginalExtension());
             $fileName = 'ktp_' . $request->nik . '_' . Str::uuid() . '.' . $ext;
-
             $objectPath = $request->nik . '/' . $fileName;
 
             try {
                 Storage::disk('supabase_ktp')->put(
                     $objectPath,
                     file_get_contents($file->getRealPath()),
-                    [
-                        'ContentType' => $file->getMimeType(),
-                    ]
+                    ['ContentType' => $file->getMimeType()]
                 );
             } catch (\Throwable $e) {
                 return redirect()->route('register')
