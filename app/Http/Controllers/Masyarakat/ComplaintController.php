@@ -6,10 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Complaint;
 use App\Models\ComplaintDocument;
-use App\Mail\ComplaintCreated;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Services\BrevoMailer;
 
 class ComplaintController extends Controller
 {
@@ -77,9 +77,13 @@ class ComplaintController extends Controller
     /**
      * Store a newly created complaint in storage
      */
-    public function store(Request $request)
+    public function store(Request $request, BrevoMailer $brevo)
     {
         $user = auth()->user();
+
+        if ($user->user_type !== 'masyarakat_umum') {
+            abort(403, 'Unauthorized access.');
+        }
 
         $from = $request->input('from', $request->query('from', 'index'));
 
@@ -89,7 +93,7 @@ class ComplaintController extends Controller
             'description' => 'required|string',
 
             'documents' => 'nullable|array|max:3',
-            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048', 
+            'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
         $nik = (string) ($user->nik ?? '');
@@ -110,9 +114,9 @@ class ComplaintController extends Controller
             'ticket_number' => $tempTicket,
         ]);
 
-        $nikPart = substr($nik, 10, 6); 
+        $nikPart = substr($nik, 10, 6);
         $datePart = now()->format('dmY');
-        $counterPart = str_pad((string) $complaint->id, 3, '0', STR_PAD_LEFT); 
+        $counterPart = str_pad((string) $complaint->id, 3, '0', STR_PAD_LEFT);
 
         $ticketNumber = "PD.{$nikPart}.{$datePart}_{$counterPart}";
 
@@ -145,10 +149,42 @@ class ComplaintController extends Controller
             }
         }
 
+        // =========================
+        // SEND EMAIL VIA BREVO API
+        // =========================
         try {
-            Mail::to($user->email)->send(new ComplaintCreated($complaint));
+            // load relasi yang dipakai di blade
+            $complaint->load(['user', 'category']);
+
+            // render view (nama file pakai dash)
+            $html = view('emails.complaint-created', [
+                'complaint' => $complaint,
+            ])->render();
+
+            Log::info('BREVO DEBUG (complaint masyarakat) - about to send', [
+                'to' => $user->email,
+                'has_api_key' => (bool) config('brevo.api_key'),
+                'ticket_number' => $complaint->ticket_number,
+                'app_env' => config('app.env'),
+            ]);
+
+            $brevo->sendTransactional(
+                toEmail: $user->email,
+                toName: $user->name ?? null,
+                subject: "Pengaduan Diterima ({$complaint->ticket_number})",
+                htmlContent: $html
+            );
+
+            Log::info('BREVO DEBUG (complaint masyarakat) - sent OK', [
+                'to' => $user->email,
+                'ticket_number' => $complaint->ticket_number,
+            ]);
         } catch (\Throwable $e) {
-            \Log::error('Failed to send complaint email: ' . $e->getMessage());
+            Log::error('BREVO DEBUG (complaint masyarakat) - failed', [
+                'to' => $user->email,
+                'ticket_number' => $complaint->ticket_number,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return redirect()
