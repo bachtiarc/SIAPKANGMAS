@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
+    ->middleware(['auth', 'signed'])
     ->name('verification.verify');
 
 
@@ -266,6 +267,5 @@ Route::get('/test-brevo', function (BrevoMailer $brevo) {
         htmlContent: '<h3>Halo</h3><p>Ini test Brevo API berhasil.</p>'
     );
 
-    // tampilkan response Brevo di browser (biasanya ada messageId)
     return response()->json($out);
 });

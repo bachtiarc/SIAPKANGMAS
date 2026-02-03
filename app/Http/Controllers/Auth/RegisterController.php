@@ -8,15 +8,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
-use App\Notifications\CustomVerifyEmail;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use App\Services\BrevoMailer;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\URL;
 
 class RegisterController extends Controller
 {
     public function showRegistrationForm()
     {
-        // Organization structure for pegawai
         $organizationStructure = [
             'Sekretariat' => [
                 'Sekretaris',
@@ -71,7 +71,7 @@ class RegisterController extends Controller
                 'Kelompok Kerja Ekspor dan Impor',
                 'Kelompok Kerja Promosi dan Kerjasama Perdagangan Luar Negeri',
                 'Kelompok Kerja Informasi Dan Analisis Pasar',
-            ], 
+            ],
             'Balai Industri Logam dan Kayu (BILK) Kelas A' => [
                 'Kepala Sub Bagian Tata Usaha',
                 'Ketua Kelompok Kerja Pelayanan Jasa Keteknikan',
@@ -79,7 +79,7 @@ class RegisterController extends Controller
                 'Kelompok Kerja Pelayanan Jasa Keteknikan,',
                 'Kelompok Kerja Penerapan dan Rekayasa',
                 'Kelompok Jabatan Fungsional',
-            ], 
+            ],
             'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Surakarta Kelas A' => [
                 'Kepala Sub Bagian Tata Usaha',
                 'Ketua Kelompok Kerja Pelayanan Teknis Pengujian dan Kalibrasi',
@@ -111,62 +111,69 @@ class RegisterController extends Controller
                 'Kelompok Kerja Industri Kreatif Digital',
                 'Kelompok Kerja Pengembangan Kemasan',
                 'Kelompok Jabatan Fungsional',
-            ], 
-            // 'Bidang Standarisasi Dan Perlindungan Konsumen' => [
-            //     'Kepala Bidang Standarisasi Dan Perlindungan Konsumen',
-            //     'Seksi Perlindungan Konsumen',
-            //     'Seksi Tertib Niaga',
-            //     'Seksi Standarisasi Industri',
-            // ],
-            // 'Bidang Industri Agro' => [
-            //     'Kepala Bidang Industri Agro',
-            //     'Seksi Pengembangan Sdm Dan Inovasi Industri Agro',
-            //     'Seksi Pengembangan Sarana Dan Prasarana Industri Agro',
-            //     'Seksi Pengendalian Dan Informasi Industri Agro',
-            // ],
-            // 'Bidang Industri Non Agro' => [
-            //     'Kepala Bidang Industri Non Agro',
-            //     'Seksi Pengembangan SDM, Kreativitas, dan Inovasi Industri Non Agro',
-            //     'Seksi Pengembangan Sarana dan Prasarana Industri Non Agro',
-            //     'Seksi Pengendalian dan Informasi Industri Non Agro',
-            // ],
-            // 'Balai Pengujian Dan Sertifikasi Mutu Barang Surakarta' => [
-            //     'Kepala Balai Pengujian Dan Sertifikasi Mutu Barang Surakarta',
-            //     'Sub Bagian Tata Usaha',
-            //     'Seksi Pelayanan Teknis Pengujian Dan Kalibrasi',
-            //     'Seksi Pengembangan Jasa Pengujian Dan Kalibrasi',
-            // ],
-            // 'Balai Pengujian Dan Sertifikasi Mutu Barang Semarang' => [
-            //     'Kepala Balai Pengujian Dan Sertifikasi Mutu Barang Semarang',
-            //     'Sub Bagian Tata Usaha',
-            //     'Seksi Pelayanan Teknis Pengujian Dan Kalibrasi',
-            //     'Seksi Pengembangan Jasa Pengujian Dan Kalibrasi',
-            // ],
-            // 'Balai Industri Produk Tekstil Dan Alas Kaki' => [
-            //     'Kepala Balai Industri Produk Tekstil Dan Alas Kaki',
-            //     'Sub Bagian Tata Usaha',
-            //     'Seksi Pengembangan Produk Tekstil',
-            //     'Seksi Pengembangan Produk Alas Kaki',
-            // ],
-            // 'Balai Industri Kreatif Digital Dan Kemasan' => [
-            //     'Kepala Balai Industri Kreatif Digital Dan Kemasan',
-            //     'Sub Bagian Tata Usaha',
-            //     'Seksi Industri Kreatif Digital',
-            //     'Seksi Pengembangan Kemasan',
-            // ],
-            // 'Balai Industri Logam Dan Kayu' => [
-            //     'Kepala Balai Industri Logam Dan Kayu',
-            //     'Sub Bagian Tata Usaha',
-            //     'Seksi Pelayanan Jasa Keteknikan',
-            //     'Seksi Penerapan Dan Rekayasa',
-            // ],
-            // 'Tata Usaha' => [
-            //     'Tata Usaha',
-            //     'Kasubbag Tata Usaha',
-            // ],
+            ],
         ];
 
         return view('auth.register', compact('organizationStructure'));
+    }
+
+    /**
+     * Kirim email verifikasi lewat Brevo API (Transactional Email)
+     */
+    private function sendBrevoVerificationEmail(User $user): void
+    {
+        $verifyUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            Carbon::now()->addMinutes(config('auth.verification.expire', 60)),
+            [
+                'id' => $user->getKey(),
+                'hash' => sha1($user->getEmailForVerification()),
+            ]
+        );
+
+        $subject = 'Verifikasi Email Akun SIAPKANGMAS';
+
+        $html = '
+        <div style="font-family:Arial,sans-serif;line-height:1.6;background:#f6f7fb;padding:24px">
+            <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden">
+                <div style="background:#2563eb;color:#fff;padding:18px 22px;font-size:18px;font-weight:bold">
+                    Verifikasi Email
+                </div>
+                <div style="padding:22px">
+                    <p>Halo <b>'.e($user->name).'</b>,</p>
+                    <p>Terima kasih sudah mendaftar di <b>SIAPKANGMAS</b>. Silakan klik tombol di bawah untuk verifikasi email kamu:</p>
+
+                    <p style="margin:24px 0">
+                        <a href="'.$verifyUrl.'" style="background:#2563eb;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;display:inline-block">
+                            Verifikasi Email
+                        </a>
+                    </p>
+
+                    <p style="color:#6b7280;font-size:13px;margin-top:18px">
+                        Link ini akan kedaluwarsa dalam '.config('auth.verification.expire', 60).' menit.
+                    </p>
+
+                    <hr style="border:none;border-top:1px solid #e5e7eb;margin:18px 0" />
+
+                    <p style="color:#6b7280;font-size:13px">
+                        Jika tombol tidak bisa diklik, salin link berikut ke browser:
+                        <br>
+                        <a href="'.$verifyUrl.'">'.$verifyUrl.'</a>
+                    </p>
+
+                    <p style="color:#6b7280;font-size:13px">
+                        Kalau kamu tidak merasa mendaftar, abaikan email ini.
+                    </p>
+                </div>
+            </div>
+        </div>';
+
+        app(BrevoMailer::class)->sendTransactional(
+            toEmail: $user->email,
+            toName: $user->name,
+            subject: $subject,
+            htmlContent: $html
+        );
     }
 
     /**
@@ -174,7 +181,6 @@ class RegisterController extends Controller
      */
     public function registerPegawai(Request $request)
     {
-        // Tetap seperti code awalmu karena sudah benar
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'nip' => 'required|string|max:18|unique:users',
@@ -221,7 +227,7 @@ class RegisterController extends Controller
             'user_type' => 'pegawai',
         ]);
 
-        $user->notify(new CustomVerifyEmail);
+        $this->sendBrevoVerificationEmail($user);
 
         return redirect()->route('register')
             ->with('registration_success', true);
@@ -258,8 +264,7 @@ class RegisterController extends Controller
             $ext = strtolower($file->getClientOriginalExtension());
             $fileName = 'ktp_' . $request->nik . '_' . Str::uuid() . '.' . $ext;
 
-            // folder per NIK biar rapi
-            $objectPath = $request->nik . '/' . $fileName; // contoh: 3318.../ktp_3318_uuid.jpg
+            $objectPath = $request->nik . '/' . $fileName;
 
             try {
                 Storage::disk('supabase_ktp')->put(
@@ -267,8 +272,6 @@ class RegisterController extends Controller
                     file_get_contents($file->getRealPath()),
                     [
                         'ContentType' => $file->getMimeType(),
-                        // kalau mau public-read (tergantung policy bucket kamu)
-                        // 'ACL' => 'public-read',
                     ]
                 );
             } catch (\Throwable $e) {
@@ -277,7 +280,6 @@ class RegisterController extends Controller
                     ->withInput();
             }
 
-            // simpan path RELATIF aja (tanpa bucket)
             $fotoKtpPath = $objectPath;
         }
 
@@ -287,13 +289,13 @@ class RegisterController extends Controller
             'email'     => $request->email,
             'phone'     => $request->phone,
             'address'   => $request->address,
-            'foto_ktp'  => $fotoKtpPath, // contoh: 3318.../ktp_3318_uuid.jpg
+            'foto_ktp'  => $fotoKtpPath,
             'password'  => Hash::make($request->password),
             'role'      => 'user',
             'user_type' => 'masyarakat_umum',
         ]);
 
-        $user->notify(new \App\Notifications\CustomVerifyEmail);
+        $this->sendBrevoVerificationEmail($user);
 
         return redirect()->route('register')->with('registration_success', true);
     }
