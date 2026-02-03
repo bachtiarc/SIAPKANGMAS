@@ -7,12 +7,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the masyarakat profile.
-     */
     public function index()
     {
         $user = auth()->user();
@@ -27,58 +25,52 @@ class ProfileController extends Controller
         return view('masyarakat.profile', compact('totalSubmissions', 'completedSubmissions'));
     }
 
-    /**
-     * Get total submissions for user
-     */
     private function getTotalSubmissions($user)
     {
         $total = 0;
-        
+
         if (class_exists('App\Models\Submission')) {
             $total += \App\Models\Submission::where('user_id', $user->id)->count();
         }
-        
+
         if (class_exists('App\Models\Consultation')) {
             $total += \App\Models\Consultation::where('user_id', $user->id)->count();
         }
-        
+
         if (class_exists('App\Models\Complaint')) {
             $total += \App\Models\Complaint::where('user_id', $user->id)->count();
         }
-        
+
         return $total;
     }
 
-    /**
-     * Get completed submissions
-     */
     private function getCompletedSubmissions($user)
     {
         $total = 0;
-        
+
         if (class_exists('App\Models\Submission')) {
             $total += \App\Models\Submission::where('user_id', $user->id)
                 ->whereIn('status', ['completed', 'selesai', 'approved'])
                 ->count();
         }
-        
+
         if (class_exists('App\Models\Consultation')) {
             $total += \App\Models\Consultation::where('user_id', $user->id)
                 ->whereIn('status', ['completed', 'selesai', 'approved'])
                 ->count();
         }
-        
+
         if (class_exists('App\Models\Complaint')) {
             $total += \App\Models\Complaint::where('user_id', $user->id)
                 ->whereIn('status', ['completed', 'selesai', 'approved'])
                 ->count();
         }
-        
+
         return $total;
     }
 
     /**
-     * Update the user's profile photo.
+     * ✅ UPDATE FOTO PROFIL -> simpan ke Supabase (biar Railway & local sama-sama aman)
      */
     public function updatePhoto(Request $request)
     {
@@ -104,16 +96,45 @@ class ProfileController extends Controller
                 return back()->with('photo_error', 'File foto tidak valid.');
             }
 
-            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
-                Storage::disk('public')->delete($user->profile_photo);
+            /**
+             * HAPUS FOTO LAMA:
+             * - kalau dulu tersimpan local (public disk) -> hapus local
+             * - kalau sudah supabase path -> hapus supabase (kalau mau)
+             */
+            if ($user->profile_photo) {
+                $old = $user->profile_photo;
+
+                // old local path
+                if (Str::startsWith($old, ['profile-photos/', 'public/', 'storage/'])) {
+                    $normalized = $old;
+                    if (Str::startsWith($normalized, 'public/')) $normalized = Str::after($normalized, 'public/');
+                    if (Str::startsWith($normalized, 'storage/')) $normalized = Str::after($normalized, 'storage/');
+                    if (Storage::disk('public')->exists($normalized)) {
+                        Storage::disk('public')->delete($normalized);
+                    }
+                } else {
+                    // old supabase path (opsional delete)
+                    try {
+                        Storage::disk('supabase_ktp')->delete(ltrim($old, '/'));
+                    } catch (\Exception $e) {
+                        // ga fatal
+                    }
+                }
             }
 
-            $path = $file->store('profile-photos', 'public');
+            // ✅ simpan ke supabase bucket profile photos
+            // PAKAI disk supabase_ktp biar ga nambah disk baru (sesuai request "tanpa helper" & minim ubah config)
+            // bucket dikontrol lewat SUPABASE_KTP_BUCKET? -> kalau kamu mau bucket khusus profile, bikin disk baru.
+            // Untuk aman: kita taruh di folder "profile-photos/"
+            $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
+            $path = 'profile-photos/' . $user->id . '/' . $filename;
 
-            if (!$path) {
-                return back()->with('photo_error', 'Gagal menyimpan foto.');
-            }
+            Storage::disk('supabase_ktp')->put(
+                $path,
+                file_get_contents($file)
+            );
 
+            // simpan path supabase ke DB
             $user->profile_photo = $path;
             $user->save();
 
@@ -127,14 +148,11 @@ class ProfileController extends Controller
                 'user_id' => auth()->id(),
                 'error' => $e->getMessage(),
             ]);
-            
+
             return back()->with('photo_error', 'Gagal mengupload foto profil.');
         }
     }
 
-    /**
-     * Update the user's password.
-     */
     public function updatePassword(Request $request)
     {
         try {

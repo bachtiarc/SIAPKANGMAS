@@ -12,18 +12,49 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         <div class="lg:col-span-1">
             <div class="bg-white rounded-xl shadow-sm p-6 text-center">
                 <div class="mb-4 relative">
-                    @if(auth()->user()->profile_photo)
-                        <img src="{{ asset('storage/' . auth()->user()->profile_photo) }}" alt="Profile" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-blue-100">
+                    @php
+                        $rawProfile = auth()->user()->profile_photo;
+                        $profileUrl = null;
+
+                        if (!empty($rawProfile)) {
+                            if (\Illuminate\Support\Str::startsWith($rawProfile, ['http://', 'https://'])) {
+                                $profileUrl = $rawProfile;
+                            } elseif (\Illuminate\Support\Str::startsWith($rawProfile, ['profile-photos/', 'public/', 'storage/'])) {
+                                $normalized = $rawProfile;
+                                if (\Illuminate\Support\Str::startsWith($normalized, 'public/')) {
+                                    $normalized = \Illuminate\Support\Str::after($normalized, 'public/');
+                                }
+                                if (\Illuminate\Support\Str::startsWith($normalized, 'storage/')) {
+                                    $normalized = \Illuminate\Support\Str::after($normalized, 'storage/');
+                                }
+                                $profileUrl = asset('storage/' . ltrim($normalized, '/'));
+                            } else {
+                                // Supabase public object URL
+                                $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+                                $bucket = env('SUPABASE_PROFILE_BUCKET', env('SUPABASE_KTP_BUCKET', 'ktp-photos'));
+
+                                $filePath = ltrim($rawProfile, '/');
+                                if (\Illuminate\Support\Str::startsWith($filePath, $bucket . '/')) {
+                                    $filePath = \Illuminate\Support\Str::after($filePath, $bucket . '/');
+                                }
+
+                                $profileUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
+                            }
+                        }
+                    @endphp
+
+                    @if($profileUrl)
+                        <img src="{{ $profileUrl }}" alt="Profile" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-blue-100">
                     @else
                         <div class="w-32 h-32 mx-auto bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-4xl font-bold border-4 border-blue-100">
                             {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                         </div>
                     @endif
-                    
+
                     <form action="{{ route('masyarakat.profile.photo.update') }}" method="POST" enctype="multipart/form-data" id="photoForm" class="absolute bottom-0 right-1/2 transform translate-x-1/2 translate-y-2">
                         @csrf
                         @method('PUT')
@@ -41,8 +72,6 @@
                     {{ auth()->user()->name }}
                 </h2>
                 <p class="font-lato text-sm text-gray-600 mb-1">Masyarakat Umum</p>
-                
-                {{-- Pembenaran: NIK tetap tampil di sidebar profil --}}
                 <p class="font-lato text-sm text-gray-500">NIK: {{ auth()->user()->nik ?? '-' }}</p>
 
                 <div class="flex justify-center space-x-8 mt-6 pt-6 border-t border-gray-200">
@@ -59,7 +88,7 @@
         </div>
 
         <div class="lg:col-span-2 space-y-6">
-            
+
             <div class="bg-white rounded-xl shadow-sm p-6">
                 <div class="flex items-center mb-6">
                     <svg class="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,12 +129,43 @@
                     </div>
 
                     @if(auth()->user()->foto_ktp)
-                    <div class="md:col-span-2">
-                        <label class="font-montserrat block text-sm font-semibold text-gray-700 mb-2">Foto KTP</label>
-                        <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                            <img src="{{ asset('storage/' . auth()->user()->foto_ktp) }}" alt="KTP" class="max-w-md mx-auto rounded-lg shadow-sm">
+                        @php
+                            // ====== FOTO KTP URL RESOLVER (LOCAL / SUPABASE / FULL URL) ======
+                            $rawKtp = auth()->user()->foto_ktp;
+                            $ktpUrl = null;
+
+                            if (!empty($rawKtp)) {
+                                if (\Illuminate\Support\Str::startsWith($rawKtp, ['http://', 'https://'])) {
+                                    $ktpUrl = $rawKtp;
+                                } elseif (\Illuminate\Support\Str::startsWith($rawKtp, ['ktp-photos/', 'profile-photos/', 'public/', 'storage/'])) {
+                                    $normalized = $rawKtp;
+                                    if (\Illuminate\Support\Str::startsWith($normalized, 'public/')) {
+                                        $normalized = \Illuminate\Support\Str::after($normalized, 'public/');
+                                    }
+                                    if (\Illuminate\Support\Str::startsWith($normalized, 'storage/')) {
+                                        $normalized = \Illuminate\Support\Str::after($normalized, 'storage/');
+                                    }
+                                    $ktpUrl = asset('storage/' . ltrim($normalized, '/'));
+                                } else {
+                                    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+                                    $bucket = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
+
+                                    $filePath = ltrim($rawKtp, '/');
+                                    if (\Illuminate\Support\Str::startsWith($filePath, $bucket . '/')) {
+                                        $filePath = \Illuminate\Support\Str::after($filePath, $bucket . '/');
+                                    }
+
+                                    $ktpUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
+                                }
+                            }
+                        @endphp
+
+                        <div class="md:col-span-2">
+                            <label class="font-montserrat block text-sm font-semibold text-gray-700 mb-2">Foto KTP</label>
+                            <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+                                <img src="{{ $ktpUrl }}" alt="KTP" class="max-w-md mx-auto rounded-lg shadow-sm">
+                            </div>
                         </div>
-                    </div>
                     @endif
                 </div>
             </div>
@@ -159,47 +219,19 @@
 
 @push('styles')
 <style>
-/* Toast Animation */
-@keyframes slideIn {
-    from {
-        transform: translateX(400px);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(400px);
-        opacity: 0;
-    }
-}
-
-.toast-enter {
-    animation: slideIn 0.3s ease-out forwards;
-}
-
-.toast-exit {
-    animation: slideOut 0.3s ease-in forwards;
-}
+@keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(400px); opacity: 0; } }
+.toast-enter { animation: slideIn 0.3s ease-out forwards; }
+.toast-exit { animation: slideOut 0.3s ease-in forwards; }
 </style>
 @endpush
 
 @push('scripts')
 <script>
-// Toast Notification Function
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
-    
     let borderColor, iconColor, icon;
-    
+
     if (type === 'success') {
         borderColor = 'border-green-500';
         iconColor = 'text-green-500';
@@ -213,10 +245,10 @@ function showToast(message, type = 'success') {
         iconColor = 'text-blue-500';
         icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
     }
-    
+
     const toast = document.createElement('div');
     toast.className = `toast-enter bg-white shadow-lg rounded-lg p-4 mb-3 flex items-center space-x-3 min-w-[320px] border-l-4 ${borderColor}`;
-    
+
     toast.innerHTML = `
         <div class="flex-shrink-0">
             <svg class="w-6 h-6 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,9 +264,9 @@ function showToast(message, type = 'success') {
             </svg>
         </button>
     `;
-    
+
     container.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.classList.remove('toast-enter');
         toast.classList.add('toast-exit');
@@ -242,45 +274,39 @@ function showToast(message, type = 'success') {
     }, 5000);
 }
 
-// FRONTEND FILE SIZE VALIDATION
 function validateFileSize(input) {
     const file = input.files[0];
-    
     if (!file) return;
-    
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    
+
+    const maxSize = 2 * 1024 * 1024;
+
     if (file.size > maxSize) {
         const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
         showToast(`Ukuran foto maksimal 2MB! File Anda: ${fileSizeMB}MB`, 'error');
         input.value = '';
         return false;
     }
-    
+
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
         showToast('Format foto harus JPG, JPEG, atau PNG!', 'error');
         input.value = '';
         return false;
     }
-    
+
     document.getElementById('photoForm').submit();
     return true;
 }
 
-// Check for toasts from backend
 @if(session('photo_success'))
     showToast('{{ session("photo_success") }}', 'success');
 @endif
-
 @if(session('photo_error'))
     showToast('{{ session("photo_error") }}', 'error');
 @endif
-
 @if(session('password_success'))
     showToast('{{ session("password_success") }}', 'success');
 @endif
-
 @if(session('password_error'))
     showToast('{{ session("password_error") }}', 'error');
 @endif

@@ -21,13 +21,44 @@
                 <!-- Right: User Profile Card -->
                 <div class="ml-6 bg-gray-50 rounded-lg p-4 min-w-[240px]">
                     <div class="flex items-center space-x-3 mb-3">
-                        @if(auth()->user()->profile_photo)
-                            <img src="{{ asset('storage/' . auth()->user()->profile_photo) }}" alt="{{ auth()->user()->name }}" class="w-12 h-12 rounded-full object-cover border-2 border-blue-600">
+                        @php
+                            $rawProfile = auth()->user()->profile_photo;
+                            $profileUrl = null;
+
+                            if (!empty($rawProfile)) {
+                                if (\Illuminate\Support\Str::startsWith($rawProfile, ['http://', 'https://'])) {
+                                    $profileUrl = $rawProfile;
+                                } elseif (\Illuminate\Support\Str::startsWith($rawProfile, ['profile-photos/', 'public/', 'storage/'])) {
+                                    $normalized = $rawProfile;
+                                    if (\Illuminate\Support\Str::startsWith($normalized, 'public/')) {
+                                        $normalized = \Illuminate\Support\Str::after($normalized, 'public/');
+                                    }
+                                    if (\Illuminate\Support\Str::startsWith($normalized, 'storage/')) {
+                                        $normalized = \Illuminate\Support\Str::after($normalized, 'storage/');
+                                    }
+                                    $profileUrl = asset('storage/' . ltrim($normalized, '/'));
+                                } else {
+                                    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+                                    $bucket = env('SUPABASE_PROFILE_BUCKET', env('SUPABASE_KTP_BUCKET', 'ktp-photos'));
+
+                                    $filePath = ltrim($rawProfile, '/');
+                                    if (\Illuminate\Support\Str::startsWith($filePath, $bucket . '/')) {
+                                        $filePath = \Illuminate\Support\Str::after($filePath, $bucket . '/');
+                                    }
+
+                                    $profileUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
+                                }
+                            }
+                        @endphp
+
+                        @if($profileUrl)
+                            <img src="{{ $profileUrl }}" alt="{{ auth()->user()->name }}" class="w-12 h-12 rounded-full object-cover border-2 border-blue-600">
                         @else
                             <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                                 {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                             </div>
                         @endif
+
                         <div>
                             <h3 class="font-montserrat font-semibold text-gray-900">{{ auth()->user()->name }}</h3>
                             <p class="font-lato text-xs text-gray-600">Masyarakat Umum</p>
