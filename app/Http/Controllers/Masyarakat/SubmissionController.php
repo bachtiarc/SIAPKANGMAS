@@ -74,7 +74,7 @@ class SubmissionController extends Controller
         return view('masyarakat.submissions.create', compact('categories'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\BrevoMailer $brevo)
     {
         $user = auth()->user();
 
@@ -91,7 +91,7 @@ class SubmissionController extends Controller
             'documents.*'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
-        $submission = Submission::create([
+        $submission = \App\Models\Submission::create([
             'user_id'     => $user->id,
             'category_id' => $validated['category_id'],
             'title'       => $validated['title'],
@@ -103,7 +103,7 @@ class SubmissionController extends Controller
         if ($request->hasFile('documents')) {
             foreach (array_slice($request->file('documents'), 0, 3) as $document) {
                 if ($document && $document->isValid()) {
-                    $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
+                    $filename = \Illuminate\Support\Str::random(40) . '.' . $document->getClientOriginalExtension();
 
                     $path = $document->storeAs(
                         (string) $submission->id,
@@ -111,7 +111,7 @@ class SubmissionController extends Controller
                         'supabase'
                     );
 
-                    SubmissionDocument::create([
+                    \App\Models\SubmissionDocument::create([
                         'submission_id'  => $submission->id,
                         'original_name'  => $document->getClientOriginalName(),
                         'file_path'      => $path,
@@ -126,35 +126,35 @@ class SubmissionController extends Controller
         // SEND EMAIL VIA BREVO API
         // =========================
         try {
-            $category = Category::find($submission->category_id);
-            $submission->refresh();
+            $submission->load(['category', 'user']); // biar $submission->category kepake aman
 
-            $html = view('emails.submission_created', [
+            $html = view('emails.submission-created', [
                 'user' => $user,
                 'submission' => $submission,
-                'category' => $category,
+                'category' => $submission->category,
             ])->render();
 
-            Log::info('BREVO DEBUG (masyarakat) - about to send', [
+            \Illuminate\Support\Facades\Log::info('BREVO DEBUG (masyarakat) - about to send', [
                 'to' => $user->email,
-                'from' => env('MAIL_FROM_ADDRESS'),
-                'from_name' => env('MAIL_FROM_NAME'),
-                'has_api_key' => (bool) env('BREVO_API_KEY'),
-                'app_env' => env('APP_ENV'),
+                'from' => config('mail.from.address'),
+                'from_name' => config('mail.from.name'),
+                'has_api_key' => (bool) config('brevo.api_key'),
+                'ticket_id' => $submission->ticket_id,
+                'app_env' => config('app.env'),
             ]);
 
-            $brevo = new BrevoMailer();
             $brevo->sendTransactional(
-                $user->email,
-                $user->name ?? null,
-                "Permohonan Informasi Diterima ({$submission->ticket_id})",
-                $html
+                toEmail: $user->email,
+                toName: $user->name ?? null,
+                subject: "Permohonan Informasi Diterima ({$submission->ticket_id})",
+                htmlContent: $html
             );
 
-            Log::info('BREVO DEBUG (masyarakat) - sent OK', ['to' => $user->email]);
+            \Illuminate\Support\Facades\Log::info('BREVO DEBUG (masyarakat) - sent OK', ['to' => $user->email]);
         } catch (\Throwable $e) {
-            Log::error('BREVO DEBUG (masyarakat) - failed', [
+            \Illuminate\Support\Facades\Log::error('BREVO DEBUG (masyarakat) - failed', [
                 'to' => $user->email,
+                'ticket_id' => $submission->ticket_id,
                 'error' => $e->getMessage(),
             ]);
         }
@@ -165,6 +165,7 @@ class SubmissionController extends Controller
             ->with('ticket_id', $submission->ticket_id)
             ->with('submission_id', $submission->id);
     }
+
 
     public function show(Submission $submission)
     {

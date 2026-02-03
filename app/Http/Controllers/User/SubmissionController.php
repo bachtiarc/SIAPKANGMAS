@@ -75,7 +75,7 @@ class SubmissionController extends Controller
         return view('user.submissions.create', compact('categories'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\BrevoMailer $brevo)
     {
         $user = auth()->user();
 
@@ -93,22 +93,18 @@ class SubmissionController extends Controller
             'documents.*.max'      => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
 
+        // total size max 6MB
         if ($request->hasFile('documents')) {
             $totalSize = 0;
             foreach ($request->file('documents') as $file) {
-                if ($file && $file->isValid()) {
-                    $totalSize += $file->getSize();
-                }
+                if ($file && $file->isValid()) $totalSize += $file->getSize();
             }
-
             if ($totalSize > 6291456) {
-                return back()->withErrors([
-                    'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
-                ])->withInput();
+                return back()->withErrors(['documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'])->withInput();
             }
         }
 
-        $submission = Submission::create([
+        $submission = \App\Models\Submission::create([
             'user_id'      => $user->id,
             'category_id'  => $validated['category_id'],
             'title'        => $validated['title'],
@@ -118,14 +114,12 @@ class SubmissionController extends Controller
         ]);
 
         if ($request->hasFile('documents')) {
-            $documents = array_slice($request->file('documents'), 0, 3);
-
-            foreach ($documents as $document) {
+            foreach (array_slice($request->file('documents'), 0, 3) as $document) {
                 if ($document && $document->isValid()) {
-                    $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
+                    $filename = \Illuminate\Support\Str::random(40) . '.' . $document->getClientOriginalExtension();
                     $path = $document->storeAs((string) $submission->id, $filename, 'supabase');
 
-                    SubmissionDocument::create([
+                    \App\Models\SubmissionDocument::create([
                         'submission_id'  => $submission->id,
                         'original_name'  => $document->getClientOriginalName(),
                         'file_path'      => $path,
@@ -137,35 +131,32 @@ class SubmissionController extends Controller
         }
 
         try {
-            $category = Category::find($submission->category_id);
-            $submission->refresh();
+            $submission->load(['category', 'user']);
 
-            $html = view('emails.submission_created', [
+            $html = view('emails.submission-created', [
                 'user' => $user,
                 'submission' => $submission,
-                'category' => $category,
+                'category' => $submission->category,
             ])->render();
 
-            Log::info('BREVO DEBUG (pegawai) - about to send', [
+            \Illuminate\Support\Facades\Log::info('BREVO DEBUG (pegawai) - about to send', [
                 'to' => $user->email,
-                'from' => env('MAIL_FROM_ADDRESS'),
-                'from_name' => env('MAIL_FROM_NAME'),
-                'has_api_key' => (bool) env('BREVO_API_KEY'),
-                'app_env' => env('APP_ENV'),
+                'has_api_key' => (bool) config('brevo.api_key'),
+                'ticket_id' => $submission->ticket_id,
             ]);
 
-            $brevo = new BrevoMailer();
             $brevo->sendTransactional(
-                $user->email,
-                $user->name ?? null,
-                "Permohonan Informasi Diterima ({$submission->ticket_id})",
-                $html
+                toEmail: $user->email,
+                toName: $user->name ?? null,
+                subject: "Permohonan Informasi Diterima ({$submission->ticket_id})",
+                htmlContent: $html
             );
 
-            Log::info('BREVO DEBUG (pegawai) - sent OK', ['to' => $user->email]);
+            \Illuminate\Support\Facades\Log::info('BREVO DEBUG (pegawai) - sent OK', ['to' => $user->email]);
         } catch (\Throwable $e) {
-            Log::error('BREVO DEBUG (pegawai) - failed', [
+            \Illuminate\Support\Facades\Log::error('BREVO DEBUG (pegawai) - failed', [
                 'to' => $user->email,
+                'ticket_id' => $submission->ticket_id,
                 'error' => $e->getMessage(),
             ]);
         }
@@ -177,6 +168,7 @@ class SubmissionController extends Controller
             ->with('ticket_id', $submission->ticket_id)
             ->with('submission_id', $submission->id);
     }
+
 
     public function show(Submission $submission)
     {
