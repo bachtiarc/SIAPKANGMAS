@@ -96,45 +96,80 @@ class SubmissionController extends Controller
         return view('admin.submissions.show', compact('submission', 'ktpPublicUrl'));
     }
 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|in:pending,in_progress,completed,rejected',
-            'admin_notes' => 'nullable|string',
-            'notify_user' => 'nullable'
+    public function update(Request $request, $id, \App\Services\BrevoMailer $brevo)
+{
+    $request->validate([
+        'status'      => 'required|in:pending,in_progress,completed,rejected',
+        'admin_notes' => 'nullable|string',
+        'notify_user' => 'nullable',
+    ]);
+
+    $submission = Submission::findOrFail($id);
+    $oldStatus  = $submission->status;
+
+    $submission->update([
+        'status'       => $request->status,
+        'admin_notes'  => $request->admin_notes,
+        'handled_by'   => Auth::id(),
+        'completed_at' => $request->status == 'completed' ? now() : null,
+    ]);
+
+    if ($oldStatus !== $request->status) {
+        $submission->statusHistories()->create([
+            'changed_by' => Auth::id(),
+            'new_status' => $request->status,
+            'old_status' => $oldStatus,
+            'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin',
         ]);
+    }
 
-        $submission = Submission::findOrFail($id);
-        $oldStatus = $submission->status;
+    if ($request->has('notify_user') && $oldStatus !== $request->status) {
+        try {
+            $submission->load(['user', 'category', 'handler']);
 
-        $submission->update([
-            'status' => $request->status,
-            'admin_notes' => $request->admin_notes,
-            'handled_by' => Auth::id(),
-            'completed_at' => $request->status == 'completed' ? now() : null
-        ]);
+            $html = view('emails.submission_status_updated', [
+                'submission' => $submission,
+                'user'       => $submission->user,
+                'category'   => $submission->category,
+                'handler'    => $submission->handler,
+                'note'       => $request->admin_notes,
+                'oldStatus'  => $oldStatus,          
+                'newStatus'  => $request->status,    
+            ])->render();
 
-        if ($oldStatus !== $request->status) {
-            $submission->statusHistories()->create([
-                'changed_by' => Auth::id(),
-                'new_status' => $request->status,
-                'old_status' => $oldStatus,
-                'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin'
+            Log::info('BREVO DEBUG (admin) - about to send status update', [
+                'to'          => $submission->user->email,
+                'from'        => config('mail.from.address'),
+                'from_name'   => config('mail.from.name'),
+                'has_api_key' => (bool) config('brevo.api_key'),
+                'ticket_id'   => $submission->ticket_id,
+                'old_status'  => $oldStatus,
+                'new_status'  => $request->status,
+                'app_env'     => config('app.env'),
+            ]);
+
+            $brevo->sendTransactional(
+                toEmail: $submission->user->email,
+                toName: $submission->user->name ?? null,
+                subject: "Update Status Tiket ({$submission->ticket_id})",
+                htmlContent: $html
+            );
+
+            Log::info('BREVO DEBUG (admin) - sent OK', [
+                'to'        => $submission->user->email,
+                'ticket_id' => $submission->ticket_id,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('BREVO DEBUG (admin) - failed', [
+                'to'        => $submission->user->email ?? null,
+                'ticket_id' => $submission->ticket_id ?? null,
+                'error'     => $e->getMessage(),
             ]);
         }
-
-        if ($request->has('notify_user') && $oldStatus !== $request->status) {
-            try {
-                Mail::to($submission->user->email)->send(
-                    new \App\Mail\SubmissionStatusUpdated($submission, $request->admin_notes)
-                );
-            } catch (\Exception $e) {
-                Log::error('Email gagal dikirim: ' . $e->getMessage());
-            }
-        }
-
-        return redirect()->back()->with('success', 'Status pengajuan berhasil diperbarui.');
     }
+
+    return redirect()->back()->with('success', 'Status pengajuan berhasil diperbarui.');
+}
 
     public function downloadDocument($id)
 {
@@ -145,7 +180,6 @@ class SubmissionController extends Controller
 
     $path = ltrim($doc->file_path, '/');
 
-    // Bersihin prefix yang keburu kesimpen di DB
     if (Str::startsWith($path, 'submissions/')) {
         $path = Str::after($path, 'submissions/');
     }
@@ -157,13 +191,8 @@ class SubmissionController extends Controller
         $path = Str::after($path, 'submission/');
     }
 
-    // Normal: bucket/submissionId/filename
     $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
-
-    // Legacy: bucket/submissions/submissionId/filename (karena terlanjur ada folder "submissions" di dalam bucket)
     $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/submissions/{$path}";
-
-    // Lebih reliable dari HEAD (kadang HEAD misleading)
     $res = Http::get($urlNormal);
     $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
 
@@ -176,7 +205,7 @@ class SubmissionController extends Controller
             'user',
             'category',
             'documents',
-            'statusHistories.changedBy', // sesuaikan relasi user di history
+            'statusHistories.changedBy', 
         ])->findOrFail($id);
 
         $pdf = Pdf::loadView('admin.submissions.pdf', compact('submission'))

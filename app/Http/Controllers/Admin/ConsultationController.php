@@ -11,7 +11,6 @@ use App\Support\SupabasePath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -20,7 +19,6 @@ class ConsultationController extends Controller
 {
     public function index(Request $request)
     {
-        // Statistik
         $stats = [
             'total'   => Consultation::count(),
             'proses'  => Consultation::where('status', 'on_progress')->count(),
@@ -28,10 +26,8 @@ class ConsultationController extends Controller
             'belum'   => Consultation::where('status', 'pending')->count(),
         ];
 
-        // Query konsultasi
         $query = Consultation::with(['user', 'category']);
         
-        // ================= FILTER TANGGAL =================
         $hasStart = $request->filled('start_date');
         $hasEnd   = $request->filled('end_date');
 
@@ -45,21 +41,14 @@ class ConsultationController extends Controller
         } elseif ($hasEnd) {
             $query->whereDate('created_at', $request->end_date);
         }
-        // ==================================================
-
-        // Filter tipe user
         if ($request->filled('type') && $request->type != 'Semua') {
             $query->whereHas('user', function($q) use ($request) {
                 $q->where('user_type', $request->type);
             });
         }
-
-        // Filter kategori
         if ($request->filled('category') && $request->category != 'Semua') {
             $query->where('category_id', $request->category);
         }
-
-        // Filter status
         if ($request->filled('status') && $request->status != 'Semua') {
             if ($request->status === 'completed') {
                 $query->whereIn('status', ['completed', 'rejected']);
@@ -88,11 +77,9 @@ class ConsultationController extends Controller
         if ($ktpRaw && $supabaseUrl) {
             $ktpRaw = ltrim($ktpRaw, '/');
 
-            // kalau udah full URL
             if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
                 $ktpPublicUrl = $ktpRaw;
             } else {
-                // kalau masih nyimpen "ktp-photos/<path>"
                 if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
                     $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
                 }
@@ -104,48 +91,80 @@ class ConsultationController extends Controller
         return view('admin.consultations.show', compact('consultation', 'ktpPublicUrl'));
     }
 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|in:pending,on_progress,completed,rejected',
-            'admin_notes' => 'nullable|string',
-            'notify_user' => 'nullable'
+    public function update(Request $request, $id, \App\Services\BrevoMailer $brevo)
+{
+    $request->validate([
+        'status'      => 'required|in:pending,on_progress,completed,rejected',
+        'admin_notes' => 'nullable|string',
+        'notify_user' => 'nullable',
+    ]);
+
+    $consultation = Consultation::findOrFail($id);
+    $oldStatus    = $consultation->status;
+
+    $consultation->update([
+        'status'         => $request->status,
+        'admin_response' => $request->admin_notes,
+        'handled_by'     => Auth::id(),
+        'completed_at'   => $request->status == 'completed' ? now() : null,
+    ]);
+
+    if ($oldStatus !== $request->status) {
+        $consultation->statusHistories()->create([
+            'changed_by' => Auth::id(),
+            'new_status' => $request->status,
+            'old_status' => $oldStatus,
+            'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin',
         ]);
+    }
 
-        $consultation = Consultation::findOrFail($id);
-        $oldStatus = $consultation->status;
+    if ($request->has('notify_user') && $oldStatus !== $request->status) {
+        try {
+            $consultation->load(['user', 'category', 'handler']);
 
-        // Update Consultation
-        $consultation->update([
-            'status' => $request->status,
-            'admin_response' => $request->admin_notes,
-            'handled_by' => Auth::id(),
-            'completed_at' => $request->status == 'completed' ? now() : null
-        ]);
+            $html = view('emails.consultation_status_updated', [
+                'consultation' => $consultation,
+                'user'         => $consultation->user,
+                'category'     => $consultation->category,
+                'handler'      => $consultation->handler,
+                'note'         => $request->admin_notes,
+                'oldStatus'    => $oldStatus,         
+                'newStatus'    => $request->status,   
+            ])->render();
 
-        // Simpan Riwayat Status (Menggunakan nama kolom yang sudah diperbaiki)
-        if ($oldStatus !== $request->status) {
-            $consultation->statusHistories()->create([
-                'changed_by' => Auth::id(),
-                'new_status' => $request->status,
-                'old_status' => $oldStatus,
-                'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin'
+            Log::info('BREVO DEBUG (admin) - about to send consultation status update', [
+                'to'          => $consultation->user->email,
+                'from'        => config('mail.from.address'),
+                'from_name'   => config('mail.from.name'),
+                'has_api_key' => (bool) config('brevo.api_key'),
+                'ticket_id'   => $consultation->ticket_id,
+                'old_status'  => $oldStatus,
+                'new_status'  => $request->status,
+                'app_env'     => config('app.env'),
+            ]);
+
+            $brevo->sendTransactional(
+                toEmail: $consultation->user->email,
+                toName: $consultation->user->name ?? null,
+                subject: "Update Status Konsultasi ({$consultation->ticket_id})",
+                htmlContent: $html
+            );
+
+            Log::info('BREVO DEBUG (admin) - consultation sent OK', [
+                'to'        => $consultation->user->email,
+                'ticket_id' => $consultation->ticket_id,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('BREVO DEBUG (admin) - consultation failed', [
+                'to'        => $consultation->user->email ?? null,
+                'ticket_id' => $consultation->ticket_id ?? null,
+                'error'     => $e->getMessage(),
             ]);
         }
-
-        // Kirim Email Notifikasi
-        if ($request->has('notify_user') && $oldStatus !== $request->status) {
-            try {
-                Mail::to($consultation->user->email)->send(
-                    new ConsultationStatusUpdated($consultation, $request->admin_notes)
-                );
-            } catch (\Exception $e) {
-                Log::error('Email konsultasi gagal dikirim: ' . $e->getMessage());
-            }
-        }
-
-        return redirect()->back()->with('success', 'Status konsultasi berhasil diperbarui.');
     }
+
+    return redirect()->back()->with('success', 'Status konsultasi berhasil diperbarui.');
+}
 
     public function downloadDocument($id)
     {
@@ -156,7 +175,6 @@ class ConsultationController extends Controller
 
         $path = ltrim($doc->file_path, '/');
 
-        // buang prefix yang keburu kesimpen di DB
         if (Str::startsWith($path, 'consultations/')) {
             $path = Str::after($path, 'consultations/');
         }
@@ -171,7 +189,6 @@ class ConsultationController extends Controller
         $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
         $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/consultations/{$path}";
 
-        // coba normal dulu, kalau 404 baru fallback legacy
         $res = Http::get($urlNormal);
         $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
 
@@ -184,7 +201,7 @@ class ConsultationController extends Controller
             'user',
             'category',
             'documents',
-            'statusHistories.changedBy', // sesuaikan relasi user di history
+            'statusHistories.changedBy', 
         ])->findOrFail($id);
 
         $pdf = Pdf::loadView('admin.consultations.pdf', compact('consultation'))
@@ -212,18 +229,15 @@ class ConsultationController extends Controller
 
         $ktpRaw = ltrim($ktpRaw, '/');
 
-        // full URL
         if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
             $fileUrl = $ktpRaw;
         } else {
-            // kalau masih nyimpen "ktp-photos/<path>"
             if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
                 $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
             }
             $fileUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
         }
 
-        // ambil konten file (stream)
         $res = Http::get($fileUrl);
         if (!$res->successful()) {
             abort(404);
@@ -231,7 +245,6 @@ class ConsultationController extends Controller
 
         $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
 
-        // tentukan ekstensi dari content-type / url
         $ext = match (true) {
             str_contains($contentType, 'png') => 'png',
             str_contains($contentType, 'jpeg'), str_contains($contentType, 'jpg') => 'jpg',
