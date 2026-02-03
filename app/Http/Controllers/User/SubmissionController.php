@@ -14,14 +14,10 @@ use App\Services\BrevoMailer;
 
 class SubmissionController extends Controller
 {
-    /**
-     * Display a listing of submissions
-     */
     public function index(Request $request)
     {
         $user = auth()->user();
 
-        // Check if user is pegawai
         if ($user->user_type !== 'pegawai') {
             abort(403, 'Unauthorized access.');
         }
@@ -33,8 +29,8 @@ class SubmissionController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('ticket_id', 'ilike', "%{$search}%")
-                    ->orWhere('title', 'ilike', "%{$search}%")
-                    ->orWhere('subject', 'ilike', "%{$search}%");
+                  ->orWhere('title', 'ilike', "%{$search}%")
+                  ->orWhere('subject', 'ilike', "%{$search}%");
             });
         }
 
@@ -42,20 +38,13 @@ class SubmissionController extends Controller
             $statusFilter = strtolower($request->status);
 
             $query->where(function ($q) use ($statusFilter) {
-                // MENUNGGU PROSES
                 if ($statusFilter === 'pending') {
                     $q->whereIn('status', ['pending', 'belum diproses']);
-                }
-                // DIPROSES
-                elseif ($statusFilter === 'diproses') {
+                } elseif ($statusFilter === 'diproses') {
                     $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
-                }
-                // SELESAI
-                elseif ($statusFilter === 'selesai') {
+                } elseif ($statusFilter === 'selesai') {
                     $q->whereIn('status', ['completed', 'selesai']);
-                }
-                // DITOLAK
-                elseif ($statusFilter === 'ditolak') {
+                } elseif ($statusFilter === 'ditolak') {
                     $q->whereIn('status', ['rejected', 'ditolak']);
                 }
             });
@@ -66,9 +55,6 @@ class SubmissionController extends Controller
         return view('user.submissions.index', compact('submissions'));
     }
 
-    /**
-     * Show the form for creating a new submission
-     */
     public function create()
     {
         $user = auth()->user();
@@ -89,10 +75,7 @@ class SubmissionController extends Controller
         return view('user.submissions.create', compact('categories'));
     }
 
-    /**
-     * Store a newly created submission in storage
-     */
-    public function store(Request $request, BrevoMailer $brevo)
+    public function store(Request $request)
     {
         $user = auth()->user();
 
@@ -110,7 +93,6 @@ class SubmissionController extends Controller
             'documents.*.max'      => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
 
-        // total size max 6MB
         if ($request->hasFile('documents')) {
             $totalSize = 0;
             foreach ($request->file('documents') as $file) {
@@ -154,14 +136,8 @@ class SubmissionController extends Controller
             }
         }
 
-        // =========================
-        // SEND EMAIL VIA BREVO API
-        // =========================
         try {
-            // penting: ambil kategori untuk template kamu (karena template pakai $category->name)
             $category = Category::find($submission->category_id);
-
-            // pastikan waktu ada object carbon (biar format() aman)
             $submission->refresh();
 
             $html = view('emails.submission_created', [
@@ -170,28 +146,27 @@ class SubmissionController extends Controller
                 'category' => $category,
             ])->render();
 
-            Log::info('BREVO DEBUG - about to send', [
+            Log::info('BREVO DEBUG (pegawai) - about to send', [
                 'to' => $user->email,
-                'from' => config('mail.from.address'),
-                'from_name' => config('mail.from.name'),
+                'from' => env('MAIL_FROM_ADDRESS'),
+                'from_name' => env('MAIL_FROM_NAME'),
                 'has_api_key' => (bool) env('BREVO_API_KEY'),
-                'app_env' => config('app.env'),
+                'app_env' => env('APP_ENV'),
             ]);
 
+            $brevo = new BrevoMailer();
             $brevo->sendTransactional(
-                toEmail: $user->email,
-                toName: $user->name ?? null,
-                subject: "Permohonan Informasi Diterima ({$submission->ticket_id})",
-                htmlContent: $html
+                $user->email,
+                $user->name ?? null,
+                "Permohonan Informasi Diterima ({$submission->ticket_id})",
+                $html
             );
 
-            Log::info('BREVO DEBUG - sent OK', ['to' => $user->email]);
-
+            Log::info('BREVO DEBUG (pegawai) - sent OK', ['to' => $user->email]);
         } catch (\Throwable $e) {
-            Log::error('BREVO DEBUG - failed', [
+            Log::error('BREVO DEBUG (pegawai) - failed', [
                 'to' => $user->email,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
         }
 
@@ -203,9 +178,6 @@ class SubmissionController extends Controller
             ->with('submission_id', $submission->id);
     }
 
-    /**
-     * Display the specified submission
-     */
     public function show(Submission $submission)
     {
         $user = auth()->user();
@@ -219,9 +191,6 @@ class SubmissionController extends Controller
         return view('user.submissions.show', compact('submission'));
     }
 
-    /**
-     * View document in browser
-     */
     public function viewDocument(SubmissionDocument $document)
     {
         $user = auth()->user();
@@ -242,9 +211,6 @@ class SubmissionController extends Controller
         return redirect()->away($publicUrl);
     }
 
-    /**
-     * Download document file
-     */
     public function downloadDocument(SubmissionDocument $document)
     {
         $user = auth()->user();

@@ -29,8 +29,8 @@ class SubmissionController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('ticket_id', 'ilike', "%{$search}%")
-                    ->orWhere('title', 'ilike', "%{$search}%")
-                    ->orWhere('subject', 'ilike', "%{$search}%");
+                  ->orWhere('title', 'ilike', "%{$search}%")
+                  ->orWhere('subject', 'ilike', "%{$search}%");
             });
         }
 
@@ -66,7 +66,7 @@ class SubmissionController extends Controller
             ->ofType('permohonan')
             ->where(function ($q) {
                 $q->where('user_type', 'masyarakat_umum')
-                    ->orWhere('user_type', 'all');
+                  ->orWhere('user_type', 'all');
             })
             ->orderBy('name')
             ->get();
@@ -74,7 +74,7 @@ class SubmissionController extends Controller
         return view('masyarakat.submissions.create', compact('categories'));
     }
 
-    public function store(Request $request, BrevoMailer $brevo)
+    public function store(Request $request)
     {
         $user = auth()->user();
 
@@ -137,26 +137,25 @@ class SubmissionController extends Controller
 
             Log::info('BREVO DEBUG (masyarakat) - about to send', [
                 'to' => $user->email,
-                'from' => config('mail.from.address'),
-                'from_name' => config('mail.from.name'),
+                'from' => env('MAIL_FROM_ADDRESS'),
+                'from_name' => env('MAIL_FROM_NAME'),
                 'has_api_key' => (bool) env('BREVO_API_KEY'),
-                'app_env' => config('app.env'),
+                'app_env' => env('APP_ENV'),
             ]);
 
+            $brevo = new BrevoMailer();
             $brevo->sendTransactional(
-                toEmail: $user->email,
-                toName: $user->name ?? null,
-                subject: "Permohonan Informasi Diterima ({$submission->ticket_id})",
-                htmlContent: $html
+                $user->email,
+                $user->name ?? null,
+                "Permohonan Informasi Diterima ({$submission->ticket_id})",
+                $html
             );
 
             Log::info('BREVO DEBUG (masyarakat) - sent OK', ['to' => $user->email]);
-
         } catch (\Throwable $e) {
             Log::error('BREVO DEBUG (masyarakat) - failed', [
                 'to' => $user->email,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
         }
 

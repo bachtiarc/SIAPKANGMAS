@@ -95,19 +95,16 @@
                 <div class="ticket-number">
                     {{ $submission->ticket_id ?? 'N/A' }}
                 </div>
-                @if(!empty($submission->full_ticket_number))
-                    <div style="font-size:12px; color:#6b7280;">
-                        {{ $submission->full_ticket_number }}
-                    </div>
-                @endif
             </div>
 
             <div class="info-row">
                 <span class="label">Judul:</span> {{ $submission->title ?? 'N/A' }}
             </div>
+
             <div class="info-row">
                 <span class="label">Kategori:</span> {{ $category->name ?? 'N/A' }}
             </div>
+
             <div class="info-row">
                 <span class="label">Tanggal Pengajuan:</span>
                 @if($submission->submitted_at)
@@ -118,6 +115,7 @@
                     {{ date('d F Y, H:i') }} WIB
                 @endif
             </div>
+
             <div class="info-row">
                 <span class="label">Status:</span> Menunggu Verifikasi
             </div>
