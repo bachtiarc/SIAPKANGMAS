@@ -9,7 +9,6 @@ use App\Models\ComplaintDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -27,7 +26,6 @@ class ComplaintController extends Controller
 
         $query = Complaint::with(['user', 'category']);
 
-        // ================= FILTER TANGGAL =================
         $hasStart = $request->filled('start_date');
         $hasEnd   = $request->filled('end_date');
 
@@ -41,7 +39,6 @@ class ComplaintController extends Controller
         } elseif ($hasEnd) {
             $query->whereDate('created_at', $request->end_date);
         }
-        // ==================================================
 
         if ($request->filled('type') && $request->type !== 'Semua') {
             $query->whereHas('user', function ($q) use ($request) {
@@ -81,16 +78,13 @@ class ComplaintController extends Controller
         if ($ktpRaw && $supabaseUrl) {
             $ktpRaw = ltrim($ktpRaw, '/');
 
-            // kalau udah full URL
             if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
                 $ktpPublicUrl = $ktpRaw;
             } else {
-                // kalau masih nyimpen "ktp-photos/<path>"
                 if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
                     $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
                 }
 
-                // sekarang ktpRaw = path relatif "3318.../ktp_xxx.png"
                 $ktpPublicUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
             }
         }
@@ -98,58 +92,91 @@ class ComplaintController extends Controller
         return view('admin.complaints.show', compact('complaint', 'ktpPublicUrl'));
     }
 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'status'      => 'required|in:pending,diproses,selesai,ditolak',
-            'admin_notes' => 'nullable|string',
-        ]);
+    public function update(Request $request, $id, \App\Services\BrevoMailer $brevo)
+{
+    $request->validate([
+        'status'      => 'required|in:pending,diproses,selesai,ditolak',
+        'admin_notes' => 'nullable|string',
+    ]);
 
-        $complaint = Complaint::with('user')->findOrFail($id);
+    $complaint = Complaint::with(['user', 'category', 'handler'])->findOrFail($id);
 
-        $oldStatus = $complaint->status;
-        $oldNotes  = $complaint->admin_response ?? $complaint->admin_notes;
+    $oldStatus = $complaint->status;
+    $oldNotes  = $complaint->admin_response ?? $complaint->admin_notes;
 
-        $newStatus = $request->status;
-        $newNotes  = $request->admin_notes;
+    $newStatus = $request->status;
+    $newNotes  = $request->admin_notes;
 
-        $statusChanged = ($oldStatus !== $newStatus);
-        $notesChanged  = ((string)($oldNotes ?? '') !== (string)($newNotes ?? ''));
+    $statusChanged = ($oldStatus !== $newStatus);
+    $notesChanged  = ((string)($oldNotes ?? '') !== (string)($newNotes ?? ''));
 
-        $complaint->update([
-            'status'         => $newStatus,
-            'admin_response' => $newNotes,
-            'handled_by'     => Auth::id(),
-            'completed_at'   => $newStatus === 'selesai' ? now() : null,
-        ]);
+    $complaint->update([
+        'status'         => $newStatus,
+        'admin_response' => $newNotes,
+        'handled_by'     => Auth::id(),
+        'completed_at'   => $newStatus === 'selesai' ? now() : null,
+    ]);
 
-        // History kalau ada perubahan status ATAU catatan
-        if ($statusChanged || $notesChanged) {
-            try {
-                $complaint->statusHistories()->create([
-                    'changed_by' => Auth::id(),
-                    'new_status' => $newStatus,
-                    'old_status' => $oldStatus,
-                    'notes'      => $newNotes ?? 'Perubahan disimpan oleh Admin',
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Gagal simpan status history pengaduan: ' . $e->getMessage());
-            }
+    if ($statusChanged || $notesChanged) {
+        try {
+            $complaint->statusHistories()->create([
+                'changed_by' => Auth::id(),
+                'new_status' => $newStatus,
+                'old_status' => $oldStatus,
+                'notes'      => $newNotes ?? 'Perubahan disimpan oleh Admin',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Gagal simpan status history pengaduan: ' . $e->getMessage());
         }
-
-        // EMAIL: otomatis terkirim kalau ada perubahan status/catatan
-        if (($statusChanged || $notesChanged) && !empty($complaint->user->email)) {
-            try {
-                Mail::to($complaint->user->email)->send(
-                    new \App\Mail\ComplaintStatusUpdated($complaint->fresh(), $newNotes)
-                );
-            } catch (\Exception $e) {
-                Log::error('Email pengaduan gagal dikirim: ' . $e->getMessage());
-            }
-        }
-
-        return redirect()->back()->with('success', 'Perubahan pengaduan berhasil disimpan.');
     }
+
+    if (($statusChanged || $notesChanged) && !empty($complaint->user->email)) {
+        try {
+            $complaint->load(['user', 'category', 'handler']);
+
+            $html = view('emails.complaint_status_updated', [
+                'complaint'  => $complaint,
+                'user'       => $complaint->user,
+                'category'   => $complaint->category,
+                'handler'    => $complaint->handler,
+                'notes'      => $newNotes,
+                'oldStatus'  => $oldStatus,    
+                'newStatus'  => $newStatus,    
+            ])->render();
+
+            Log::info('BREVO DEBUG (admin) - about to send complaint status update', [
+                'to'          => $complaint->user->email,
+                'from'        => config('mail.from.address'),
+                'from_name'   => config('mail.from.name'),
+                'has_api_key' => (bool) config('brevo.api_key'),
+                'ticket_no'   => $complaint->ticket_number ?? $complaint->id,
+                'old_status'  => $oldStatus,
+                'new_status'  => $newStatus,
+                'app_env'     => config('app.env'),
+            ]);
+
+            $brevo->sendTransactional(
+                toEmail: $complaint->user->email,
+                toName: $complaint->user->name ?? null,
+                subject: 'Update Status Pengaduan (' . ($complaint->ticket_number ?? $complaint->id) . ')',
+                htmlContent: $html
+            );
+
+            Log::info('BREVO DEBUG (admin) - complaint sent OK', [
+                'to'        => $complaint->user->email,
+                'ticket_no' => $complaint->ticket_number ?? $complaint->id,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('BREVO DEBUG (admin) - complaint failed', [
+                'to'        => $complaint->user->email ?? null,
+                'ticket_no' => $complaint->ticket_number ?? $complaint->id ?? null,
+                'error'     => $e->getMessage(),
+            ]);
+        }
+    }
+
+    return redirect()->back()->with('success', 'Perubahan pengaduan berhasil disimpan.');
+}
 
     public function downloadDocument($id)
     {
@@ -158,21 +185,14 @@ class ComplaintController extends Controller
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
 
-        // file_path contoh: "8/xxxx.pdf"
         $path = ltrim($doc->file_path, '/');
 
-        // safety: kalau ada legacy "complaints/" di DB
         if (Str::startsWith($path, 'complaints/')) {
             $path = Str::after($path, 'complaints/');
         }
 
-        // URL NORMAL (yang kita mau)
         $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
-
-        // URL LEGACY (kalau dulu sempat double folder)
         $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/complaints/{$path}";
-
-        // cek mana yang ada
         $res = Http::get($urlNormal);
         $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
 
@@ -216,18 +236,15 @@ class ComplaintController extends Controller
 
         $ktpRaw = ltrim($ktpRaw, '/');
 
-        // full URL
         if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
             $fileUrl = $ktpRaw;
         } else {
-            // kalau masih nyimpen "ktp-photos/<path>"
             if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
                 $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
             }
             $fileUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
         }
 
-        // ambil konten file (stream)
         $res = Http::get($fileUrl);
         if (!$res->successful()) {
             abort(404);
@@ -235,7 +252,6 @@ class ComplaintController extends Controller
 
         $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
 
-        // tentukan ekstensi dari content-type / url
         $ext = match (true) {
             str_contains($contentType, 'png') => 'png',
             str_contains($contentType, 'jpeg'), str_contains($contentType, 'jpg') => 'jpg',
