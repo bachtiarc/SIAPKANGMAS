@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -118,4 +119,17 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Complaint::class, 'handled_by');
     }
+
+    /**
+     * URL foto profil (Supabase)
+     */
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        if (!$this->profile_photo) {
+            return null;
+        }
+
+        return Storage::disk('supabase_profile')->url($this->profile_photo);
+    }
+
 }

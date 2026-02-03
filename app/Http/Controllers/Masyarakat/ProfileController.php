@@ -77,74 +77,45 @@ class ProfileController extends Controller
         try {
             $request->validate([
                 'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            ], [
-                'profile_photo.required' => 'Foto profil wajib dipilih.',
-                'profile_photo.image' => 'File harus berupa gambar.',
-                'profile_photo.mimes' => 'Format foto harus JPEG, PNG, atau JPG.',
-                'profile_photo.max' => 'Ukuran foto maksimal 2MB.',
             ]);
 
             $user = auth()->user();
-
-            if (!$request->hasFile('profile_photo')) {
-                return back()->with('photo_error', 'File foto tidak ditemukan.');
-            }
-
             $file = $request->file('profile_photo');
 
-            if (!$file->isValid()) {
+            if (!$file || !$file->isValid()) {
                 return back()->with('photo_error', 'File foto tidak valid.');
             }
 
-            /**
-             * HAPUS FOTO LAMA:
-             * - kalau dulu tersimpan local (public disk) -> hapus local
-             * - kalau sudah supabase path -> hapus supabase (kalau mau)
-             */
+            // 🧹 hapus foto lama (jika ada)
             if ($user->profile_photo) {
-                $old = $user->profile_photo;
-
-                // old local path
-                if (Str::startsWith($old, ['profile-photos/', 'public/', 'storage/'])) {
-                    $normalized = $old;
-                    if (Str::startsWith($normalized, 'public/')) $normalized = Str::after($normalized, 'public/');
-                    if (Str::startsWith($normalized, 'storage/')) $normalized = Str::after($normalized, 'storage/');
-                    if (Storage::disk('public')->exists($normalized)) {
-                        Storage::disk('public')->delete($normalized);
-                    }
-                } else {
-                    // old supabase path (opsional delete)
-                    try {
-                        Storage::disk('supabase_ktp')->delete(ltrim($old, '/'));
-                    } catch (\Exception $e) {
-                        // ga fatal
-                    }
+                try {
+                    Storage::disk('supabase_profile')->delete($user->profile_photo);
+                } catch (\Exception $e) {
+                    // tidak fatal
                 }
             }
 
-            // ✅ simpan ke supabase bucket profile photos
-            // PAKAI disk supabase_ktp biar ga nambah disk baru (sesuai request "tanpa helper" & minim ubah config)
-            // bucket dikontrol lewat SUPABASE_KTP_BUCKET? -> kalau kamu mau bucket khusus profile, bikin disk baru.
-            // Untuk aman: kita taruh di folder "profile-photos/"
-            $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $path = 'profile-photos/' . $user->id . '/' . $filename;
+            // 📦 simpan ke Supabase bucket profile-photos
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $path = "users/{$user->id}/{$filename}";
 
-            Storage::disk('supabase_ktp')->put(
+            Storage::disk('supabase_profile')->put(
                 $path,
-                file_get_contents($file)
+                file_get_contents($file),
+                [
+                    'visibility' => 'public',
+                    'ContentType' => $file->getMimeType(),
+                ]
             );
 
-            // simpan path supabase ke DB
+            // 💾 simpan PATH (bukan URL) ke DB
             $user->profile_photo = $path;
             $user->save();
 
             return back()->with('photo_success', 'Foto profil berhasil diperbarui!');
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            $errorMessage = $e->validator->errors()->first('profile_photo');
-            return back()->with('photo_error', $errorMessage);
         } catch (\Exception $e) {
-            Log::error('Profile photo upload failed', [
+            Log::error('Upload profile photo failed', [
                 'user_id' => auth()->id(),
                 'error' => $e->getMessage(),
             ]);

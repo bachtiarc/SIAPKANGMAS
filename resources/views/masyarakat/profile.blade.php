@@ -17,41 +17,15 @@
             <div class="bg-white rounded-xl shadow-sm p-6 text-center">
                 <div class="mb-4 relative">
                     @php
-                        $rawProfile = auth()->user()->profile_photo;
-                        $profileUrl = null;
-
-                        if (!empty($rawProfile)) {
-                            if (\Illuminate\Support\Str::startsWith($rawProfile, ['http://', 'https://'])) {
-                                $profileUrl = $rawProfile;
-                            } elseif (\Illuminate\Support\Str::startsWith($rawProfile, ['profile-photos/', 'public/', 'storage/'])) {
-                                $normalized = $rawProfile;
-                                if (\Illuminate\Support\Str::startsWith($normalized, 'public/')) {
-                                    $normalized = \Illuminate\Support\Str::after($normalized, 'public/');
-                                }
-                                if (\Illuminate\Support\Str::startsWith($normalized, 'storage/')) {
-                                    $normalized = \Illuminate\Support\Str::after($normalized, 'storage/');
-                                }
-                                $profileUrl = asset('storage/' . ltrim($normalized, '/'));
-                            } else {
-                                // Supabase public object URL
-                                $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-                                $bucket = env('SUPABASE_PROFILE_BUCKET', env('SUPABASE_KTP_BUCKET', 'ktp-photos'));
-
-                                $filePath = ltrim($rawProfile, '/');
-                                if (\Illuminate\Support\Str::startsWith($filePath, $bucket . '/')) {
-                                    $filePath = \Illuminate\Support\Str::after($filePath, $bucket . '/');
-                                }
-
-                                $profileUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
-                            }
-                        }
+                        $user = auth()->user();
                     @endphp
 
-                    @if($profileUrl)
-                        <img src="{{ $profileUrl }}" alt="Profile" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-blue-100">
+                    @if($user->profile_photo_url)
+                        <img src="{{ $user->profile_photo_url }}" alt="Profile"
+                            class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-blue-100">
                     @else
                         <div class="w-32 h-32 mx-auto bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-4xl font-bold border-4 border-blue-100">
-                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                            {{ strtoupper(substr($user->name, 0, 1)) }}
                         </div>
                     @endif
 

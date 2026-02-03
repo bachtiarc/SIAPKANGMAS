@@ -20,11 +20,18 @@
             <div class="bg-white rounded-xl shadow-sm p-6 text-center">
                 <!-- Profile Picture with Upload -->
                 <div class="mb-4 relative">
-                    @if(auth()->user()->profile_photo)
-                        <img src="{{ asset('storage/' . auth()->user()->profile_photo) }}" alt="Profile" class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-blue-100">
+
+                    {{-- ✅ FOTO PROFIL: pakai accessor profile_photo_url (Supabase) --}}
+                    @php
+                        $user = auth()->user();
+                    @endphp
+
+                    @if($user->profile_photo_url)
+                        <img src="{{ $user->profile_photo_url }}" alt="Profile"
+                            class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-blue-100">
                     @else
                         <div class="w-32 h-32 mx-auto bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-4xl font-bold border-4 border-blue-100">
-                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                            {{ strtoupper(substr($user->name, 0, 1)) }}
                         </div>
                     @endif
                     
@@ -42,8 +49,6 @@
                         <input type="file" name="profile_photo" id="profile_photo" accept="image/jpeg,image/jpg,image/png" class="hidden" onchange="validateFileSize(this)">
                     </form>
                 </div>
-
-                <!-- REMOVED: Static success/error messages (now using toast) -->
 
                 <!-- User Info -->
                 <h2 class="font-montserrat text-xl font-bold text-gray-900 mb-1">
@@ -131,8 +136,6 @@
                     </svg>
                     <h3 class="font-montserrat text-xl font-bold text-gray-900">Keamanan Akun</h3>
                 </div>
-
-                <!-- REMOVED: Static success/error messages (now using toast) -->
 
                 <form action="{{ route('user.password.update') }}" method="POST" class="space-y-4">
                     @csrf

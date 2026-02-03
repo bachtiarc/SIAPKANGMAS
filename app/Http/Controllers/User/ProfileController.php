@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProfileController extends Controller
 {
@@ -80,7 +81,7 @@ class ProfileController extends Controller
     {
         try {
             $request->validate([
-                'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048', // 2048 KB = 2 MB
+                'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             ], [
                 'profile_photo.required' => 'Foto profil wajib dipilih.',
                 'profile_photo.image' => 'File harus berupa gambar.',
@@ -89,69 +90,61 @@ class ProfileController extends Controller
             ]);
 
             $user = auth()->user();
-            if (!$request->hasFile('profile_photo')) {
-                Log::error('Profile photo upload failed: No file in request');
-                return back()->with('photo_error', 'File foto tidak ditemukan. Silakan pilih foto terlebih dahulu.');
-            }
-
             $file = $request->file('profile_photo');
 
-            if (!$file->isValid()) {
-                Log::error('Profile photo upload failed: Invalid file', [
-                    'error' => $file->getError(),
-                    'error_message' => $file->getErrorMessage()
-                ]);
-                return back()->with('photo_error', 'File foto tidak valid atau rusak. Error: ' . $file->getErrorMessage());
+            if (!$file || !$file->isValid()) {
+                return back()->with('photo_error', 'File foto tidak valid.');
             }
 
-            Log::info('Uploading profile photo', [
+            Log::info('Uploading profile photo (Supabase)', [
                 'user_id' => $user->id,
                 'original_name' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType(),
                 'size' => $file->getSize(),
             ]);
 
+            // 🧹 HAPUS FOTO LAMA DI SUPABASE
             if ($user->profile_photo) {
-                if (Storage::disk('public')->exists($user->profile_photo)) {
-                    Storage::disk('public')->delete($user->profile_photo);
-                    Log::info('Deleted old profile photo', ['path' => $user->profile_photo]);
+                try {
+                    Storage::disk('supabase_profile')->delete($user->profile_photo);
+                } catch (\Exception $e) {
+                    // tidak fatal
                 }
             }
 
-            $path = $file->store('profile-photos', 'public');
+            // 📦 SIMPAN KE SUPABASE bucket profile-photos
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $path = "users/{$user->id}/{$filename}";
 
-            if (!$path) {
-                Log::error('Profile photo upload failed: Storage returned false');
-                return back()->with('photo_error', 'Gagal menyimpan foto ke storage. Periksa permission folder storage/app/public.');
-            }
+            Storage::disk('supabase_profile')->put(
+                $path,
+                file_get_contents($file),
+                [
+                    'visibility' => 'public',
+                    'ContentType' => $file->getMimeType(),
+                ]
+            );
 
-            if (!Storage::disk('public')->exists($path)) {
-                Log::error('Profile photo upload failed: File not found after save', ['path' => $path]);
-                return back()->with('photo_error', 'Foto tidak ditemukan setelah disimpan. Periksa konfigurasi storage.');
-            }
-
+            // 💾 SIMPAN PATH ke DB (BUKAN URL)
             $user->profile_photo = $path;
             $user->save();
 
-            Log::info('Profile photo updated successfully', [
+            Log::info('Profile photo updated successfully (Supabase)', [
                 'user_id' => $user->id,
-                'path' => $path
+                'path' => $path,
             ]);
 
             return back()->with('photo_success', 'Foto profil berhasil diperbarui!');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-
-            $errorMessage = $e->validator->errors()->first('profile_photo');
-            return back()->with('photo_error', $errorMessage);
+            return back()->with('photo_error', $e->validator->errors()->first('profile_photo'));
         } catch (\Exception $e) {
-            Log::error('Profile photo upload failed with exception', [
+            Log::error('Profile photo upload failed', [
                 'user_id' => auth()->id(),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
             ]);
-            
-            return back()->with('photo_error', 'Gagal mengupload foto profil. Error: ' . $e->getMessage());
+
+            return back()->with('photo_error', 'Gagal mengupload foto profil.');
         }
     }
 
