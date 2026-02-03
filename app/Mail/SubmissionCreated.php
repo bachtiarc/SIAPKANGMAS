@@ -5,45 +5,36 @@ namespace App\Mail;
 use App\Models\Submission;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Mail\Mailables\Address;
 
 class SubmissionCreated extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $submission;
+    public Submission $submission;
 
     public function __construct(Submission $submission)
     {
-        $this->submission = $submission;
+        $this->submission = $submission->loadMissing(['user', 'category']);
     }
 
-    public function envelope(): Envelope
+    public function build()
     {
-        return new Envelope(
-            // pakai FROM dari config/.env biar SMTP ga nolak
-            from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Permohonan Informasi Berhasil - ' . $this->submission->ticket_id,
-        );
-    }
+        $fromAddress = config('mail.from.address');
+        $fromName    = config('mail.from.name');
 
-    public function content(): Content
-    {
-        return new Content(
-            view: 'emails.submission-created',
-            with: [
+        if (!$fromAddress) {
+            throw new \RuntimeException('MAIL_FROM_ADDRESS belum diset di env/config.');
+        }
+
+        return $this
+            ->from($fromAddress, $fromName)
+            ->subject('Permohonan Informasi Berhasil - ' . ($this->submission->ticket_id ?? 'N/A'))
+            ->view('emails.submission-created')
+            ->with([
                 'submission' => $this->submission,
-                'user' => $this->submission->user,
-                'category' => $this->submission->category,
-            ]
-        );
-    }
-
-    public function attachments(): array
-    {
-        return [];
+                'user'       => $this->submission->user,
+                'category'   => $this->submission->category, 
+            ]);
     }
 }
