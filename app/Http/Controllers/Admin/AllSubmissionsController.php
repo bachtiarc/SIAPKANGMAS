@@ -44,7 +44,6 @@ class AllSubmissionsController extends Controller
         $hasEnd   = $request->filled('end_date');
 
         if ($hasStart && $hasEnd) {
-            // rentang tanggal
             $qConsultation->whereBetween('created_at', [
                 $request->start_date . ' 00:00:00',
                 $request->end_date   . ' 23:59:59',
@@ -58,17 +57,14 @@ class AllSubmissionsController extends Controller
                 $request->end_date   . ' 23:59:59',
             ]);
         } elseif ($hasStart) {
-            // hanya tanggal mulai → 1 hari itu saja
             $qConsultation->whereDate('created_at', $request->start_date);
             $qComplaint->whereDate('created_at', $request->start_date);
             $qSubmission->whereDate('created_at', $request->start_date);
         } elseif ($hasEnd) {
-            // hanya tanggal akhir → 1 hari itu saja
             $qConsultation->whereDate('created_at', $request->end_date);
             $qComplaint->whereDate('created_at', $request->end_date);
             $qSubmission->whereDate('created_at', $request->end_date);
         }
-        // ==================================================
 
         if ($request->filled('type') && $request->type !== 'Semua') {
             $qConsultation->whereHas('user', fn($q) => $q->where('user_type', $request->type));
@@ -96,7 +92,7 @@ class AllSubmissionsController extends Controller
             } elseif ($status === 'selesai') {
                 $qConsultation->whereIn('status', ['completed', 'rejected']);
                 $qSubmission->whereIn('status', ['completed', 'rejected']);
-                $qComplaint->where('status', 'selesai');
+                $qComplaint->whereIn('status', ['selesai', 'ditolak']);
             } elseif ($status === 'ditolak') {
                 $qConsultation->where('status', 'rejected');
                 $qSubmission->where('status', 'rejected');
@@ -167,7 +163,6 @@ class AllSubmissionsController extends Controller
             ['path' => url()->current(), 'query' => $request->query()]
         );
 
-        // NOTE: sesuaikan view path kamu (lihat poin #2 di bawah)
         return view('admin.managements.semua', [
             'items'      => $paginated,
             'categories' => $categories,

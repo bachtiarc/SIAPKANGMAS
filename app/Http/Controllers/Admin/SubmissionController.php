@@ -97,106 +97,123 @@ class SubmissionController extends Controller
     }
 
     public function update(Request $request, $id, \App\Services\BrevoMailer $brevo)
-{
-    $request->validate([
-        'status'      => 'required|in:pending,in_progress,completed,rejected',
-        'admin_notes' => 'nullable|string',
-        'notify_user' => 'nullable',
-    ]);
-
-    $submission = Submission::findOrFail($id);
-    $oldStatus  = $submission->status;
-
-    $submission->update([
-        'status'       => $request->status,
-        'admin_notes'  => $request->admin_notes,
-        'handled_by'   => Auth::id(),
-        'completed_at' => $request->status == 'completed' ? now() : null,
-    ]);
-
-    if ($oldStatus !== $request->status) {
-        $submission->statusHistories()->create([
-            'changed_by' => Auth::id(),
-            'new_status' => $request->status,
-            'old_status' => $oldStatus,
-            'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin',
+    {
+        $request->validate([
+            'status'      => 'required|in:pending,in_progress,completed,rejected',
+            'admin_notes' => 'nullable|string',
+            'notify_user' => 'nullable',
         ]);
-    }
 
-    if ($request->has('notify_user') && $oldStatus !== $request->status) {
-        try {
-            $submission->load(['user', 'category', 'handler']);
+        $submission = Submission::findOrFail($id);
+        $oldStatus  = $submission->status;
 
-            $html = view('emails.submission_status_updated', [
-                'submission' => $submission,
-                'user'       => $submission->user,
-                'category'   => $submission->category,
-                'handler'    => $submission->handler,
-                'note'       => $request->admin_notes,
-                'oldStatus'  => $oldStatus,          
-                'newStatus'  => $request->status,    
-            ])->render();
+        $submission->update([
+            'status'       => $request->status,
+            'admin_notes'  => $request->admin_notes,
+            'handled_by'   => Auth::id(),
+            'completed_at' => $request->status == 'completed' ? now() : null,
+        ]);
 
-            Log::info('BREVO DEBUG (admin) - about to send status update', [
-                'to'          => $submission->user->email,
-                'from'        => config('mail.from.address'),
-                'from_name'   => config('mail.from.name'),
-                'has_api_key' => (bool) config('brevo.api_key'),
-                'ticket_id'   => $submission->ticket_id,
-                'old_status'  => $oldStatus,
-                'new_status'  => $request->status,
-                'app_env'     => config('app.env'),
-            ]);
-
-            $brevo->sendTransactional(
-                toEmail: $submission->user->email,
-                toName: $submission->user->name ?? null,
-                subject: "Update Status Permohonan Informasi ({$submission->ticket_id})",
-                htmlContent: $html
-            );
-
-            Log::info('BREVO DEBUG (admin) - sent OK', [
-                'to'        => $submission->user->email,
-                'ticket_id' => $submission->ticket_id,
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('BREVO DEBUG (admin) - failed', [
-                'to'        => $submission->user->email ?? null,
-                'ticket_id' => $submission->ticket_id ?? null,
-                'error'     => $e->getMessage(),
+        if ($oldStatus !== $request->status) {
+            $submission->statusHistories()->create([
+                'changed_by' => Auth::id(),
+                'new_status' => $request->status,
+                'old_status' => $oldStatus,
+                'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin',
             ]);
         }
+
+        if ($request->has('notify_user') && $oldStatus !== $request->status) {
+            try {
+                $submission->load(['user', 'category', 'handler']);
+
+                $html = view('emails.submission_status_updated', [
+                    'submission' => $submission,
+                    'user'       => $submission->user,
+                    'category'   => $submission->category,
+                    'handler'    => $submission->handler,
+                    'note'       => $request->admin_notes,
+                    'oldStatus'  => $oldStatus,          
+                    'newStatus'  => $request->status,    
+                ])->render();
+
+                Log::info('BREVO DEBUG (admin) - about to send status update', [
+                    'to'          => $submission->user->email,
+                    'from'        => config('mail.from.address'),
+                    'from_name'   => config('mail.from.name'),
+                    'has_api_key' => (bool) config('brevo.api_key'),
+                    'ticket_id'   => $submission->ticket_id,
+                    'old_status'  => $oldStatus,
+                    'new_status'  => $request->status,
+                    'app_env'     => config('app.env'),
+                ]);
+
+                $brevo->sendTransactional(
+                    toEmail: $submission->user->email,
+                    toName: $submission->user->name ?? null,
+                    subject: "Update Status Permohonan Informasi ({$submission->ticket_id})",
+                    htmlContent: $html
+                );
+
+                Log::info('BREVO DEBUG (admin) - sent OK', [
+                    'to'        => $submission->user->email,
+                    'ticket_id' => $submission->ticket_id,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('BREVO DEBUG (admin) - failed', [
+                    'to'        => $submission->user->email ?? null,
+                    'ticket_id' => $submission->ticket_id ?? null,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Status permohonan informasi berhasil diperbarui.');
     }
 
-    return redirect()->back()->with('success', 'Status permohonan informasi berhasil diperbarui.');
-}
+    public function downloadDocument(Request $request, $id)
+    {
+        $doc = SubmissionDocument::findOrFail($id);
 
-    public function downloadDocument($id)
-{
-    $doc = SubmissionDocument::findOrFail($id);
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', env('SUPABASE_BUCKET', 'submissions'));
 
-    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-    $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', env('SUPABASE_BUCKET', 'submissions'));
+        $path = ltrim($doc->file_path, '/');
 
-    $path = ltrim($doc->file_path, '/');
+        if (Str::startsWith($path, 'submissions/')) {
+            $path = Str::after($path, 'submissions/');
+        }
+        if (Str::startsWith($path, 'consultations/')) {
+            $path = Str::after($path, 'consultations/');
+        }
+        if (Str::startsWith($path, 'submission/')) {
+            $path = Str::after($path, 'submission/');
+        }
 
-    if (Str::startsWith($path, 'submissions/')) {
-        $path = Str::after($path, 'submissions/');
-    }
-    if (Str::startsWith($path, 'consultations/')) {
-        $path = Str::after($path, 'consultations/');
-    }
+        $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
+        $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/submissions/{$path}";
 
-    if (Str::startsWith($path, 'submission/')) {
-        $path = Str::after($path, 'submission/');
-    }
+        $res = Http::get($urlNormal);
+        if (!$res->successful()) {
+            $res = Http::get($urlLegacy);
+            if (!$res->successful()) {
+                abort(404, 'Dokumen tidak ditemukan.');
+            }
+        }
 
-    $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
-    $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/submissions/{$path}";
-    $res = Http::get($urlNormal);
-    $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
+        $mode = $request->get('mode', 'download'); // view | download
+        $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
 
-    return redirect()->away($finalUrl . '?download=' . urlencode($doc->original_name));
+        $filename = str_replace(['"', "\r", "\n"], '', $doc->original_name ?? 'document');
+
+        $disposition = $mode === 'view'
+            ? 'inline; filename="' . $filename . '"'
+            : 'attachment; filename="' . $filename . '"';
+
+        return response($res->body(), 200, [
+            'Content-Type' => $contentType,
+            'Content-Disposition' => $disposition,
+        ]);
     }
 
     public function downloadPdf($id)

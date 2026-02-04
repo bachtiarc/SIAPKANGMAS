@@ -190,8 +190,16 @@
                     <tbody class="divide-y divide-gray-100/70">
                         @forelse($consultations as $item)
                         <tr class="hover:bg-gray-50/70 transition">
-                            <td class="px-4 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">{{ $item->ticket_number }}</td>
-
+                            <td class="px-4 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">
+                                <a href="{{ route('admin.consultations.show', $item->id) }}"
+                                class="group inline-block rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/15"
+                                title="Lihat Detail">
+                                    <span class="underline-offset-4 group-hover:underline group-hover:text-blue-700">
+                                        {{ $item->ticket_number }}
+                                    </span>
+                                </a>
+                            </td>
+                            
                             <td class="px-4 py-4 text-sm text-gray-600 whitespace-nowrap text-center">{{ $item->created_at->format('d F Y') }}</td>
 
                             <td class="px-4 py-4 text-sm font-medium text-gray-900">

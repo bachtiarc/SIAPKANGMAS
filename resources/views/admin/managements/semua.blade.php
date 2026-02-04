@@ -152,7 +152,6 @@
                                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Belum Diproses</option>
                                     <option value="proses" {{ request('status') == 'proses' ? 'selected' : '' }}>Sedang diproses</option>
                                     <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
-                                    <option value="ditolak" {{ request('status') == 'ditolak' ? 'selected' : '' }}>Ditolak</option>
                                 </select>
                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -216,11 +215,18 @@
 
                             <tr class="hover:bg-gray-50/70 transition">
                                 <td class="px-4 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">
-                                    <div class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                                <a href="{{ $row['show_route'] }}"
+                                class="group inline-block rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/15"
+                                title="Lihat Detail">
+                                    <div class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1 group-hover:text-blue-600">
                                         {{ $row['service'] }}
                                     </div>
-                                    {{ $row['ticket'] }}
-                                </td>
+
+                                    <span class="underline-offset-4 group-hover:underline group-hover:text-blue-700">
+                                        {{ $row['ticket'] }}
+                                    </span>
+                                </a>
+                            </td>
 
                                 <td class="px-4 py-4 text-sm text-gray-600 whitespace-nowrap text-center">
                                     {{ isset($row['created_at']) && $row['created_at'] ? \Carbon\Carbon::parse($row['created_at'])->format('d F Y') : '-' }}

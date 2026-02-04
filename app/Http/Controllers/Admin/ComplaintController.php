@@ -93,92 +93,92 @@ class ComplaintController extends Controller
     }
 
     public function update(Request $request, $id, \App\Services\BrevoMailer $brevo)
-{
-    $request->validate([
-        'status'      => 'required|in:pending,diproses,selesai,ditolak',
-        'admin_notes' => 'nullable|string',
-    ]);
+    {
+        $request->validate([
+            'status'      => 'required|in:pending,diproses,selesai,ditolak',
+            'admin_notes' => 'nullable|string',
+        ]);
 
-    $complaint = Complaint::with(['user', 'category', 'handler'])->findOrFail($id);
+        $complaint = Complaint::with(['user', 'category', 'handler'])->findOrFail($id);
 
-    $oldStatus = $complaint->status;
-    $oldNotes  = $complaint->admin_response ?? $complaint->admin_notes;
+        $oldStatus = $complaint->status;
+        $oldNotes  = $complaint->admin_response ?? $complaint->admin_notes;
 
-    $newStatus = $request->status;
-    $newNotes  = $request->admin_notes;
+        $newStatus = $request->status;
+        $newNotes  = $request->admin_notes;
 
-    $statusChanged = ($oldStatus !== $newStatus);
-    $notesChanged  = ((string)($oldNotes ?? '') !== (string)($newNotes ?? ''));
+        $statusChanged = ($oldStatus !== $newStatus);
+        $notesChanged  = ((string)($oldNotes ?? '') !== (string)($newNotes ?? ''));
 
-    $complaint->update([
-        'status'         => $newStatus,
-        'admin_response' => $newNotes,
-        'handled_by'     => Auth::id(),
-        'completed_at'   => $newStatus === 'selesai' ? now() : null,
-    ]);
+        $complaint->update([
+            'status'         => $newStatus,
+            'admin_response' => $newNotes,
+            'handled_by'     => Auth::id(),
+            'completed_at'   => $newStatus === 'selesai' ? now() : null,
+        ]);
 
-    if ($statusChanged || $notesChanged) {
-        try {
-            $complaint->statusHistories()->create([
-                'changed_by' => Auth::id(),
-                'new_status' => $newStatus,
-                'old_status' => $oldStatus,
-                'notes'      => $newNotes ?? 'Perubahan disimpan oleh Admin',
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Gagal simpan status history pengaduan: ' . $e->getMessage());
+        if ($statusChanged || $notesChanged) {
+            try {
+                $complaint->statusHistories()->create([
+                    'changed_by' => Auth::id(),
+                    'new_status' => $newStatus,
+                    'old_status' => $oldStatus,
+                    'notes'      => $newNotes ?? 'Perubahan disimpan oleh Admin',
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Gagal simpan status history pengaduan: ' . $e->getMessage());
+            }
         }
+
+        if (($statusChanged || $notesChanged) && !empty($complaint->user->email)) {
+            try {
+                $complaint->load(['user', 'category', 'handler']);
+
+                $html = view('emails.complaint_status_updated', [
+                    'complaint'  => $complaint,
+                    'user'       => $complaint->user,
+                    'category'   => $complaint->category,
+                    'handler'    => $complaint->handler,
+                    'notes'      => $newNotes,
+                    'oldStatus'  => $oldStatus,    
+                    'newStatus'  => $newStatus,    
+                ])->render();
+
+                Log::info('BREVO DEBUG (admin) - about to send complaint status update', [
+                    'to'          => $complaint->user->email,
+                    'from'        => config('mail.from.address'),
+                    'from_name'   => config('mail.from.name'),
+                    'has_api_key' => (bool) config('brevo.api_key'),
+                    'ticket_no'   => $complaint->ticket_number ?? $complaint->id,
+                    'old_status'  => $oldStatus,
+                    'new_status'  => $newStatus,
+                    'app_env'     => config('app.env'),
+                ]);
+
+                $brevo->sendTransactional(
+                    toEmail: $complaint->user->email,
+                    toName: $complaint->user->name ?? null,
+                    subject: 'Update Status Pengaduan (' . ($complaint->ticket_number ?? $complaint->id) . ')',
+                    htmlContent: $html
+                );
+
+                Log::info('BREVO DEBUG (admin) - complaint sent OK', [
+                    'to'        => $complaint->user->email,
+                    'ticket_no' => $complaint->ticket_number ?? $complaint->id,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('BREVO DEBUG (admin) - complaint failed', [
+                    'to'        => $complaint->user->email ?? null,
+                    'ticket_no' => $complaint->ticket_number ?? $complaint->id ?? null,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Status pengaduan berhasil diperbarui.');
     }
 
-    if (($statusChanged || $notesChanged) && !empty($complaint->user->email)) {
-        try {
-            $complaint->load(['user', 'category', 'handler']);
-
-            $html = view('emails.complaint_status_updated', [
-                'complaint'  => $complaint,
-                'user'       => $complaint->user,
-                'category'   => $complaint->category,
-                'handler'    => $complaint->handler,
-                'notes'      => $newNotes,
-                'oldStatus'  => $oldStatus,    
-                'newStatus'  => $newStatus,    
-            ])->render();
-
-            Log::info('BREVO DEBUG (admin) - about to send complaint status update', [
-                'to'          => $complaint->user->email,
-                'from'        => config('mail.from.address'),
-                'from_name'   => config('mail.from.name'),
-                'has_api_key' => (bool) config('brevo.api_key'),
-                'ticket_no'   => $complaint->ticket_number ?? $complaint->id,
-                'old_status'  => $oldStatus,
-                'new_status'  => $newStatus,
-                'app_env'     => config('app.env'),
-            ]);
-
-            $brevo->sendTransactional(
-                toEmail: $complaint->user->email,
-                toName: $complaint->user->name ?? null,
-                subject: 'Update Status Pengaduan (' . ($complaint->ticket_number ?? $complaint->id) . ')',
-                htmlContent: $html
-            );
-
-            Log::info('BREVO DEBUG (admin) - complaint sent OK', [
-                'to'        => $complaint->user->email,
-                'ticket_no' => $complaint->ticket_number ?? $complaint->id,
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('BREVO DEBUG (admin) - complaint failed', [
-                'to'        => $complaint->user->email ?? null,
-                'ticket_no' => $complaint->ticket_number ?? $complaint->id ?? null,
-                'error'     => $e->getMessage(),
-            ]);
-        }
-    }
-
-    return redirect()->back()->with('success', 'Status pengaduan berhasil diperbarui.');
-}
-
-    public function downloadDocument($id)
+    public function downloadDocument(Request $request, $id)
     {
         $doc = ComplaintDocument::findOrFail($id);
 
@@ -193,12 +193,29 @@ class ComplaintController extends Controller
 
         $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
         $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/complaints/{$path}";
-        $res = Http::get($urlNormal);
-        $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
 
-        return redirect()->away(
-            $finalUrl . '?download=' . urlencode($doc->original_name)
-        );
+        $res = Http::get($urlNormal);
+        if (!$res->successful()) {
+            $res = Http::get($urlLegacy);
+            if (!$res->successful()) {
+                abort(404, 'Dokumen tidak ditemukan.');
+            }
+        }
+
+        $mode = $request->get('mode', 'download'); 
+
+        $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
+
+        $filename = str_replace(['"', "\r", "\n"], '', $doc->original_name ?? 'document');
+
+        $disposition = $mode === 'view'
+            ? 'inline; filename="' . $filename . '"'
+            : 'attachment; filename="' . $filename . '"';
+
+        return response($res->body(), 200, [
+            'Content-Type' => $contentType,
+            'Content-Disposition' => $disposition,
+        ]);
     }
 
     public function downloadPdf($id)

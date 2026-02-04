@@ -92,81 +92,81 @@ class ConsultationController extends Controller
     }
 
     public function update(Request $request, $id, \App\Services\BrevoMailer $brevo)
-{
-    $request->validate([
-        'status'      => 'required|in:pending,on_progress,completed,rejected',
-        'admin_notes' => 'nullable|string',
-        'notify_user' => 'nullable',
-    ]);
-
-    $consultation = Consultation::findOrFail($id);
-    $oldStatus    = $consultation->status;
-
-    $consultation->update([
-        'status'         => $request->status,
-        'admin_response' => $request->admin_notes,
-        'handled_by'     => Auth::id(),
-        'completed_at'   => $request->status == 'completed' ? now() : null,
-    ]);
-
-    if ($oldStatus !== $request->status) {
-        $consultation->statusHistories()->create([
-            'changed_by' => Auth::id(),
-            'new_status' => $request->status,
-            'old_status' => $oldStatus,
-            'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin',
+    {
+        $request->validate([
+            'status'      => 'required|in:pending,on_progress,completed,rejected',
+            'admin_notes' => 'nullable|string',
+            'notify_user' => 'nullable',
         ]);
-    }
 
-    if ($request->has('notify_user') && $oldStatus !== $request->status) {
-        try {
-            $consultation->load(['user', 'category', 'handler']);
+        $consultation = Consultation::findOrFail($id);
+        $oldStatus    = $consultation->status;
 
-            $html = view('emails.consultation_status_updated', [
-                'consultation' => $consultation,
-                'user'         => $consultation->user,
-                'category'     => $consultation->category,
-                'handler'      => $consultation->handler,
-                'note'         => $request->admin_notes,
-                'oldStatus'    => $oldStatus,         
-                'newStatus'    => $request->status,   
-            ])->render();
+        $consultation->update([
+            'status'         => $request->status,
+            'admin_response' => $request->admin_notes,
+            'handled_by'     => Auth::id(),
+            'completed_at'   => $request->status == 'completed' ? now() : null,
+        ]);
 
-            Log::info('BREVO DEBUG (admin) - about to send consultation status update', [
-                'to'          => $consultation->user->email,
-                'from'        => config('mail.from.address'),
-                'from_name'   => config('mail.from.name'),
-                'has_api_key' => (bool) config('brevo.api_key'),
-                'ticket_id'   => $consultation->ticket_id,
-                'old_status'  => $oldStatus,
-                'new_status'  => $request->status,
-                'app_env'     => config('app.env'),
-            ]);
-
-            $brevo->sendTransactional(
-                toEmail: $consultation->user->email,
-                toName: $consultation->user->name ?? null,
-                subject: "Update Status Konsultasi ({$consultation->ticket_id})",
-                htmlContent: $html
-            );
-
-            Log::info('BREVO DEBUG (admin) - consultation sent OK', [
-                'to'        => $consultation->user->email,
-                'ticket_id' => $consultation->ticket_id,
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('BREVO DEBUG (admin) - consultation failed', [
-                'to'        => $consultation->user->email ?? null,
-                'ticket_id' => $consultation->ticket_id ?? null,
-                'error'     => $e->getMessage(),
+        if ($oldStatus !== $request->status) {
+            $consultation->statusHistories()->create([
+                'changed_by' => Auth::id(),
+                'new_status' => $request->status,
+                'old_status' => $oldStatus,
+                'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin',
             ]);
         }
+
+        if ($request->has('notify_user') && $oldStatus !== $request->status) {
+            try {
+                $consultation->load(['user', 'category', 'handler']);
+
+                $html = view('emails.consultation_status_updated', [
+                    'consultation' => $consultation,
+                    'user'         => $consultation->user,
+                    'category'     => $consultation->category,
+                    'handler'      => $consultation->handler,
+                    'note'         => $request->admin_notes,
+                    'oldStatus'    => $oldStatus,         
+                    'newStatus'    => $request->status,   
+                ])->render();
+
+                Log::info('BREVO DEBUG (admin) - about to send consultation status update', [
+                    'to'          => $consultation->user->email,
+                    'from'        => config('mail.from.address'),
+                    'from_name'   => config('mail.from.name'),
+                    'has_api_key' => (bool) config('brevo.api_key'),
+                    'ticket_id'   => $consultation->ticket_id,
+                    'old_status'  => $oldStatus,
+                    'new_status'  => $request->status,
+                    'app_env'     => config('app.env'),
+                ]);
+
+                $brevo->sendTransactional(
+                    toEmail: $consultation->user->email,
+                    toName: $consultation->user->name ?? null,
+                    subject: "Update Status Konsultasi ({$consultation->ticket_id})",
+                    htmlContent: $html
+                );
+
+                Log::info('BREVO DEBUG (admin) - consultation sent OK', [
+                    'to'        => $consultation->user->email,
+                    'ticket_id' => $consultation->ticket_id,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('BREVO DEBUG (admin) - consultation failed', [
+                    'to'        => $consultation->user->email ?? null,
+                    'ticket_id' => $consultation->ticket_id ?? null,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Status konsultasi berhasil diperbarui.');
     }
 
-    return redirect()->back()->with('success', 'Status konsultasi berhasil diperbarui.');
-}
-
-    public function downloadDocument($id)
+    public function downloadDocument(Request $request, $id)
     {
         $doc = ConsultationDocument::findOrFail($id);
 
@@ -175,13 +175,13 @@ class ConsultationController extends Controller
 
         $path = ltrim($doc->file_path, '/');
 
+        // normalisasi path (sesuai punyamu)
         if (Str::startsWith($path, 'consultations/')) {
             $path = Str::after($path, 'consultations/');
         }
         if (Str::startsWith($path, 'submissions/')) {
             $path = Str::after($path, 'submissions/');
         }
-
         if (Str::startsWith($path, 'consultations/')) {
             $path = Str::after($path, 'consultations/');
         }
@@ -190,9 +190,26 @@ class ConsultationController extends Controller
         $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/consultations/{$path}";
 
         $res = Http::get($urlNormal);
-        $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
+        if (!$res->successful()) {
+            $res = Http::get($urlLegacy);
+            if (!$res->successful()) {
+                abort(404, 'Dokumen tidak ditemukan.');
+            }
+        }
 
-        return redirect()->away($finalUrl . '?download=' . urlencode($doc->original_name));
+        $mode = $request->get('mode', 'download'); // view | download
+        $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
+
+        $filename = str_replace(['"', "\r", "\n"], '', $doc->original_name ?? 'document');
+
+        $disposition = $mode === 'view'
+            ? 'inline; filename="' . $filename . '"'
+            : 'attachment; filename="' . $filename . '"';
+
+        return response($res->body(), 200, [
+            'Content-Type' => $contentType,
+            'Content-Disposition' => $disposition,
+        ]);
     }
 
     public function downloadPdf($id)

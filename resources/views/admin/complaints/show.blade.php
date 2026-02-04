@@ -137,17 +137,65 @@
                             @if($complaint->documents->count() > 0)
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     @foreach($complaint->documents as $doc)
-                                        <a href="{{ route('admin.complaints.document', $doc->id) }}" target="_blank"
-                                           class="flex items-center p-3 border border-blue-100 bg-blue-50 rounded-lg hover:bg-blue-100 transition group">
-                                            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-sm mr-3 shrink-0">
-                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                                </svg>
+                                        @php
+                                            $ext = strtoupper(pathinfo($doc->original_name, PATHINFO_EXTENSION) ?: 'FILE');
+                                            $sizeText = null;
+
+                                            // kalau di tabel ada kolom size (bytes), tampilkan. kalau tidak, aman (kosong).
+                                            if (!empty($doc->size)) {
+                                                $bytes = (int) $doc->size;
+                                                if ($bytes >= 1048576) $sizeText = number_format($bytes / 1048576, 2) . ' MB';
+                                                elseif ($bytes >= 1024) $sizeText = number_format($bytes / 1024, 2) . ' KB';
+                                                else $sizeText = $bytes . ' B';
+                                            }
+                                        @endphp
+
+                                        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 transition">
+                                            <div class="flex items-center gap-3 min-w-0">
+                                                <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                </div>
+
+                                                <div class="min-w-0">
+                                                    <p class="text-sm font-semibold text-gray-900 truncate">
+                                                        {{ $doc->original_name }}
+                                                    </p>
+                                                    <p class="text-xs text-gray-500">
+                                                        {{ $sizeText ? $sizeText . ' • ' : '' }}.{{ $ext }}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div class="overflow-hidden">
-                                                <p class="text-sm font-medium text-blue-700 truncate group-hover:underline">{{ $doc->original_name }}</p>
+
+                                            <div class="flex items-center gap-2 shrink-0">
+                                                {{-- Lihat --}}
+                                                <a href="{{ route('admin.complaints.document', $doc->id) }}?mode=view"
+                                                target="_blank" rel="noopener"
+                                                class="p-2 rounded-xl hover:bg-gray-100 text-blue-600"
+                                                title="Lihat"
+                                                aria-label="Lihat">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                    </svg>
+                                                </a>
+
+                                                {{-- Unduh --}}
+                                                <a href="{{ route('admin.complaints.document', $doc->id) }}?mode=download"
+                                                class="p-2 rounded-xl hover:bg-gray-100 text-blue-600"
+                                                title="Unduh"
+                                                aria-label="Unduh">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                    </svg>
+                                                </a>
                                             </div>
-                                        </a>
+                                        </div>
                                     @endforeach
                                 </div>
                             @else
@@ -200,7 +248,18 @@
 
                         <div>
                             <p class="text-xs text-gray-500 mb-1">Nomor Telepon</p>
-                            <p class="font-bold text-gray-900">{{ $user->phone ?? '-' }}</p>
+
+                            @if($waLink)
+                                <a href="{{ $waLink }}"
+                                target="_blank" rel="noopener"
+                                class="font-bold text-blue-600 hover:underline inline-flex items-center gap-2"
+                                title="Chat via WhatsApp"
+                                aria-label="Chat via WhatsApp">
+                                    {{ $user->phone ?? '-' }}
+                                </a>
+                            @else
+                                <p class="font-bold text-gray-900">{{ $user->phone ?? '-' }}</p>
+                            @endif
                         </div>
 
                         {{-- MASYARAKAT UMUM --}}
@@ -228,17 +287,30 @@
                                                 class="w-full rounded-xl border border-gray-200 shadow-sm hover:opacity-95 transition">
                                         </a>
 
-                                        <div class="flex gap-2">
+                                        <div class="flex items-center gap-2">
+                                            {{-- LIHAT --}}
                                             <a href="{{ $ktpPublicUrl }}"
-                                            target="_blank"
-                                            rel="noopener"
-                                            class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
-                                                Lihat
+                                            target="_blank" rel="noopener"
+                                            class="p-2 rounded-xl hover:bg-gray-100 text-blue-600"
+                                            title="Lihat KTP"
+                                            aria-label="Lihat KTP">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
                                             </a>
 
+                                            {{-- UNDUH --}}
                                             <a href="{{ route('admin.complaints.ktp.download', $complaint->id) }}"
-                                            class="px-4 py-2 bg-gray-800 text-white text-sm font-semibold rounded-lg hover:bg-gray-900 transition">
-                                                Unduh
+                                            class="p-2 rounded-xl hover:bg-gray-100 text-blue-600"
+                                            title="Unduh KTP"
+                                            aria-label="Unduh KTP">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                </svg>
                                             </a>
                                         </div>
                                     </div>
