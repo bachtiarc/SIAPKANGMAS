@@ -518,6 +518,7 @@
 
                     <form class="mt-6 space-y-6" action="{{ route('contact.send') }}" method="POST">
                         @csrf
+                        <input type="hidden" name="to" value="siapkangmasdisperindag@gmail.com">
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-800">Nama Lengkap <span class="text-red-500">*</span></label>
@@ -553,7 +554,7 @@
                                 class="btn-breathe bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500
                                        text-white px-8 py-3 rounded-xl font-semibold transition shadow-md hover:shadow-lg"
                             >
-                                Send Message
+                                Kirim Pesan
                             </button>
                         </div>
                     </form>

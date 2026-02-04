@@ -12,7 +12,9 @@ class BrevoMailer
         string $toEmail,
         ?string $toName,
         string $subject,
-        string $htmlContent
+        string $htmlContent,
+        ?string $replyToEmail = null,
+        ?string $replyToName = null
     ): array {
         $apiKey = config('brevo.api_key');
         if (!$apiKey) {
@@ -40,6 +42,13 @@ class BrevoMailer
             'subject' => $subject,
             'htmlContent' => $htmlContent,
         ];
+
+        if ($replyToEmail) {
+            $payload['replyTo'] = [
+                'email' => $replyToEmail,
+                'name'  => $replyToName ?: $replyToEmail,
+            ];
+        }
 
         /** @var Response $res */
         $res = Http::withHeaders([

@@ -3,29 +3,38 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
+use App\Services\BrevoMailer;
 
 class ContactController extends Controller
 {
-    public function send(Request $request)
+    public function send(Request $request, \App\Services\BrevoMailer $brevo)
     {
         $data = $request->validate([
-            'name' => ['required','string','max:255'],
-            'email' => ['required','email','max:255'],
+            'name'    => ['required','string','max:255'],
+            'email'   => ['required','email','max:255'],
             'subject' => ['nullable','string','max:255'],
             'message' => ['required','string'],
         ]);
 
-        $to = config('mail.from.address'); // atau email tujuan admin
-        // contoh: $to = 'siapkangmasdisperindag@gmail.com';
+        $toEmail = 'siapkangmasdisperindag@gmail.com';
+        $toName  = 'Admin SIAPKANGMAS';
 
-        Mail::raw(
-            "Nama: {$data['name']}\nEmail: {$data['email']}\nSubject: ".($data['subject'] ?? '-')."\n\nPesan:\n{$data['message']}",
-            function ($mail) use ($data, $to) {
-                $mail->to($to)
-                     ->subject('[Kontak] ' . ($data['subject'] ?? 'Pesan Baru'))
-                     ->replyTo($data['email'], $data['name']);
-            }
+        $subject = '[Kontak] ' . ($data['subject'] ?? 'Pesan Baru');
+
+        $html = nl2br(e(
+            "Nama: {$data['name']}\n" .
+            "Email: {$data['email']}\n" .
+            "Subject: " . ($data['subject'] ?? '-') . "\n\n" .
+            "Pesan:\n{$data['message']}"
+        ));
+
+        $brevo->sendTransactional(
+            toEmail: $toEmail,
+            toName: $toName,
+            subject: $subject,
+            htmlContent: $html,
+            replyToEmail: $data['email'],
+            replyToName: $data['name']
         );
 
         return back()->with('success', 'Pesan berhasil dikirim!');
