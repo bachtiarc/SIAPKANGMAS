@@ -151,7 +151,7 @@ class SubmissionController extends Controller
             $brevo->sendTransactional(
                 toEmail: $submission->user->email,
                 toName: $submission->user->name ?? null,
-                subject: "Update Status Tiket ({$submission->ticket_id})",
+                subject: "Update Status Permohonan Informasi ({$submission->ticket_id})",
                 htmlContent: $html
             );
 
@@ -168,7 +168,7 @@ class SubmissionController extends Controller
         }
     }
 
-    return redirect()->back()->with('success', 'Status pengajuan berhasil diperbarui.');
+    return redirect()->back()->with('success', 'Status permohonan informasi berhasil diperbarui.');
 }
 
     public function downloadDocument($id)
