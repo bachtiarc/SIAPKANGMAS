@@ -227,8 +227,9 @@
                 </div>
             </div>
             <div class="items-center px-4 py-3 space-y-2">
-                @if(session('complaint_id'))
-                <button type="button" onclick="window.location.href='{{ route('user.consultations.show', session('complaint_id')) }}'"
+                @if(session('ticket_id'))
+                <button type="button"
+                    onclick="window.location.href='{{ route('user.consultations.show', session('ticket_id')) }}'"
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
                     Lihat Detail Konsultasi
                 </button>
