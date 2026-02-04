@@ -175,7 +175,7 @@ class ComplaintController extends Controller
         }
     }
 
-    return redirect()->back()->with('success', 'Perubahan pengaduan berhasil disimpan.');
+    return redirect()->back()->with('success', 'Status pengaduan berhasil diperbarui.');
 }
 
     public function downloadDocument($id)

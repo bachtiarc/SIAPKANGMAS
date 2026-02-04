@@ -53,7 +53,7 @@
 
 <div class="container">
     <div class="header">
-        <h1>Status Pengajuan Diperbarui</h1>
+        <h1>Status Permohonan Informasi Diperbarui</h1>
         <p style="margin: 10px 0 0 0; opacity: 0.9;">SIAPKANGMAS - DISPERINDAG Jawa Tengah</p>
     </div>
 
