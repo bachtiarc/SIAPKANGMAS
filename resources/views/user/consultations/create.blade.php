@@ -212,7 +212,7 @@
             <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Formulir Anda Berhasil Terkirim!</h3>
             <div class="mt-4 px-7 py-3">
                 <p class="text-sm text-gray-600 mb-4">
-                    Terima kasih telah mengirimkan pengaduan. Pengajuan Anda akan segera ditinjau. Silakan cek Email untuk melihat bukti konfirmasi formulir telah terkirim.
+                    Terima kasih telah mengirimkan konsultasi. Pengajuan Anda akan segera ditinjau. Silakan cek Email untuk melihat bukti konfirmasi formulir telah terkirim.
                 </p>
                 <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
                     <p class="text-xs text-gray-600 mb-1">Nomor Tiket Anda</p>
@@ -228,14 +228,14 @@
             </div>
             <div class="items-center px-4 py-3 space-y-2">
                 @if(session('complaint_id'))
-                <button type="button" onclick="window.location.href='{{ route('user.complaints.show', session('complaint_id')) }}'"
+                <button type="button" onclick="window.location.href='{{ route('user.consultations.show', session('complaint_id')) }}'"
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
-                    Lihat Detail Pengaduan
+                    Lihat Detail Konsultasi
                 </button>
                 @endif
-                <button type="button" onclick="window.location.href='{{ route('user.complaints.index') }}'"
+                <button type="button" onclick="window.location.href='{{ route('user.consultations.index') }}'"
                     class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
-                    Lihat Semua Pengaduan
+                    Lihat Semua Konsultasi
                 </button>
                 <button type="button" onclick="window.location.href='{{ route('user.dashboard') }}'"
                     class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
