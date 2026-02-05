@@ -303,10 +303,47 @@
             <td>:</td>
             <td><span class="status-text">{{ $statusLabel }}</span></td>
         </tr>
+        <tr class="divider">
+            <td>Tujuan Permohonan</td>
+            <td>:</td>
+            <td>
+                {{ $submission->tujuan_permohonan ?? '-' }}
+            </td>
+        </tr>
+        @php
+            $cara = strtolower($submission->cara_penyampaian ?? '');
+            $caraLabel = match($cara) {
+                'online' => 'Online',
+                'datang_langsung' => 'Datang Langsung',
+                default => $submission->cara_penyampaian
+                    ? ucfirst(str_replace('_',' ', $submission->cara_penyampaian))
+                    : '-',
+            };
+
+            $opsi = $submission->datang_langsung_opsi ?? [];
+            if (!is_array($opsi)) $opsi = [];
+
+            $opsiLabel = collect($opsi)->map(fn($x) => match(strtolower($x)) {
+                'flashdisk' => 'Flashdisk',
+                'cetak' => 'Cetak',
+                default => ucfirst($x),
+            })->implode(', ');
+        @endphp
+
+        <tr class="divider">
+            <td>Penyampaian Feedback</td>
+            <td>:</td>
+            <td>
+                {{ $caraLabel }}
+                @if($cara === 'datang_langsung')
+                    <br><strong>Opsi :</strong> {{ $opsiLabel ?: '-' }}
+                @endif
+            </td>
+        </tr>
     </table>
 
     <div class="field-label">Deskripsi:</div>
-    <div class="description-box">{{ $submission->description ?? '-' }}</div>
+        <div class="description-box">{{ $submission->description ?? '-' }}</div>
 </div>
 
 <!-- Section C: Riwayat Status -->
