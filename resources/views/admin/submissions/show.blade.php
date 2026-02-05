@@ -112,9 +112,57 @@
                         <p class="text-gray-700 font-lato">{{ $submission->title }}</p>
                     </div>
                     <div>
+                        <h4 class="font-bold text-gray-900 text-sm mb-2">Tujuan Permohonan</h4>
+                        <div class="p-4 bg-gray-50 rounded-lg text-gray-700 font-lato text-sm leading-relaxed border border-gray-100 min-h-[80px]">
+                            {{ $submission->tujuan_permohonan ?: '-' }}
+                        </div>
+                    </div>
+                    <div>
                         <h4 class="font-bold text-gray-900 text-sm mb-2">Deskripsi Lengkap</h4>
                         <div class="p-4 bg-gray-50 rounded-lg text-gray-700 font-lato text-sm leading-relaxed border border-gray-100 min-h-[100px]">
                             {{ $submission->description }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-sm mb-2">Penyampaian Feedback</h4>
+
+                        @php
+                            $cara = strtolower($submission->cara_penyampaian ?? '');
+                            $caraLabel = match($cara) {
+                                'online' => 'Online',
+                                'datang_langsung' => 'Datang Langsung',
+                                default => $submission->cara_penyampaian ? ucfirst(str_replace('_',' ', $submission->cara_penyampaian)) : '-',
+                            };
+
+                            $opsi = $submission->datang_langsung_opsi ?? [];
+                            if (!is_array($opsi)) $opsi = [];
+
+                            $opsiLabel = collect($opsi)->map(fn($x) => match(strtolower($x)) {
+                                'flashdisk' => 'Flashdisk',
+                                'cetak' => 'Cetak',
+                                default => ucfirst($x),
+                            })->values()->all();
+                        @endphp
+
+                        <div class="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                            <p class="text-sm font-semibold text-gray-900 font-lato">{{ $caraLabel }}</p>
+
+                            @if($cara === 'datang_langsung')
+                                <div class="mt-2 text-sm text-gray-700 font-lato">
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        @if(count($opsiLabel))
+                                            @foreach($opsiLabel as $lbl)
+                                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 ring-1 ring-black/5">
+                                                    {{ $lbl }}
+                                                </span>
+                                            @endforeach
+                                        @else
+                                            <span class="text-gray-500 italic text-sm">-</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
 
