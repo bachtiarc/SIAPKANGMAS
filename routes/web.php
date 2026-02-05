@@ -132,7 +132,7 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
 });
 
 // User Masyarakat Dashboard 
-Route::middleware(['auth', 'verified', 'role:user,masyarakat_umum'])->prefix('masyarakat')->name('masyarakat.')->group(function () {
+Route::middleware(['auth', 'verified'])->prefix('masyarakat')->name('masyarakat.')->group(function () {
     Route::get('/dashboard', [MasyarakatDashboardController::class, 'index'])->name('dashboard');
     Route::get('/profile', [MasyarakatProfileController::class, 'index'])->name('profile');
     Route::put('/password', [MasyarakatProfileController::class, 'updatePassword'])->name('password.update');

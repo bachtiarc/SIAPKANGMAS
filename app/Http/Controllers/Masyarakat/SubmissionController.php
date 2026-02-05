@@ -1,32 +1,47 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Submission;
 use App\Models\SubmissionDocument;
-use App\Models\Category;
+use App\Services\BrevoMailer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class SubmissionController extends Controller
 {
-    public function index(Request $request)
+    private function ensureMasyarakatUser(): void
     {
         $user = auth()->user();
 
-        if ($user->user_type !== 'pegawai') {
+        if (!$user) {
             abort(403, 'Unauthorized access.');
         }
+
+        $allowed = ['masyarakat', 'masyarakat_umum'];
+
+        if (!in_array($user->user_type, $allowed, true)) {
+            abort(403, 'Unauthorized access.');
+        }
+    }
+
+    public function index(Request $request)
+    {
+        $this->ensureMasyarakatUser();
+
+        $user = auth()->user();
 
         $query = Submission::where('user_id', $user->id)
             ->with(['category', 'handler']);
 
         if ($request->filled('search')) {
             $search = $request->search;
+
             $query->where(function ($q) use ($search) {
                 $q->where('ticket_id', 'ilike', "%{$search}%")
                     ->orWhere('title', 'ilike', "%{$search}%")
@@ -52,36 +67,31 @@ class SubmissionController extends Controller
 
         $submissions = $query->latest()->paginate(10)->withQueryString();
 
-        return view('user.submissions.index', compact('submissions'));
+        return view('masyarakat.submissions.index', compact('submissions'));
     }
 
     public function create()
     {
-        $user = auth()->user();
-
-        if ($user->user_type !== 'pegawai') {
-            abort(403, 'Unauthorized access.');
-        }
+        $this->ensureMasyarakatUser();
 
         $categories = Category::active()
             ->ofType('permohonan')
             ->where(function ($query) {
-                $query->where('user_type', 'pegawai')
+                $query->where('user_type', 'masyarakat')
+                    ->orWhere('user_type', 'masyarakat_umum')
                     ->orWhere('user_type', 'all');
             })
             ->orderBy('name')
             ->get();
 
-        return view('user.submissions.create', compact('categories'));
+        return view('masyarakat.submissions.create', compact('categories'));
     }
 
-    public function store(Request $request, \App\Services\BrevoMailer $brevo)
+    public function store(Request $request, BrevoMailer $brevo)
     {
-        $user = auth()->user();
+        $this->ensureMasyarakatUser();
 
-        if ($user->user_type !== 'pegawai') {
-            abort(403, 'Unauthorized access.');
-        }
+        $user = auth()->user();
 
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
@@ -106,8 +116,8 @@ class SubmissionController extends Controller
 
             'tujuan_permohonan.required' => 'Tujuan permohonan wajib diisi.',
 
-            'cara_penyampaian.required' => 'Penyampaian feedback wajib dipilih.',
-            'cara_penyampaian.in'       => 'Penyampaian feedback tidak valid.',
+            'cara_penyampaian.required' => 'Cara penyampaian wajib dipilih.',
+            'cara_penyampaian.in'       => 'Cara penyampaian tidak valid.',
 
             'datang_langsung_opsi.required_if' => 'Opsi saat datang langsung wajib dipilih.',
             'datang_langsung_opsi.in'          => 'Opsi datang langsung tidak valid.',
@@ -116,6 +126,7 @@ class SubmissionController extends Controller
             'documents.*.max'      => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
 
+        // total max 6MB (3 file x 2MB)
         if ($request->hasFile('documents')) {
             $totalSize = 0;
             foreach ($request->file('documents') as $file) {
@@ -123,7 +134,7 @@ class SubmissionController extends Controller
                     $totalSize += $file->getSize();
                 }
             }
-            if ($totalSize > 6291456) {
+            if ($totalSize > 6 * 1024 * 1024) {
                 return back()
                     ->withErrors(['documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'])
                     ->withInput();
@@ -133,7 +144,6 @@ class SubmissionController extends Controller
         $caraPenyampaian = $validated['cara_penyampaian'];
 
         $opsiDatangArray = [];
-
         if ($caraPenyampaian === 'datang_langsung') {
             $opsi = $validated['datang_langsung_opsi'] ?? null;
 
@@ -178,12 +188,12 @@ class SubmissionController extends Controller
             $submission->load(['category', 'user']);
 
             $html = view('emails.submission-created', [
-                'user' => $user,
+                'user'       => $user,
                 'submission' => $submission,
-                'category' => $submission->category,
+                'category'   => $submission->category,
             ])->render();
 
-            Log::info('BREVO DEBUG (pegawai) - about to send', [
+            Log::info('BREVO DEBUG (masyarakat) - about to send', [
                 'to' => $user->email,
                 'has_api_key' => (bool) config('brevo.api_key'),
                 'ticket_id' => $submission->ticket_id,
@@ -196,9 +206,9 @@ class SubmissionController extends Controller
                 htmlContent: $html
             );
 
-            Log::info('BREVO DEBUG (pegawai) - sent OK', ['to' => $user->email]);
+            Log::info('BREVO DEBUG (masyarakat) - sent OK', ['to' => $user->email]);
         } catch (\Throwable $e) {
-            Log::error('BREVO DEBUG (pegawai) - failed', [
+            Log::error('BREVO DEBUG (masyarakat) - failed', [
                 'to' => $user->email,
                 'ticket_id' => $submission->ticket_id,
                 'error' => $e->getMessage(),
@@ -207,7 +217,8 @@ class SubmissionController extends Controller
 
         $from = $request->query('from', 'index');
 
-        return redirect()->route('user.submissions.create', ['from' => $from])
+        return redirect()
+            ->route('masyarakat.submissions.create', ['from' => $from])
             ->with('success', true)
             ->with('ticket_id', $submission->ticket_id)
             ->with('submission_id', $submission->id);
@@ -215,6 +226,8 @@ class SubmissionController extends Controller
 
     public function show(Submission $submission)
     {
+        $this->ensureMasyarakatUser();
+
         $user = auth()->user();
 
         if ($submission->user_id !== $user->id) {
@@ -223,18 +236,20 @@ class SubmissionController extends Controller
 
         $submission->load(['category', 'handler', 'statusHistories', 'documents']);
 
-        return view('user.submissions.show', compact('submission'));
+        return view('masyarakat.submissions.show', compact('submission'));
     }
 
     public function viewDocument(SubmissionDocument $document)
     {
+        $this->ensureMasyarakatUser();
+
         $user = auth()->user();
 
         if ($document->submission->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
 
-        $supabaseUrl = env('SUPABASE_URL');
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $bucket = env('SUPABASE_BUCKET', 'submissions');
         $filePath = ltrim($document->file_path, '/');
 
@@ -243,11 +258,14 @@ class SubmissionController extends Controller
         }
 
         $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
+
         return redirect()->away($publicUrl);
     }
 
     public function downloadDocument(SubmissionDocument $document)
     {
+        $this->ensureMasyarakatUser();
+
         $user = auth()->user();
 
         if ($document->submission->user_id !== $user->id) {
@@ -268,7 +286,7 @@ class SubmissionController extends Controller
             $response = Http::get($publicUrl);
 
             if ($response->successful()) {
-                $fileName = $document->original_name ?? basename($document->file_path);
+                $fileName = $document->original_name ?: basename($document->file_path);
 
                 return response($response->body(), 200)
                     ->header('Content-Type', $document->file_type)
