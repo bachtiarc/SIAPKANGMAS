@@ -21,6 +21,23 @@
         <p class="text-gray-600">Silakan lengkapi formulir di bawah ini untuk menyampaikan aspirasi dan pengaduan Anda kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Estimasi respon waktu 1x24 jam.</p>
     </div>
 
+    <!-- Important Info -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
+            <div class="flex items-start">
+                <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-yellow-800 mb-2">Perhatian:</h3>
+                    <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                        <li>Pastikan semua data yang Anda masukkan sudah benar</li>
+                        <li>Anda akan menerima notifikasi via email setelah permohonan diproses</li>
+                        <li>Simpan ID tiket Anda untuk melacak status permohonan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    
     <!-- Form -->
     @php
         // Parameter asal halaman untuk tombol "Kembali" dan redirect setelah submit
@@ -172,23 +189,6 @@
             </div>
         </div>
 
-        <!-- Important Info -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
-            <div class="flex items-start">
-                <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-                <div class="flex-1">
-                    <h3 class="text-sm font-semibold text-yellow-800 mb-2">Perhatian:</h3>
-                    <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
-                        <li>Pastikan semua data yang Anda masukkan sudah benar</li>
-                        <li>Anda akan menerima notifikasi via email setelah permohonan diproses</li>
-                        <li>Simpan ID tiket Anda untuk melacak status permohonan</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
         <!-- Action Buttons -->
         <div class="flex items-center justify-between">
             <a href="{{ $backUrl }}" 
@@ -277,7 +277,6 @@
     </div>
 </div>
 
-<!-- COPY SUCCESS TOAST -->
 <div id="copyToast" class="hidden fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50">
     Nomor tiket berhasil disalin!
 </div>
@@ -292,13 +291,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Show success modal if session has success
     @if(session('success'))
         document.getElementById('successModal').classList.remove('hidden');
         document.getElementById('ticketNumber').textContent = '{{ session('ticket_id') }}';
     @endif
 
-    // Show error modal if there are validation errors
     @if($errors->any())
         document.getElementById('errorModal').classList.remove('hidden');
     @endif

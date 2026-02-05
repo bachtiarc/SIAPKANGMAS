@@ -21,10 +21,27 @@
         <p class="text-gray-600">Silahkan lengkapi formulir di bawah ini untuk mengajukan permohonan informasi publik terkait perindustrian dan perdagangan. Estimasi respon waktu ada 1 kali 24 jam.</p>
     </div>
 
+    <!-- Important Info -->
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
+        <div class="flex items-start">
+            <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <div class="flex-1">
+                <h3 class="text-sm font-semibold text-yellow-800 mb-2">Perhatian:</h3>
+                <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                    <li>Pastikan semua data yang Anda masukkan sudah benar</li>
+                    <li>Anda akan menerima notifikasi via email setelah permohonan diproses</li>
+                    <li>Simpan ID tiket Anda untuk melacak status permohonan</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <!-- Form -->
     <form action="{{ route('user.submissions.store') }}" method="POST" enctype="multipart/form-data" id="submissionForm">
         @csrf
-        
+
         <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
             <div class="flex items-center mb-6">
                 <svg class="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,7 +57,7 @@
                         Judul Permohonan <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="title" value="{{ old('title') }}" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Contoh: Data Ekspor Rempah Semarang Tahun xxxx">
                     @error('title')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -66,28 +83,111 @@
                     @enderror
                 </div>
 
+                <!-- TUJUAN PERMOHONAN -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Tujuan Permohonan <span class="text-red-500">*</span>
+                    </label>
+                    <textarea name="tujuan_permohonan" rows="4" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Tuliskan tujuan permohonan Anda secara jelas...">{{ old('tujuan_permohonan') }}</textarea>
+                    @error('tujuan_permohonan')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Deskripsi Lengkap -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
                         Deskripsi Lengkap <span class="text-red-500">*</span>
                     </label>
                     <textarea name="description" rows="6" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Jelaskan secara spesifik informasi yang Anda butuhkan. Sertakan detail waktu, lokasi, atau konteks relevan lainnya.">{{ old('description') }}</textarea>
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Dokumen Pendukung (Multiple Upload) -->
+                <!-- PENYAMPAIAN FEEDBACK -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-900 mb-3">
+                        Penyampaian Feedback <span class="text-red-500">*</span>
+                    </label>
+
+                    <div class="border border-gray-200 rounded-xl p-5 bg-white">
+                        @php
+                            $cara = old('cara_penyampaian', '');
+                            $opsi = old('datang_langsung_opsi', '');
+                        @endphp
+
+                        <div class="space-y-4">
+                            <!-- Online -->
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="radio" name="cara_penyampaian" value="online" class="mt-1 h-5 w-5 text-pink-500 focus:ring-pink-500"
+                                    {{ $cara === 'online' ? 'checked' : '' }}>
+                                <div>
+                                    <p class="text-lg font-semibold text-gray-900">Secara Online</p>
+                                </div>
+                            </label>
+
+                            <!-- Datang langsung -->
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="radio" name="cara_penyampaian" value="datang_langsung" class="mt-1 h-5 w-5 text-pink-500 focus:ring-pink-500"
+                                    {{ $cara === 'datang_langsung' ? 'checked' : '' }}>
+                                <div class="flex-1">
+                                    <p class="text-lg font-semibold text-gray-900">Datang langsung di kantor Disperindag</p>
+
+                                    <!-- Opsi datang langsung (radio 1 pilih) -->
+                                    <div id="opsiDatangLangsung" class="{{ $cara === 'datang_langsung' ? '' : 'hidden' }} mt-4 pl-1">
+                                        <p class="text-base font-semibold text-gray-700 mb-3">Opsi saat datang langsung:</p>
+
+                                        <div class="space-y-3">
+                                            <label class="flex items-center space-x-3 cursor-pointer">
+                                                <input type="radio" name="datang_langsung_opsi" value="flashdisk"
+                                                    class="h-5 w-5 text-gray-800 focus:ring-gray-800"
+                                                    {{ $opsi === 'flashdisk' ? 'checked' : '' }}>
+                                                <span class="text-lg text-gray-900">Membawa flasdik/storage untuk penyimpanan file</span>
+                                            </label>
+
+                                            <label class="flex items-center space-x-3 cursor-pointer">
+                                                <input type="radio" name="datang_langsung_opsi" value="cetak"
+                                                    class="h-5 w-5 text-gray-800 focus:ring-gray-800"
+                                                    {{ $opsi === 'cetak' ? 'checked' : '' }}>
+                                                <span class="text-lg text-gray-900">Cetak hasil permohonan dengan biaya sendiri</span>
+                                            </label>
+
+                                            <label class="flex items-center space-x-3 cursor-pointer">
+                                                <input type="radio" name="datang_langsung_opsi" value="keduanya"
+                                                    class="h-5 w-5 text-gray-800 focus:ring-gray-800"
+                                                    {{ $opsi === 'keduanya' ? 'checked' : '' }}>
+                                                <span class="text-lg text-gray-900">Keduanya</span>
+                                            </label>
+                                        </div>
+
+                                        @error('datang_langsung_opsi')
+                                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    @error('cara_penyampaian')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Dokumen Pendukung -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
                         Dokumen Pendukung <span class="text-gray-500">(Maksimal 3 file)</span>
                     </label>
-                    
-                    <!-- Upload Area 1 -->
+
                     <div class="space-y-4">
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <!-- Upload 1 -->
+                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document1').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,12 +204,12 @@
                                     </svg>
                                 </button>
                             </div>
-                            <input id="document1" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
+                            <input id="document1" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
                                 onchange="displayFileName(1, this)">
                         </div>
 
-                        <!-- Upload Area 2 -->
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <!-- Upload 2 -->
+                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document2').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,12 +226,12 @@
                                     </svg>
                                 </button>
                             </div>
-                            <input id="document2" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
+                            <input id="document2" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
                                 onchange="displayFileName(2, this)">
                         </div>
 
-                        <!-- Upload Area 3 -->
-                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
+                        <!-- Upload 3 -->
+                        <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document3').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +248,7 @@
                                     </svg>
                                 </button>
                             </div>
-                            <input id="document3" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
+                            <input id="document3" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
                                 onchange="displayFileName(3, this)">
                         </div>
                     </div>
@@ -160,34 +260,19 @@
             </div>
         </div>
 
-        <!-- Important Info -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
-            <div class="flex items-start">
-                <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-                <div class="flex-1">
-                    <h3 class="text-sm font-semibold text-yellow-800 mb-2">Perhatian:</h3>
-                    <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
-                        <li>Pastikan semua data yang Anda masukkan sudah benar</li>
-                        <li>Anda akan menerima notifikasi via email setelah permohonan diproses</li>
-                        <li>Simpan ID tiket Anda untuk melacak status permohonan</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
         <!-- Submit Buttons -->
         <div class="flex items-center justify-between">
             @php
                 $from = request()->query('from', 'index');
                 $backUrl = $from === 'dashboard' ? route('user.dashboard') : route('user.submissions.index');
             @endphp
-            <a href="{{ $backUrl }}" 
+
+            <a href="{{ $backUrl }}"
                 class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
                 Kembali
             </a>
-            <button type="submit" 
+
+            <button type="submit"
                 class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -264,7 +349,7 @@
                 </div>
             </div>
             <div class="items-center px-4 py-3">
-                <button type="button" onclick="closeErrorModal()" 
+                <button type="button" onclick="closeErrorModal()"
                     class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
                     Kembali & Lengkapi
                 </button>
@@ -283,6 +368,26 @@
 </style>
 
 <script>
+
+document.addEventListener('DOMContentLoaded', () => {
+    const radios = document.querySelectorAll('input[name="cara_penyampaian"]');
+    const box = document.getElementById('opsiDatangLangsung');
+
+    function sync() {
+        const checked = document.querySelector('input[name="cara_penyampaian"]:checked');
+        if (checked && checked.value === 'datang_langsung') {
+            box.classList.remove('hidden');
+        } else {
+            box.classList.add('hidden');
+            const opsiRadios = document.querySelectorAll('input[name="datang_langsung_opsi"]');
+            opsiRadios.forEach(r => r.checked = false);
+        }
+    }
+
+    radios.forEach(r => r.addEventListener('change', sync));
+    sync();
+});
+
 // ========= TOAST =========
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
@@ -406,7 +511,7 @@ function copyTicket() {
 function showErrorModal(errors) {
     const errorList = document.getElementById('errorList');
     errorList.innerHTML = '';
-    
+
     if (Array.isArray(errors)) {
         errors.forEach(error => {
             const li = document.createElement('li');
@@ -422,7 +527,7 @@ function showErrorModal(errors) {
             });
         });
     }
-    
+
     document.getElementById('errorModal').classList.remove('hidden');
 }
 

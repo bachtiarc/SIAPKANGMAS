@@ -14,7 +14,7 @@ class SubmissionPdfController extends Controller
     public function download(Submission $submission)
     {
         $user = auth()->user();
-        
+
         if ($submission->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }

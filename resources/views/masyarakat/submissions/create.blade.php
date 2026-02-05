@@ -73,17 +73,36 @@
             </a>
             <div>
                 <h1 class="font-montserrat text-3xl font-bold text-gray-900">Formulir Pengajuan Permohonan Informasi</h1>
-                <p class="text-gray-600 mt-1">Silakan lengkapi formulir di bawah ini untuk mengajukan permohonan informasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Estimasi respon waktu 10 hari kerja.</p>
+                <p class="text-gray-600 mt-1">
+                    Silakan lengkapi formulir di bawah ini untuk mengajukan permohonan informasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Estimasi respon waktu 10 hari kerja.
+                </p>
             </div>
         </div>
     </div>
 
+
+        <!-- Important Info -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
+            <div class="flex items-start">
+                <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-yellow-800 mb-2">Perhatian:</h3>
+                    <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                        <li>Pastikan semua data yang Anda masukkan sudah benar</li>
+                        <li>Anda akan menerima notifikasi via email setelah permohonan diproses</li>
+                        <li>Simpan ID tiket Anda untuk melacak status permohonan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     <!-- Form -->
-    <form action="{{ route('masyarakat.submissions.store', ['from' => request('from', 'index')]) }}" method="POST" enctype="multipart/form-data">
+    <form id="submissionForm" action="{{ route('masyarakat.submissions.store', ['from' => request('from', 'index')]) }}" method="POST" enctype="multipart/form-data">
         @csrf
 
         <!-- Main Form Card -->
-        <div class="bg-white rounded-lg shadow-sm p-8">
+        <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
             <div class="flex items-center mb-6">
                 <svg class="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -138,7 +157,100 @@
                     @enderror
                 </div>
 
-                <!-- Document Upload  -->
+                <!-- Tujuan Permohonan -->
+                <div class="md:col-span-2">
+                    <label for="tujuan_permohonan" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Tujuan Permohonan <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        name="tujuan_permohonan"
+                        id="tujuan_permohonan"
+                        value="{{ old('tujuan_permohonan') }}"
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('tujuan_permohonan') border-red-500 @enderror"
+                        placeholder="Contoh: Untuk kebutuhan penelitian skripsi, laporan, data pendukung, dll.">
+                    @error('tujuan_permohonan')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Cara Penyampaian Feedback -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Cara Penyampaian Feedback <span class="text-red-500">*</span>
+                    </label>
+
+                    <!-- font lebih gede + spacing lebih lega -->
+                    <div class="space-y-3 text-[15px] leading-relaxed">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="radio" name="cara_penyampaian" id="cara_online" value="online"
+                                class="mt-1 text-blue-600 focus:ring-blue-500"
+                                {{ old('cara_penyampaian', 'online') === 'online' ? 'checked' : '' }}>
+                            <span class="text-gray-900">Secara Online</span>
+                        </label>
+
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="radio" name="cara_penyampaian" id="cara_datang" value="datang_langsung"
+                                class="mt-1 text-blue-600 focus:ring-blue-500"
+                                {{ old('cara_penyampaian') === 'datang_langsung' ? 'checked' : '' }}>
+                            <span class="text-gray-900">Datang langsung di kantor Disperindag</span>
+                        </label>
+                    </div>
+
+                    @error('cara_penyampaian')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+
+                    <!-- Box opsi datang langsung (SINGLE SELECT / RADIO) -->
+                    <div id="datangLangsungBox"
+                        class="mt-4 border border-gray-200 rounded-lg p-5 bg-gray-50 {{ old('cara_penyampaian') === 'datang_langsung' ? '' : 'hidden' }}">
+
+                        <p class="text-sm font-semibold text-gray-800 mb-3">
+                            Opsi saat datang langsung (wajib pilih 1):
+                        </p>
+
+                        <!-- WAJIB kebawah, jangan nyamping -->
+                        <div class="space-y-3 text-[15px] leading-relaxed">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="radio"
+                                    name="datang_langsung_opsi"
+                                    value="flashdisk"
+                                    class="mt-1 text-blue-600 focus:ring-blue-500"
+                                    {{ old('datang_langsung_opsi') === 'flashdisk' ? 'checked' : '' }}>
+                                <span class="text-gray-900">Membawa flasdik/storage untuk penyimpanan file</span>
+                            </label>
+
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="radio"
+                                    name="datang_langsung_opsi"
+                                    value="cetak"
+                                    class="mt-1 text-blue-600 focus:ring-blue-500"
+                                    {{ old('datang_langsung_opsi') === 'cetak' ? 'checked' : '' }}>
+                                <span class="text-gray-900">Cetak hasil permohonan dengan biaya sendiri</span>
+                            </label>
+
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="radio"
+                                    name="datang_langsung_opsi"
+                                    value="keduanya"
+                                    class="mt-1 text-blue-600 focus:ring-blue-500"
+                                    {{ old('datang_langsung_opsi') === 'keduanya' ? 'checked' : '' }}>
+                                <span class="text-gray-900">Kedua opsi</span>
+                            </label>
+                        </div>
+
+                        @error('datang_langsung_opsi')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+
+                        <p class="text-xs text-gray-600 mt-4">
+                            Jika memilih <b>"Kedua opsi"</b>, sistem akan menyimpan sebagai <b>(flashdisk + cetak)</b>.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Document Upload -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
                         Dokumen Pendukung <span class="text-gray-500">(Maksimal 3 file)</span>
@@ -217,23 +329,6 @@
                     @enderror
                 </div>
 
-            </div>
-        </div>
-
-        <!-- Important Info -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
-            <div class="flex items-start">
-                <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-                <div class="flex-1">
-                    <h3 class="text-sm font-semibold text-yellow-800 mb-2">Perhatian:</h3>
-                    <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
-                        <li>Pastikan semua data yang Anda masukkan sudah benar</li>
-                        <li>Anda akan menerima notifikasi via email setelah permohonan diproses</li>
-                        <li>Simpan ID tiket Anda untuk melacak status permohonan</li>
-                    </ul>
-                </div>
             </div>
         </div>
 
@@ -351,30 +446,10 @@ function showToast(message, type = 'success') {
     }, 4000);
 }
 
-function canUpload(idx) {
-    if (idx === 1) return true;
-
-    const prevInput = document.getElementById('document' + (idx - 1));
-    const prevHasFile = prevInput && prevInput.files && prevInput.files.length > 0;
-
-    if (!prevHasFile) {
-        showToast(`Mohon upload Dokumen ${idx - 1} dulu sebelum Dokumen ${idx}.`, 'error');
-        return false;
-    }
-    return true;
-}
-
-// Display file name 
+// Display file name
 function displayFileName(index, input) {
     const fileNameDisplay = document.getElementById('fileName' + index);
     const clearBtn = document.getElementById('clearBtn' + index);
-
-    if (!canUpload(index)) {
-        input.value = '';
-        if (fileNameDisplay) fileNameDisplay.classList.add('hidden');
-        if (clearBtn) clearBtn.classList.add('hidden');
-        return;
-    }
 
     if (input.files && input.files[0]) {
         const file = input.files[0];
@@ -438,6 +513,53 @@ function showErrorModal(errors) {
 function closeErrorModal() {
     document.getElementById('errorModal').classList.add('hidden');
 }
+
+function toggleDatangLangsungBox() {
+    const datangBox = document.getElementById('datangLangsungBox');
+    const radioDatang = document.getElementById('cara_datang');
+    if (!datangBox || !radioDatang) return;
+
+    if (radioDatang.checked) {
+        datangBox.classList.remove('hidden');
+    } else {
+        datangBox.classList.add('hidden');
+        // clear radio opsi datang langsung
+        document.querySelectorAll('input[name="datang_langsung_opsi"]').forEach(r => r.checked = false);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const online = document.getElementById('cara_online');
+    const datang = document.getElementById('cara_datang');
+
+    if (online) online.addEventListener('change', toggleDatangLangsungBox);
+    if (datang) datang.addEventListener('change', toggleDatangLangsungBox);
+
+    toggleDatangLangsungBox();
+
+    const form = document.getElementById('submissionForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const errors = [];
+
+            const tujuan = document.getElementById('tujuan_permohonan');
+            if (!tujuan || !tujuan.value.trim()) errors.push('Tujuan Permohonan wajib diisi');
+
+            const caraChecked = document.querySelector('input[name="cara_penyampaian"]:checked');
+            if (!caraChecked) {
+                errors.push('Cara Penyampaian Feedback wajib dipilih');
+            } else if (caraChecked.value === 'datang_langsung') {
+                const opsi = document.querySelector('input[name="datang_langsung_opsi"]:checked');
+                if (!opsi) errors.push('Opsi saat datang langsung wajib pilih 1');
+            }
+
+            if (errors.length > 0) {
+                e.preventDefault();
+                showErrorModal(errors);
+            }
+        });
+    }
+});
 
 @if($errors->any())
     const errors = @json($errors->all());

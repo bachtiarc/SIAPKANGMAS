@@ -7,51 +7,43 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $submission->ticket_id }}</title>
     <style>
-        @page {
-            margin: 0;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        @page { margin: 0; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 12pt;
             line-height: 1.6;
             color: #000;
-
-            /* FIX: samain margin feel seperti PDF pegawai */
             padding: 30px 40px;
         }
-        
+
         .header {
             text-align: center;
             margin-bottom: 30px;
             border-bottom: 3px solid #000;
             padding-bottom: 20px;
         }
-        
+
         .header h1 {
             font-size: 16pt;
             font-weight: bold;
             margin-bottom: 5px;
             text-transform: uppercase;
         }
-        
+
         .header h2 {
             font-size: 14pt;
             font-weight: bold;
             margin-bottom: 3px;
         }
-        
+
         .header p {
             font-size: 10pt;
             margin: 2px 0;
         }
-        
+
         .document-title {
             text-align: center;
             margin: 30px 0;
@@ -60,7 +52,7 @@
             text-decoration: underline;
             text-transform: uppercase;
         }
-        
+
         .ticket-info {
             text-align: center;
             margin-bottom: 20px;
@@ -68,22 +60,20 @@
             background-color: #f0f0f0;
             border: 1px solid #000;
         }
-        
+
         .ticket-info p {
             font-size: 11pt;
             margin: 5px 0;
         }
-        
+
         .ticket-id {
             font-weight: bold;
             font-size: 13pt;
             color: #000;
         }
-        
-        .content-section {
-            margin: 20px 0;
-        }
-        
+
+        .content-section { margin: 20px 0; }
+
         .content-section h3 {
             font-size: 12pt;
             font-weight: bold;
@@ -91,13 +81,13 @@
             border-bottom: 1px solid #000;
             padding-bottom: 5px;
         }
-        
+
         .info-row {
             margin: 10px 0;
             display: table;
             width: 100%;
         }
-        
+
         .info-label {
             display: table-cell;
             width: 35%;
@@ -105,14 +95,14 @@
             vertical-align: top;
             padding: 5px 0;
         }
-        
+
         .info-value {
             display: table-cell;
             width: 5%;
             vertical-align: top;
             padding: 5px 0;
         }
-        
+
         .info-content {
             display: table-cell;
             width: 60%;
@@ -120,7 +110,7 @@
             padding: 5px 0;
             text-align: justify;
         }
-        
+
         .description-box {
             border: 1px solid #000;
             padding: 15px;
@@ -129,7 +119,7 @@
             white-space: pre-line;
             text-align: justify;
         }
-        
+
         .status-badge {
             display: inline-block;
             padding: 5px 15px;
@@ -137,26 +127,22 @@
             font-weight: bold;
             margin: 5px 0;
         }
-        
-        .signature-section {
-            margin-top: 50px;
-        }
-        
+
+        .signature-section { margin-top: 50px; }
+
         .signature-box {
             float: right;
             width: 45%;
             text-align: center;
         }
-        
-        .signature-box p {
-            margin: 5px 0;
-        }
-        
+
+        .signature-box p { margin: 5px 0; }
+
         .signature-space {
             height: 80px;
             margin: 20px 0;
         }
-        
+
         .document-footer {
             margin-top: 50px;
             padding-top: 20px;
@@ -166,51 +152,49 @@
             color: #666;
         }
 
-        .document-footer p {
-            margin: 5px 0;
-        }
+        .document-footer p { margin: 5px 0; }
 
-        .footer-ticket-label {
-            margin-top: 10px;
-            font-weight: bold;
-            color: #000;
-        }
-        .footer-ticket-id {
-            font-weight: bold;
-            color: #000;
-        }
-        
         .admin-response {
             border: 2px solid #000;
             padding: 15px;
             margin: 15px 0;
             background-color: #f9f9f9;
         }
-        
+
         .admin-response h4 {
             font-size: 11pt;
             font-weight: bold;
             margin-bottom: 10px;
         }
-        
+
         .admin-response p {
             white-space: pre-line;
             text-align: justify;
             margin: 10px 0;
         }
-        
+
         .admin-info {
             margin-top: 15px;
             font-size: 10pt;
             font-style: italic;
         }
-        
-        .clear {
-            clear: both;
+
+        .clear { clear: both; }
+
+        .opsi-list {
+            margin: 8px 0 0 18px;
+        }
+        .opsi-list li {
+            margin: 3px 0;
         }
     </style>
 </head>
 <body>
+    @php
+        $caraPenyampaian = $submission->cara_penyampaian ?? null;
+        $opsiDatang = $submission->datang_langsung_opsi ?? null;
+    @endphp
+
     <!-- Header -->
     <div class="header">
         <h1>PEMERINTAH PROVINSI JAWA TENGAH</h1>
@@ -235,31 +219,31 @@
     <!-- Personal Information -->
     <div class="content-section">
         <h3>I. DATA PEMOHON</h3>
-        
+
         <div class="info-row">
             <div class="info-label">Nama Lengkap</div>
             <div class="info-value">:</div>
             <div class="info-content">{{ $user->name }}</div>
         </div>
-        
+
         <div class="info-row">
             <div class="info-label">NIK</div>
             <div class="info-value">:</div>
             <div class="info-content">{{ $user->nik ?? '-' }}</div>
         </div>
-        
+
         <div class="info-row">
             <div class="info-label">Email</div>
             <div class="info-value">:</div>
             <div class="info-content">{{ $user->email }}</div>
         </div>
-        
+
         <div class="info-row">
             <div class="info-label">Nomor Telepon</div>
             <div class="info-value">:</div>
             <div class="info-content">{{ $user->phone ?? '-' }}</div>
         </div>
-        
+
         <div class="info-row">
             <div class="info-label">Alamat</div>
             <div class="info-value">:</div>
@@ -270,25 +254,25 @@
     <!-- Submission Details -->
     <div class="content-section">
         <h3>II. RINCIAN PERMOHONAN</h3>
-        
+
         <div class="info-row">
             <div class="info-label">Kategori Informasi</div>
             <div class="info-value">:</div>
             <div class="info-content">{{ $submission->category->name }}</div>
         </div>
-        
+
         <div class="info-row">
             <div class="info-label">Judul Permohonan</div>
             <div class="info-value">:</div>
             <div class="info-content">{{ $submission->title }}</div>
         </div>
-        
+
         <div class="info-row">
             <div class="info-label">Tanggal Pengajuan</div>
             <div class="info-value">:</div>
             <div class="info-content">{{ $submission->created_at->format('d F Y, H:i') }} WIB</div>
         </div>
-        
+
         <div class="info-row">
             <div class="info-label">Status</div>
             <div class="info-value">:</div>
@@ -296,22 +280,58 @@
                 <span class="status-badge">{{ $submission->status_label }}</span>
             </div>
         </div>
-        
+
+        <!-- === Tujuan Permohonan === -->
+        <div class="info-row">
+            <div class="info-label">Tujuan Permohonan</div>
+            <div class="info-value">:</div>
+            <div class="info-content">{{ $submission->tujuan_permohonan ?? '-' }}</div>
+        </div>
+
+        <!-- === Cara Penyampaian Feedback === -->
+        <div class="info-row">
+            <div class="info-label">Penyampaian Feedback</div>
+            <div class="info-value">:</div>
+            <div class="info-content">
+                @if($caraPenyampaian === 'online')
+                    Secara Online
+                @elseif($caraPenyampaian === 'datang_langsung')
+                    Datang langsung di kantor Disperindag
+                @else
+                    -
+                @endif
+
+                @if($caraPenyampaian === 'datang_langsung')
+                    <ul class="opsi-list">
+                        @if($opsiDatang === 'flashdisk')
+                            <li>Membawa flasdik/storage untuk penyimpanan file</li>
+                        @elseif($opsiDatang === 'cetak')
+                            <li>Cetak hasil permohonan dengan biaya sendiri</li>
+                        @elseif($opsiDatang === 'keduanya')
+                            <li>Kedua opsi (flashdisk + cetak)</li>
+                        @else
+                            <li>-</li>
+                        @endif
+                    </ul>
+                @endif
+            </div>
+        </div>
+
         <div style="margin-top: 15px;">
             <p style="font-weight: bold; margin-bottom: 5px;">Deskripsi Lengkap:</p>
             <div class="description-box">{{ $submission->description }}</div>
         </div>
     </div>
 
-    <!-- Admin Response (if exists) -->
+    <!-- Admin Response  -->
     @if($submission->admin_response || $submission->admin_notes)
     <div class="content-section">
         <h3>III. TANGGAPAN DARI ADMIN</h3>
-        
+
         <div class="admin-response">
             <h4>Respon:</h4>
             <p>{{ $submission->admin_response ?? $submission->admin_notes }}</p>
-            
+
             <div class="admin-info">
                 @if($submission->handler)
                     <p>Ditangani oleh: {{ $submission->handler->name }}</p>
@@ -339,7 +359,6 @@
     <div class="document-footer">
         <p>Dokumen ini dicetak secara elektronik dan sah tanpa tanda tangan basah.</p>
         <p>Dicetak pada {{ now()->format('d F Y, H:i') }} WIB</p>
-
     </div>
 </body>
 </html>
