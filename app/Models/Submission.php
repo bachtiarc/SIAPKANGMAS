@@ -23,11 +23,15 @@ class Submission extends Model
         'handled_by',
         'submitted_at',
         'completed_at',
+        'tujuan_permohonan',
+        'cara_penyampaian',
+        'datang_langsung_opsi',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'completed_at' => 'datetime',
+        'datang_langsung_opsi' => 'array',
     ];
 
     /**
@@ -59,7 +63,7 @@ class Submission extends Model
         'Sub Bagian Program' => '105',
         'Sub Bagian Keuangan' => '106',
         'Sub Bagian Umum dan Kepegawaian' => '107',
-        
+
         // Bidang Pembangunan Sumber Daya Industri Dan Perwilayahan Industri (02)
         'Kepala Bidang Pembangunan Sumber Daya Industri Dan Perwilayahan Industri' => '201',
         'Ketua Kelompok Kerja Pengembangan Perwilayahan Industri' => '202',
@@ -68,7 +72,7 @@ class Submission extends Model
         'Kelompok Kerja Pengembangan Perwilayahan Industri' => '205',
         'Kelompok Kerja pengembangan Teknologi Industri' => '206',
         'Kelompok Kerja Pengembangan SDM Industri' => '207',
-        
+
         // Bidang Pemberdayaan Industri (03)
         'Kepala Bidang Pemberdayaan Industri' => '301',
         'Ketua Kelompok Kerja Pengembangan Industri' => '302',
@@ -77,7 +81,7 @@ class Submission extends Model
         'Kelompok Kerja Pengembangan Industri' => '305',
         'Kelompok Kerja Promosi dan Kerja Sama Industri' => '306',
         'Kelompok Kerja Promosi dan Kerja Sama Industri' => '307',
-        
+
         // Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri (04)
         'Kepala Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri' => '401',
         'Ketua Kelompok Kerja Pengembangan Sarana Prasarana Industri' => '402',
@@ -86,7 +90,7 @@ class Submission extends Model
         'Kelompok Kerja Pengembangan Sarana Prasarana Industri' => '405',
         'Kelompok Kerja Pengawasan dan Pengendalian Industri' => '406',
         'Kelompok Kerja Data dan Informasi Industri' => '407',
-        
+
         // Bidang Perdagangan Dalam Negeri (05)
         'Kepala Bidang Perdagangan Dalam Negeri' => '501',
         'Ketua Kelompok Kerja Pengendalian Bapokting, Pengembangan Informasi dan Sarana Perdagangan' => '502',
@@ -95,7 +99,7 @@ class Submission extends Model
         'Kelompok Kerja Pengendalian Bapokting, Pengembangan Informasi dan Sarana Perdagangan' => '505',
         'Kelompok Kerja Promosi dan Kerjasama' => '506',
         'Kelompok Kerja Perlindungan Konsumen dan Tertib Niaga' => '507',
-        
+
         // Bidang Perdagangan Luar Negeri (06)
         'Kepala Bidang Perdagangan Luar Negeri' => '601',
         'Ketua Kelompok Kerja Ekspor dan Impor' => '602',
@@ -112,7 +116,7 @@ class Submission extends Model
         'Kelompok Kerja Pelayanan Jasa Keteknikan' => '704',
         'Kelompok Kerja Penerapan dan Rekayasa' => '705',
         'Kelompok Jabatan Fungsional' => '706',
-        
+
         // Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Surakarta Kelas A (08)
         'Kepala Sub Bagian Tata Usaha' => '801',
         'Ketua Kelompok Kerja Pelayanan Teknis Pengujian dan Kalibrasi' => '802',
@@ -120,7 +124,7 @@ class Submission extends Model
         'Kelompok Kerja Pelayanan Teknis Pengujian dan Kalibrasi' => '804',
         'Kelompok Kerja Pengembangan Jasa Pengujian dan Kalibrasi' => '805',
         'Kelompok Jabatan Fungsional' => '806',
-        
+
         // Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Semarang (09)
         'Kepala Sub Bagian Tata Usaha' => '901',
         'Ketua Kelompok Kerja Produk Alas Kaki' => '902',
@@ -128,7 +132,7 @@ class Submission extends Model
         'Kelompok Kerja Pengembangan Produk Alas Kaki' => '904',
         'Kelompok Kerja Pengembangan Jasa Pengujian dan Kalibrasi' => '905',
         'Kelompok Jabatan Fungsional' => '906',
-        
+
         // Balai Industri Produk Tekstil dan Alas Kaki (BIPTAK) (10)
         'Kepala Sub Bagian Tata Usaha' => '1001',
         'Ketua Kelompok Kerja Pengembangan Produk Tekstil' => '1002',
@@ -136,7 +140,7 @@ class Submission extends Model
         'Kelompok Kerja Pengembangan Produk Tekstil' => '1004',
         'Kelompok Kerja Pengembangan Produk Alas Kaki' => '1005',
         'Kelompok Jabatan Fungsional' => '1006',
-        
+
         // Balai Industri Kreatif Digital dan Kemasan Kelas A (BIKDK) (11)
         'Kepala Sub Bagian Tata Usaha' => '1101',
         'Ketua Kelompok Kerja Industri Kreatif Digital' => '1102',
@@ -155,57 +159,40 @@ class Submission extends Model
 
         static::creating(function ($submission) {
             $user = $submission->user;
-            
-            // Generate ticket_id berdasarkan user_type
+
             if ($user->user_type === 'pegawai') {
                 $submission->ticket_id = self::generateTicketIdPegawai($user);
             } else {
-                // masyarakat_umum
                 $submission->ticket_id = self::generateTicketIdMasyarakat($user);
             }
         });
     }
 
-    /**
-     * Generate ticket ID untuk PEGAWAI
-     * Format: PI.XX.YYY.DDMMYYYY_NNN
-     * Contoh: PI.01.106.12012026_010
-     */
     private static function generateTicketIdPegawai($user)
     {
-        $prefix = 'PI'; 
-        
+        $prefix = 'PI';
+
         $bidangCode = self::$bidangCodes[$user->bidang] ?? '00';
-        
+
         $jabatanCode = self::getJabatanCode($user->bidang, $user->jabatan);
-        
-        $date = date('dmY'); 
-        
+
+        $date = date('dmY');
+
         $sequence = self::getMonthlySequence();
-        
+
         return "{$prefix}.{$bidangCode}.{$jabatanCode}.{$date}_{$sequence}";
     }
 
-    /**
-     * Generate ticket ID untuk MASYARAKAT
-     * Format: PI.XXXXXX.DDMMYYYY_NNN
-     * XXXXXX = 6 digit terakhir NIK (digit ke-11 sampai ke-16)
-     * Contoh: PI.614725.30012026_020
-     */
     private static function generateTicketIdMasyarakat($user)
     {
         $prefix = 'PI';
-        
-        // Ambil 6 digit terakhir NIK (digit ke-11 sampai ke-16)
-        // NIK format: 16 digit
-        // Digit ke-11 sampai ke-16 = substr(10, 6)
-        $nik = $user->nik ?? '000000000000000000'; 
-        $nikCode = substr($nik, 10, 6); 
-        
+        $nik = $user->nik ?? '000000000000000000';
+        $nikCode = substr($nik, 10, 6);
+
         $date = date('dmY');
-        
+
         $sequence = self::getMonthlySequence();
-        
+
         return "{$prefix}.{$nikCode}.{$date}_{$sequence}";
     }
 
@@ -216,14 +203,14 @@ class Submission extends Model
     {
         if ($jabatan === 'Kepala Sub Bagian Tata Usaha') {
             $bidangCode = self::$bidangCodes[$bidang] ?? '00';
-            return $bidangCode . '01'; 
+            return $bidangCode . '01';
         }
-        
+
         if ($jabatan === 'Sub Bagian Tata Usaha') {
             $bidangCode = self::$bidangCodes[$bidang] ?? '00';
-            return $bidangCode . '04'; 
+            return $bidangCode . '04';
         }
-        
+
         return self::$jabatanCodes[$jabatan] ?? '000';
     }
 
@@ -236,9 +223,9 @@ class Submission extends Model
         $count = self::whereYear('created_at', date('Y'))
             ->whereMonth('created_at', date('m'))
             ->count();
-        
+
         $sequence = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
-        
+
         return $sequence;
     }
 
@@ -297,7 +284,7 @@ class Submission extends Model
         return 'bg-gray-100 text-gray-800';
     }
 
-    // Status Label  
+    // Status Label
     public function getStatusLabelAttribute()
     {
         $status = strtolower($this->status);

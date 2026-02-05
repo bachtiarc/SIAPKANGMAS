@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
-use App\Services\BrevoMailer;
+use Illuminate\Validation\Rule;
 
 class SubmissionController extends Controller
 {
@@ -25,16 +25,16 @@ class SubmissionController extends Controller
         $query = Submission::where('user_id', $user->id)
             ->with(['category', 'handler']);
 
-        if ($request->has('search') && $request->search) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('ticket_id', 'ilike', "%{$search}%")
-                  ->orWhere('title', 'ilike', "%{$search}%")
-                  ->orWhere('subject', 'ilike', "%{$search}%");
+                    ->orWhere('title', 'ilike', "%{$search}%")
+                    ->orWhere('subject', 'ilike', "%{$search}%");
             });
         }
 
-        if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
+        if ($request->has('status') && $request->status !== 'semua' && $request->status !== '') {
             $statusFilter = strtolower($request->status);
 
             $query->where(function ($q) use ($statusFilter) {
@@ -79,18 +79,37 @@ class SubmissionController extends Controller
     {
         $user = auth()->user();
 
+        if ($user->user_type !== 'pegawai') {
+            abort(403, 'Unauthorized access.');
+        }
+
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'title'       => 'required|string|max:255',
             'description' => 'required|string',
+            'tujuan_permohonan' => 'required|string|max:5000',
+            'cara_penyampaian'  => ['required', Rule::in(['online', 'datang_langsung'])],
+            'datang_langsung_opsi' => [
+                'nullable',
+                'required_if:cara_penyampaian,datang_langsung',
+                Rule::in(['flashdisk', 'cetak', 'keduanya']),
+            ],
+
             'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ], [
             'category_id.required' => 'Kategori informasi wajib dipilih.',
             'category_id.exists'   => 'Kategori tidak valid.',
             'title.required'       => 'Judul permohonan wajib diisi.',
             'description.required' => 'Deskripsi lengkap wajib diisi.',
-            'documents.*.mimes'    => 'Format dokumen harus PDF, JPG, JPEG, atau PNG.',
-            'documents.*.max'      => 'Ukuran setiap dokumen maksimal 2MB.',
+
+            'cara_penyampaian.required' => 'Penyampaian feedback wajib dipilih.',
+            'cara_penyampaian.in'       => 'Penyampaian feedback tidak valid.',
+
+            'datang_langsung_opsi.required_if' => 'Mohon pilih salah satu opsi saat datang langsung.',
+            'datang_langsung_opsi.in'          => 'Opsi datang langsung tidak valid.',
+
+            'documents.*.mimes' => 'Format dokumen harus PDF, JPG, JPEG, atau PNG.',
+            'documents.*.max'   => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
 
         // total size max 6MB
@@ -100,31 +119,52 @@ class SubmissionController extends Controller
                 if ($file && $file->isValid()) $totalSize += $file->getSize();
             }
             if ($totalSize > 6291456) {
-                return back()->withErrors(['documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'])->withInput();
+                return back()
+                    ->withErrors(['documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'])
+                    ->withInput();
             }
         }
 
-        $submission = \App\Models\Submission::create([
+        $caraPenyampaian = $validated['cara_penyampaian'] ?? 'online';
+        $opsiDatang = [];
+        if ($caraPenyampaian === 'datang_langsung') {
+            $raw = $validated['datang_langsung_opsi'] ?? null;
+
+            if ($raw === 'keduanya') {
+                $opsiDatang = ['flashdisk', 'cetak'];
+            } elseif ($raw === 'flashdisk') {
+                $opsiDatang = ['flashdisk'];
+            } elseif ($raw === 'cetak') {
+                $opsiDatang = ['cetak'];
+            } else {
+                $opsiDatang = [];
+            }
+        }
+
+        $submission = Submission::create([
             'user_id'      => $user->id,
             'category_id'  => $validated['category_id'],
             'title'        => $validated['title'],
             'subject'      => $validated['title'],
             'description'  => $validated['description'],
             'status'       => 'pending',
+            'tujuan_permohonan'    => $validated['tujuan_permohonan'] ?? null,
+            'cara_penyampaian'     => $caraPenyampaian,
+            'datang_langsung_opsi' => $opsiDatang,
         ]);
 
         if ($request->hasFile('documents')) {
             foreach (array_slice($request->file('documents'), 0, 3) as $document) {
                 if ($document && $document->isValid()) {
-                    $filename = \Illuminate\Support\Str::random(40) . '.' . $document->getClientOriginalExtension();
+                    $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
                     $path = $document->storeAs((string) $submission->id, $filename, 'supabase');
 
-                    \App\Models\SubmissionDocument::create([
-                        'submission_id'  => $submission->id,
-                        'original_name'  => $document->getClientOriginalName(),
-                        'file_path'      => $path,
-                        'file_type'      => $document->getMimeType(),
-                        'file_size'      => $document->getSize(),
+                    SubmissionDocument::create([
+                        'submission_id' => $submission->id,
+                        'original_name' => $document->getClientOriginalName(),
+                        'file_path'     => $path,
+                        'file_type'     => $document->getMimeType(),
+                        'file_size'     => $document->getSize(),
                     ]);
                 }
             }
@@ -139,7 +179,7 @@ class SubmissionController extends Controller
                 'category' => $submission->category,
             ])->render();
 
-            \Illuminate\Support\Facades\Log::info('BREVO DEBUG (pegawai) - about to send', [
+            Log::info('BREVO DEBUG (pegawai) - about to send', [
                 'to' => $user->email,
                 'has_api_key' => (bool) config('brevo.api_key'),
                 'ticket_id' => $submission->ticket_id,
@@ -152,9 +192,9 @@ class SubmissionController extends Controller
                 htmlContent: $html
             );
 
-            \Illuminate\Support\Facades\Log::info('BREVO DEBUG (pegawai) - sent OK', ['to' => $user->email]);
+            Log::info('BREVO DEBUG (pegawai) - sent OK', ['to' => $user->email]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('BREVO DEBUG (pegawai) - failed', [
+            Log::error('BREVO DEBUG (pegawai) - failed', [
                 'to' => $user->email,
                 'ticket_id' => $submission->ticket_id,
                 'error' => $e->getMessage(),
@@ -168,7 +208,6 @@ class SubmissionController extends Controller
             ->with('ticket_id', $submission->ticket_id)
             ->with('submission_id', $submission->id);
     }
-
 
     public function show(Submission $submission)
     {

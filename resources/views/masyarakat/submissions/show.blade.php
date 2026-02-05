@@ -9,7 +9,7 @@
         <div class="flex items-center space-x-4">
             @php
                 $from = request()->get('from', 'index');
-                
+
                 if ($from === 'dashboard') {
                     $backUrl = route('masyarakat.dashboard');
                 } elseif ($from === 'history') {
@@ -35,6 +35,20 @@
                 elseif ($isProcessing) $progressWidth = '58%';
                 elseif ($isFinished) $progressWidth = '100%';
                 else $progressWidth = '0%';
+
+                // === FITUR BARU (DISPLAY) ===
+                $caraPenyampaian = $submission->cara_penyampaian ?? null;
+                $opsiDatang = $submission->datang_langsung_opsi ?? [];
+
+                // Pastikan array
+                if (!is_array($opsiDatang)) {
+                    $opsiDatang = [];
+                }
+
+                // Jika ada "keduanya" dari data lama, normalisasi jadi flashdisk+cetak
+                if (in_array('keduanya', $opsiDatang, true)) {
+                    $opsiDatang = ['flashdisk', 'cetak'];
+                }
             @endphp
 
             <a href="{{ $backUrl }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
@@ -141,6 +155,48 @@
                     <label class="block text-sm font-semibold text-gray-600">Subjek Permohonan</label>
                     <p class="text-gray-900">{{ $submission->subject }}</p>
                 </div>
+
+                <!-- === Tujuan Permohonan === -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600">Tujuan Permohonan</label>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-gray-900 whitespace-pre-line">{{ $submission->tujuan_permohonan ?? '-' }}</p>
+                    </div>
+                </div>
+
+                <!-- === Cara Penyampaian Feedback === -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600">Penyampaian Feedback</label>
+                    <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+                        <p class="text-gray-900">
+                            @if($caraPenyampaian === 'online')
+                                Secara Online
+                            @elseif($caraPenyampaian === 'datang_langsung')
+                                Datang langsung di kantor Disperindag
+                            @else
+                                -
+                            @endif
+                        </p>
+
+                        @if($caraPenyampaian === 'datang_langsung')
+                            <div class="pt-2 border-t border-gray-200">
+                                <p class="text-sm font-semibold text-gray-600 mb-2">Opsi saat datang langsung:</p>
+                                <ul class="list-disc list-inside text-gray-900">
+                                    @if(in_array('flashdisk', $opsiDatang))
+                                        <li>Membawa flasdik/storage untuk penyimpanan file</li>
+                                    @endif
+                                    @if(in_array('cetak', $opsiDatang))
+                                        <li>Cetak hasil permohonan dengan biaya sendiri</li>
+                                    @endif
+                                    @if(!in_array('flashdisk', $opsiDatang) && !in_array('cetak', $opsiDatang))
+                                        <li>-</li>
+                                    @endif
+                                </ul>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-gray-600">Status</label>
                     <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full {{ $submission->status_badge }}">
@@ -192,16 +248,22 @@
                                             <p class="text-xs text-gray-500">{{ number_format($doc->file_size / 1024, 2) }} KB</p>
                                         </div>
                                     </div>
-                                    <div class="flex items-center space-x-2">
+                                    <div class="flex items-center gap-2">
                                         <span class="text-xs text-gray-500 group-hover:text-blue-600">.{{ strtoupper($ext) }}</span>
-                                        <a href="{{ route('masyarakat.submissions.document.download', $doc) }}" class="text-blue-600 hover:text-blue-800" title="Download">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                        <a href="{{ route('masyarakat.submissions.document.download', $doc) }}"
+                                        class="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition"
+                                        title="Download">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                             </svg>
                                         </a>
-                                        <a href="{{ $documentUrl }}" target="_blank" class="text-blue-600 hover:text-blue-800" title="Lihat">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                        <a href="{{ $documentUrl }}" target="_blank"
+                                        class="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition"
+                                        title="Lihat">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                                             </svg>
                                         </a>
                                     </div>
