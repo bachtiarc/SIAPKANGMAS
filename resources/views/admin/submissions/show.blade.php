@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('header_title', 'Detail Pengajuan')
-@section('title', 'Detail Pengajuan ' . $submission->ticket_id)
+@section('title', 'Detail Permohonan Informasi ' . $submission->ticket_id)
 
 @section('content')
 @php
@@ -108,9 +108,10 @@
                 </div>
                 <div class="p-6 space-y-6">
                     <div>
-                        <h4 class="font-bold text-gray-900 text-sm mb-2">Judul</h4>
+                        <h4 class="font-bold text-gray-900 text-sm mb-2">Judul Permohonan</h4>
                         <p class="text-gray-700 font-lato">{{ $submission->title }}</p>
                     </div>
+                    // Kategori Informasi
                     <div>
                         <h4 class="font-bold text-gray-900 text-sm mb-2">Tujuan Permohonan</h4>
                         <div class="p-4 bg-gray-50 rounded-lg text-gray-700 font-lato text-sm leading-relaxed border border-gray-100 min-h-[80px]">
