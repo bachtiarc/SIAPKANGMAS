@@ -5,6 +5,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Api\WilayahController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -59,13 +60,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'login']);
     
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    
-    Route::get('/register/pegawai', [RegisterController::class, 'showPegawaiForm'])->name('register.pegawai');
-    // Jika method di controller adalah 'register', sesuaikan namanya
-    Route::post('/register/pegawai', [RegisterController::class, 'registerPegawai']);
-    
-    Route::get('/register/masyarakat', [RegisterController::class, 'showMasyarakatForm'])->name('register.masyarakat');
-    Route::post('/register/masyarakat', [RegisterController::class, 'registerMasyarakat']);
+    Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
     
     Route::get('/password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
     Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
@@ -73,10 +68,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
 });
 
-// Logout (Authenticated Users Only)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
-// Email Verification Routes
+// Email Verification 
 Route::middleware('auth')->group(function () {
     Route::get('/email/verify', [VerificationController::class, 'show'])->name('verification.notice');
     Route::post('/email/resend', [VerificationController::class, 'resend'])
@@ -84,9 +78,20 @@ Route::middleware('auth')->group(function () {
         ->name('verification.resend');
 });
 
+// RESEND VERIFIKASI TANPA LOGIN
+    Route::post('/register/resend', 
+        [RegisterController::class, 'resendVerification']
+    )->name('resend.verification');
+
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
     ->name('verification.verify');
 
+// WILAYAH
+Route::prefix('api')->group(function () {
+    Route::get('/kabupaten', [WilayahController::class, 'kabupaten']);
+    Route::get('/kecamatan/{kodeKab}', [WilayahController::class, 'kecamatan']);
+    Route::get('/desa/{kodeKec}', [WilayahController::class, 'desa']);
+});
 
 // User Pegawai Dashboard 
 Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')->name('user.')->group(function () {
