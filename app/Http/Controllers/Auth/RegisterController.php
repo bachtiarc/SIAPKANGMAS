@@ -31,7 +31,6 @@ class RegisterController extends Controller
             'kecamatan' => 'required|string',
             'desa'      => 'required|string',
             'alamat'    => 'required|string',
-
             'foto_ktp'  => 'required|image|mimes:jpg,jpeg,png|max:2048',
             'password'  => 'required|min:8|confirmed',
         ]);
@@ -53,17 +52,35 @@ class RegisterController extends Controller
             ['ContentType' => $file->getMimeType()]
         );
 
+        $isKota = str_starts_with(strtolower($request->kabupaten), 'Kota');
+        $kecamatanKota = [
+            'banjarnegara','purwokerto timur','purwokerto barat','purwokerto selatan','purwokerto utara',
+            'batang','blora','boyolali','brebes','cilacap tengah','cilacap selatan','cilacap utara',
+            'demak','purwodadi','jepara','karanganyar','kebumen','kendal','klaten tengah',
+            'kota kudus','mungkid','pati','kajen','pemalang','purbalingga','purworejo',
+            'rembang','sragen','sukoharjo','slawi','temanggung','wonosobo','wonogiri'
+        ];
+
+        $isKelurahan =
+            $isKota ||
+            in_array(strtolower($request->kecamatan), $kecamatanKota);
+
         $user = User::create([
-            'name'      => $request->name,
-            'nik'       => $request->nik,
-            'email'     => $request->email,
-            'phone'     => $request->phone,
-            'address'   => $request->alamat,
-            'pekerjaan' => $pekerjaan, 
-            'foto_ktp'  => $path,
-            'role'      => 'user',
-            'user_type' => 'masyarakat_umum',
-            'password'  => Hash::make($request->password),
+            'name'       => $request->name,
+            'nik'        => $request->nik,
+            'email'      => $request->email,
+            'phone'      => $request->phone,
+            'address'    => $request->alamat,
+            'desa'       => $request->desa,
+            'kecamatan'  => $request->kecamatan,
+            'kabupaten'  => $request->kabupaten,
+            'provinsi'   => 'Jawa Tengah',
+            'is_kelurahan' => $isKelurahan,
+            'pekerjaan'  => $pekerjaan,
+            'foto_ktp'   => $path,
+            'role'       => 'user',
+            'user_type'  => 'masyarakat_umum',
+            'password'   => Hash::make($request->password),
         ]);
 
         $this->sendBrevoVerificationEmail($user);

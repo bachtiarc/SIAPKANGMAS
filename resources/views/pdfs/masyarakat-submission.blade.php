@@ -1,18 +1,16 @@
-<!-- resources/views/pdfs/masyarakat-submission.blade.php -->
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $submission->ticket_id }}</title>
+
     <style>
         @page { margin: 0; }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Times New Roman', Times, serif;
+            font-family: "Times New Roman", Times, serif;
             font-size: 12pt;
             line-height: 1.6;
             color: #000;
@@ -29,19 +27,18 @@
         .header h1 {
             font-size: 16pt;
             font-weight: bold;
-            margin-bottom: 5px;
             text-transform: uppercase;
         }
 
         .header h2 {
             font-size: 14pt;
             font-weight: bold;
-            margin-bottom: 3px;
+            margin-top: 5px;
         }
 
         .header p {
             font-size: 10pt;
-            margin: 2px 0;
+            margin-top: 4px;
         }
 
         .document-title {
@@ -57,35 +54,31 @@
             text-align: center;
             margin-bottom: 20px;
             padding: 10px;
-            background-color: #f0f0f0;
             border: 1px solid #000;
-        }
-
-        .ticket-info p {
-            font-size: 11pt;
-            margin: 5px 0;
+            background: #f2f2f2;
         }
 
         .ticket-id {
             font-weight: bold;
             font-size: 13pt;
-            color: #000;
         }
 
-        .content-section { margin: 20px 0; }
+        .content-section {
+            margin-top: 25px;
+        }
 
         .content-section h3 {
             font-size: 12pt;
             font-weight: bold;
-            margin-bottom: 10px;
             border-bottom: 1px solid #000;
+            margin-bottom: 10px;
             padding-bottom: 5px;
         }
 
         .info-row {
-            margin: 10px 0;
             display: table;
             width: 100%;
+            margin-bottom: 8px;
         }
 
         .info-label {
@@ -93,272 +86,230 @@
             width: 35%;
             font-weight: bold;
             vertical-align: top;
-            padding: 5px 0;
         }
 
-        .info-value {
+        .info-sep {
             display: table-cell;
             width: 5%;
-            vertical-align: top;
-            padding: 5px 0;
         }
 
         .info-content {
             display: table-cell;
             width: 60%;
-            vertical-align: top;
-            padding: 5px 0;
             text-align: justify;
         }
 
-        .description-box {
+        .box {
             border: 1px solid #000;
-            padding: 15px;
-            margin: 10px 0;
-            background-color: #fafafa;
+            padding: 12px;
+            margin-top: 8px;
+            background: #fafafa;
             white-space: pre-line;
-            text-align: justify;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 5px 15px;
             border: 1px solid #000;
+            padding: 4px 12px;
             font-weight: bold;
-            margin: 5px 0;
         }
 
-        .signature-section { margin-top: 50px; }
-
-        .signature-box {
-            float: right;
-            width: 45%;
-            text-align: center;
+        .signature {
+            margin-top: 50px;
+            text-align: right;
         }
-
-        .signature-box p { margin: 5px 0; }
 
         .signature-space {
             height: 80px;
-            margin: 20px 0;
         }
 
-        .document-footer {
-            margin-top: 50px;
-            padding-top: 20px;
+        .footer {
+            margin-top: 40px;
             border-top: 1px solid #000;
+            padding-top: 15px;
             font-size: 9pt;
             text-align: center;
-            color: #666;
+            color: #444;
         }
 
-        .document-footer p { margin: 5px 0; }
-
-        .admin-response {
-            border: 2px solid #000;
-            padding: 15px;
-            margin: 15px 0;
-            background-color: #f9f9f9;
+        ul {
+            margin-left: 18px;
+            margin-top: 5px;
         }
 
-        .admin-response h4 {
-            font-size: 11pt;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .admin-response p {
-            white-space: pre-line;
-            text-align: justify;
-            margin: 10px 0;
-        }
-
-        .admin-info {
-            margin-top: 15px;
-            font-size: 10pt;
-            font-style: italic;
-        }
-
-        .clear { clear: both; }
-
-        .opsi-list {
-            margin: 8px 0 0 18px;
-        }
-        .opsi-list li {
-            margin: 3px 0;
+        li {
+            margin-bottom: 3px;
         }
     </style>
 </head>
 <body>
+
+@php
+    $cara = $submission->cara_penyampaian;
+    $opsi = $submission->datang_langsung_opsi ?? [];
+
+    if (!is_array($opsi)) {
+        $opsi = [];
+    }
+
+    if (in_array('keduanya', $opsi)) {
+        $opsi = ['flashdisk', 'cetak'];
+    }
+@endphp
+
+<!-- HEADER -->
+<div class="header">
+    <h1>PEMERINTAH PROVINSI JAWA TENGAH</h1>
+    <h2>DINAS PERINDUSTRIAN DAN PERDAGANGAN</h2>
+    <p>Jl. Pahlawan No. 4 Semarang 50132</p>
+    <p>Website: www.disperindag.jatengprov.go.id</p>
+</div>
+
+<!-- TITLE -->
+<div class="document-title">
+    {{ $submissionType }}
+</div>
+
+<!-- TICKET -->
+<div class="ticket-info">
+    <p>Nomor Tiket</p>
+    <p class="ticket-id">{{ $submission->ticket_id }}</p>
+    <p>Tanggal: {{ $submission->created_at->format('d F Y') }}</p>
+</div>
+
+<!-- DATA PEMOHON -->
+<div class="content-section">
+    <h3>I. DATA PEMOHON</h3>
+
+    <div class="info-row">
+        <div class="info-label">Nama Lengkap</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $user->name }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">NIK</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $user->nik ?? '-' }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Pekerjaan</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $user->pekerjaan ?? '-' }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Email</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $user->email }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Nomor Telepon</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $user->phone ?? '-' }}</div>
+    </div>
+
     @php
-        $caraPenyampaian = $submission->cara_penyampaian ?? null;
-        $opsiDatang = $submission->datang_langsung_opsi ?? null;
+        $alamat = trim($user->address ?? '');
+
+        $desaLabel = $user->is_kelurahan
+            ? 'Kelurahan ' . $user->desa
+            : 'Desa ' . $user->desa;
+
+        $kabLabel = str_starts_with(strtolower($user->kabupaten), 'kota')
+            ? 'Kota ' . str_replace('Kota ', '', $user->kabupaten)
+            : 'Kab. ' . $user->kabupaten;
+
+        $alamatLengkap = collect([
+            $alamat,
+            $desaLabel,
+            'Kec. ' . $user->kecamatan,
+            $kabLabel,
+            $user->provinsi ?? 'Jawa Tengah',
+        ])->implode(', ');
     @endphp
 
-    <!-- Header -->
-    <div class="header">
-        <h1>PEMERINTAH PROVINSI JAWA TENGAH</h1>
-        <h2>DINAS PERINDUSTRIAN DAN PERDAGANGAN</h2>
-        <p>Jl. Pemuda No. 117 Semarang 50132</p>
-        <p>Telepon: (024) 3520994, 3545156 | Fax: (024) 3545156</p>
-        <p>Website: www.disperindag.jatengprov.go.id | Email: disperindag@jatengprov.go.id</p>
+    <div class="info-row">
+        <div class="info-label">Alamat</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $alamatLengkap }}</div>
+    </div>
+</div>
+
+<!-- RINCIAN PERMOHONAN -->
+<div class="content-section">
+    <h3>II. RINCIAN PERMOHONAN</h3>
+
+    <div class="info-row">
+        <div class="info-label">Judul Permohonan</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $submission->title }}</div>
     </div>
 
-    <!-- Document Title -->
-    <div class="document-title">
-        {{ $submissionType }}
+    <div class="info-row">
+        <div class="info-label">Tanggal Pengajuan</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $submission->created_at->format('d F Y, H:i') }} WIB</div>
     </div>
 
-    <!-- Ticket Info -->
-    <div class="ticket-info">
-        <p>Nomor Tiket:</p>
-        <p class="ticket-id">{{ $submission->ticket_id }}</p>
-        <p style="font-size: 9pt; margin-top: 5px;">Tanggal: {{ $submission->created_at->format('d F Y') }}</p>
-    </div>
-
-    <!-- Personal Information -->
-    <div class="content-section">
-        <h3>I. DATA PEMOHON</h3>
-
-        <div class="info-row">
-            <div class="info-label">Nama Lengkap</div>
-            <div class="info-value">:</div>
-            <div class="info-content">{{ $user->name }}</div>
-        </div>
-
-        <div class="info-row">
-            <div class="info-label">NIK</div>
-            <div class="info-value">:</div>
-            <div class="info-content">{{ $user->nik ?? '-' }}</div>
-        </div>
-
-        <div class="info-row">
-            <div class="info-label">Email</div>
-            <div class="info-value">:</div>
-            <div class="info-content">{{ $user->email }}</div>
-        </div>
-
-        <div class="info-row">
-            <div class="info-label">Nomor Telepon</div>
-            <div class="info-value">:</div>
-            <div class="info-content">{{ $user->phone ?? '-' }}</div>
-        </div>
-
-        <div class="info-row">
-            <div class="info-label">Alamat</div>
-            <div class="info-value">:</div>
-            <div class="info-content">{{ $user->address ?? '-' }}</div>
+    <div class="info-row">
+        <div class="info-label">Status</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">
+            <span class="status-badge">{{ $submission->status_label }}</span>
         </div>
     </div>
 
-    <!-- Submission Details -->
-    <div class="content-section">
-        <h3>II. RINCIAN PERMOHONAN</h3>
+    <div class="info-row">
+        <div class="info-label">Tujuan Permohonan</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $submission->tujuan_permohonan }}</div>
+    </div>
 
-        <div class="info-row">
-            <div class="info-label">Kategori Informasi</div>
-            <div class="info-value">:</div>
-            <div class="info-content">{{ $submission->category->name }}</div>
-        </div>
+    <div class="info-row">
+        <div class="info-label">Penyampaian Feedback</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">
+            @if($cara === 'online')
+                Secara Online
+            @elseif($cara === 'datang_langsung')
+                Datang langsung ke kantor Disperindag
+            @else
+                -
+            @endif
 
-        <div class="info-row">
-            <div class="info-label">Judul Permohonan</div>
-            <div class="info-value">:</div>
-            <div class="info-content">{{ $submission->title }}</div>
-        </div>
-
-        <div class="info-row">
-            <div class="info-label">Tanggal Pengajuan</div>
-            <div class="info-value">:</div>
-            <div class="info-content">{{ $submission->created_at->format('d F Y, H:i') }} WIB</div>
-        </div>
-
-        <div class="info-row">
-            <div class="info-label">Status</div>
-            <div class="info-value">:</div>
-            <div class="info-content">
-                <span class="status-badge">{{ $submission->status_label }}</span>
-            </div>
-        </div>
-
-        <!-- === Tujuan Permohonan === -->
-        <div class="info-row">
-            <div class="info-label">Tujuan Permohonan</div>
-            <div class="info-value">:</div>
-            <div class="info-content">{{ $submission->tujuan_permohonan ?? '-' }}</div>
-        </div>
-
-        <!-- === Cara Penyampaian Feedback === -->
-        <div class="info-row">
-            <div class="info-label">Penyampaian Feedback</div>
-            <div class="info-value">:</div>
-            <div class="info-content">
-                @if($caraPenyampaian === 'online')
-                    Secara Online
-                @elseif($caraPenyampaian === 'datang_langsung')
-                    Datang langsung di kantor Disperindag
-                @else
-                    -
-                @endif
-
-                @if($caraPenyampaian === 'datang_langsung')
-                    <ul class="opsi-list">
-                        @if($opsiDatang === 'flashdisk')
-                            <li>Membawa flasdik/storage untuk penyimpanan file</li>
-                        @elseif($opsiDatang === 'cetak')
-                            <li>Cetak hasil permohonan dengan biaya sendiri</li>
-                        @elseif($opsiDatang === 'keduanya')
-                            <li>Kedua opsi (flashdisk + cetak)</li>
-                        @else
-                            <li>-</li>
-                        @endif
-                    </ul>
-                @endif
-            </div>
-        </div>
-
-        <div style="margin-top: 15px;">
-            <p style="font-weight: bold; margin-bottom: 5px;">Deskripsi Lengkap:</p>
-            <div class="description-box">{{ $submission->description }}</div>
+            @if($cara === 'datang_langsung')
+                <ul>
+                    @if(in_array('flashdisk', $opsi))
+                        <li>Membawa flashdisk / media penyimpanan</li>
+                    @endif
+                    @if(in_array('cetak', $opsi))
+                        <li>Cetak hasil permohonan dengan biaya sendiri</li>
+                    @endif
+                </ul>
+            @endif
         </div>
     </div>
 
-    <!-- Admin Response  -->
-    @if($submission->admin_response || $submission->admin_notes)
-    <div class="content-section">
-        <h3>III. TANGGAPAN DARI ADMIN</h3>
+    <p style="margin-top:10px;font-weight:bold;">Deskripsi Lengkap:</p>
+    <div class="box">{{ $submission->description }}</div>
+</div>
 
-        <div class="admin-response">
-            <h4>Respon:</h4>
-            <p>{{ $submission->admin_response ?? $submission->admin_notes }}</p>
+<!-- TTD -->
+<div class="signature">
+    <p>Semarang, {{ $submission->created_at->format('d F Y') }}</p>
+    <p>Pemohon,</p>
+    <div class="signature-space"></div>
+    <p><strong>{{ $user->name }}</strong></p>
+</div>
 
-            <div class="admin-info">
-                @if($submission->handler)
-                    <p>Ditangani oleh: {{ $submission->handler->name }}</p>
-                @endif
-                @if($submission->completed_at)
-                    <p>Tanggal Selesai: {{ $submission->completed_at->format('d F Y, H:i') }} WIB</p>
-                @endif
-            </div>
-        </div>
-    </div>
-    @endif
+<!-- FOOTER -->
+<div class="footer">
+    <p>Dokumen ini dicetak secara elektronik dan sah tanpa tanda tangan basah.</p>
+    <p>Dicetak pada {{ now()->format('d F Y, H:i') }} WIB</p>
+</div>
 
-    <!-- Signature Section -->
-    <div class="signature-section">
-        <div class="signature-box">
-            <p>Semarang, {{ $submission->created_at->format('d F Y') }}</p>
-            <p>Pemohon,</p>
-            <div class="signature-space"></div>
-            <p style="font-weight: bold;">{{ $user->name }}</p>
-        </div>
-        <div class="clear"></div>
-    </div>
-
-    <!-- Footer -->
-    <div class="document-footer">
-        <p>Dokumen ini dicetak secara elektronik dan sah tanpa tanda tangan basah.</p>
-        <p>Dicetak pada {{ now()->format('d F Y, H:i') }} WIB</p>
-    </div>
 </body>
 </html>

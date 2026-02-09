@@ -102,10 +102,6 @@
             </div>
 
             <div class="info-row">
-                <span class="label">Kategori:</span> {{ $category->name ?? 'N/A' }}
-            </div>
-
-            <div class="info-row">
                 <span class="label">Tanggal Pengajuan:</span>
                 @if($submission->submitted_at)
                     {{ $submission->submitted_at->format('d F Y, H:i') }} WIB

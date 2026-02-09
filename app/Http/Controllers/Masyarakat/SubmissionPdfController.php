@@ -8,25 +8,44 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class SubmissionPdfController extends Controller
 {
-    /**
-     * Download submission as PDF
-     */
     public function download(Submission $submission)
     {
         $user = auth()->user();
 
-        if ($submission->user_id !== $user->id) {
+        if (!$user || $submission->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
 
-        $submission->load(['category', 'user']);
+        $submission->load(['user']);
 
-        $submissionType = $this->getSubmissionType($submission->category->type);
+
+        $alamatDetail = trim($user->address ?? '');
+        $desa         = trim($user->desa ?? '');
+        $kecamatan    = trim($user->kecamatan ?? '');
+        $kabupaten    = trim($user->kabupaten ?? '');
+        $provinsi     = $user->provinsi ?? 'Jawa Tengah';
+        $isKota = str_contains(strtolower($kabupaten), 'kota');
+        $kabLabel = $isKota
+            ? 'Kota ' . trim(str_ireplace('kota', '', $kabupaten))
+            : 'Kab. ' . $kabupaten;
+        $desaLabel = $isKota
+            ? 'Kelurahan ' . $desa
+            : 'Desa ' . $desa;
+        $alamatLengkap = collect([
+            $alamatDetail ?: null,
+            $desa ? $desaLabel : null,
+            $kecamatan ? 'Kec. ' . $kecamatan : null,
+            $kabupaten ? $kabLabel : null,
+            $provinsi,
+        ])->filter()->implode(', ');
+
+        $submissionType = $this->getSubmissionType($submission->type ?? 'permohonan');
 
         $pdf = Pdf::loadView('pdfs.masyarakat-submission', [
-            'submission' => $submission,
-            'user' => $user,
-            'submissionType' => $submissionType
+            'submission'     => $submission,
+            'user'           => $user,
+            'submissionType' => $submissionType,
+            'alamatLengkap'  => $alamatLengkap, // ⬅️ PENTING
         ]);
 
         $pdf->setPaper('a4', 'portrait');
@@ -34,17 +53,12 @@ class SubmissionPdfController extends Controller
         return $pdf->download($submission->ticket_id . '.pdf');
     }
 
-    /**
-     * Get submission type label based on category type
-     */
-    private function getSubmissionType($categoryType)
+    private function getSubmissionType(string $type): string
     {
-        $types = [
-            'permohonan' => 'PERMOHONAN INFORMASI',
+        return match ($type) {
             'konsultasi' => 'KONSULTASI',
-            'pengaduan' => 'BUAT PENGADUAN',
-        ];
-
-        return $types[$categoryType] ?? 'PENGAJUAN';
+            'pengaduan'  => 'PENGADUAN',
+            default      => 'PERMOHONAN INFORMASI',
+        };
     }
 }

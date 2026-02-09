@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\Submission;
 use App\Models\SubmissionDocument;
 use App\Services\BrevoMailer;
@@ -23,9 +22,7 @@ class SubmissionController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        $allowed = ['masyarakat', 'masyarakat_umum'];
-
-        if (!in_array($user->user_type, $allowed, true)) {
+        if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
     }
@@ -37,29 +34,28 @@ class SubmissionController extends Controller
         $user = auth()->user();
 
         $query = Submission::where('user_id', $user->id)
-            ->with(['category', 'handler']);
+            ->with(['handler']);
 
         if ($request->filled('search')) {
             $search = $request->search;
-
             $query->where(function ($q) use ($search) {
                 $q->where('ticket_id', 'ilike', "%{$search}%")
-                    ->orWhere('title', 'ilike', "%{$search}%")
-                    ->orWhere('subject', 'ilike', "%{$search}%");
+                  ->orWhere('title', 'ilike', "%{$search}%")
+                  ->orWhere('subject', 'ilike', "%{$search}%");
             });
         }
 
-        if ($request->has('status') && $request->status !== 'semua' && $request->status !== '') {
-            $statusFilter = strtolower($request->status);
+        if ($request->filled('status') && $request->status !== 'semua') {
+            $status = strtolower($request->status);
 
-            $query->where(function ($q) use ($statusFilter) {
-                if ($statusFilter === 'pending') {
+            $query->where(function ($q) use ($status) {
+                if ($status === 'pending') {
                     $q->whereIn('status', ['pending', 'belum diproses']);
-                } elseif ($statusFilter === 'diproses') {
-                    $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
-                } elseif ($statusFilter === 'selesai') {
+                } elseif ($status === 'diproses') {
+                    $q->whereIn('status', ['in_progress', 'on_progress', 'diproses']);
+                } elseif ($status === 'selesai') {
                     $q->whereIn('status', ['completed', 'selesai']);
-                } elseif ($statusFilter === 'ditolak') {
+                } elseif ($status === 'ditolak') {
                     $q->whereIn('status', ['rejected', 'ditolak']);
                 }
             });
@@ -73,18 +69,7 @@ class SubmissionController extends Controller
     public function create()
     {
         $this->ensureMasyarakatUser();
-
-        $categories = Category::active()
-            ->ofType('permohonan')
-            ->where(function ($query) {
-                $query->where('user_type', 'masyarakat')
-                    ->orWhere('user_type', 'masyarakat_umum')
-                    ->orWhere('user_type', 'all');
-            })
-            ->orderBy('name')
-            ->get();
-
-        return view('masyarakat.submissions.create', compact('categories'));
+        return view('masyarakat.submissions.create');
     }
 
     public function store(Request $request, BrevoMailer $brevo)
@@ -94,13 +79,11 @@ class SubmissionController extends Controller
         $user = auth()->user();
 
         $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'title'       => 'required|string|max:255',
-            'description' => 'required|string',
-
+            'title'             => 'required|string|max:255',
+            'description'       => 'required|string',
             'tujuan_permohonan' => 'required|string|max:5000',
 
-            'cara_penyampaian'  => ['required', Rule::in(['online', 'datang_langsung'])],
+            'cara_penyampaian' => ['required', Rule::in(['online', 'datang_langsung'])],
 
             'datang_langsung_opsi' => [
                 'required_if:cara_penyampaian,datang_langsung',
@@ -108,25 +91,8 @@ class SubmissionController extends Controller
             ],
 
             'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-        ], [
-            'category_id.required' => 'Kategori informasi wajib dipilih.',
-            'category_id.exists'   => 'Kategori tidak valid.',
-            'title.required'       => 'Judul permohonan wajib diisi.',
-            'description.required' => 'Deskripsi lengkap wajib diisi.',
-
-            'tujuan_permohonan.required' => 'Tujuan permohonan wajib diisi.',
-
-            'cara_penyampaian.required' => 'Cara penyampaian wajib dipilih.',
-            'cara_penyampaian.in'       => 'Cara penyampaian tidak valid.',
-
-            'datang_langsung_opsi.required_if' => 'Opsi saat datang langsung wajib dipilih.',
-            'datang_langsung_opsi.in'          => 'Opsi datang langsung tidak valid.',
-
-            'documents.*.mimes'    => 'Format dokumen harus PDF, JPG, JPEG, atau PNG.',
-            'documents.*.max'      => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
 
-        // total max 6MB (3 file x 2MB)
         if ($request->hasFile('documents')) {
             $totalSize = 0;
             foreach ($request->file('documents') as $file) {
@@ -134,6 +100,7 @@ class SubmissionController extends Controller
                     $totalSize += $file->getSize();
                 }
             }
+
             if ($totalSize > 6 * 1024 * 1024) {
                 return back()
                     ->withErrors(['documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'])
@@ -141,30 +108,24 @@ class SubmissionController extends Controller
             }
         }
 
-        $caraPenyampaian = $validated['cara_penyampaian'];
-
-        $opsiDatangArray = [];
-        if ($caraPenyampaian === 'datang_langsung') {
-            $opsi = $validated['datang_langsung_opsi'] ?? null;
-
-            if ($opsi === 'keduanya') {
-                $opsiDatangArray = ['flashdisk', 'cetak'];
-            } elseif (in_array($opsi, ['flashdisk', 'cetak'], true)) {
-                $opsiDatangArray = [$opsi];
+        $opsiDatang = [];
+        if ($validated['cara_penyampaian'] === 'datang_langsung') {
+            if ($validated['datang_langsung_opsi'] === 'keduanya') {
+                $opsiDatang = ['flashdisk', 'cetak'];
+            } else {
+                $opsiDatang = [$validated['datang_langsung_opsi']];
             }
         }
 
         $submission = Submission::create([
-            'user_id'      => $user->id,
-            'category_id'  => $validated['category_id'],
-            'title'        => $validated['title'],
-            'subject'      => $validated['title'],
-            'description'  => $validated['description'],
-            'status'       => 'pending',
-
-            'tujuan_permohonan'    => $validated['tujuan_permohonan'],
-            'cara_penyampaian'     => $caraPenyampaian,
-            'datang_langsung_opsi' => $opsiDatangArray,
+            'user_id'             => $user->id,
+            'title'               => $validated['title'],
+            'subject'             => $validated['title'],
+            'description'         => $validated['description'],
+            'status'              => 'pending',
+            'tujuan_permohonan'   => $validated['tujuan_permohonan'],
+            'cara_penyampaian'    => $validated['cara_penyampaian'],
+            'datang_langsung_opsi'=> $opsiDatang,
         ]);
 
         if ($request->hasFile('documents')) {
@@ -174,42 +135,33 @@ class SubmissionController extends Controller
                     $path = $document->storeAs((string) $submission->id, $filename, 'supabase');
 
                     SubmissionDocument::create([
-                        'submission_id'  => $submission->id,
-                        'original_name'  => $document->getClientOriginalName(),
-                        'file_path'      => $path,
-                        'file_type'      => $document->getMimeType(),
-                        'file_size'      => $document->getSize(),
+                        'submission_id' => $submission->id,
+                        'original_name' => $document->getClientOriginalName(),
+                        'file_path'     => $path,
+                        'file_type'     => $document->getMimeType(),
+                        'file_size'     => $document->getSize(),
                     ]);
                 }
             }
         }
 
         try {
-            $submission->load(['category', 'user']);
+            $submission->load(['user']);
 
             $html = view('emails.submission-created', [
                 'user'       => $user,
                 'submission' => $submission,
-                'category'   => $submission->category,
             ])->render();
-
-            Log::info('BREVO DEBUG (masyarakat) - about to send', [
-                'to' => $user->email,
-                'has_api_key' => (bool) config('brevo.api_key'),
-                'ticket_id' => $submission->ticket_id,
-            ]);
 
             $brevo->sendTransactional(
                 toEmail: $user->email,
-                toName: $user->name ?? null,
+                toName: $user->name,
                 subject: "Permohonan Informasi Diterima ({$submission->ticket_id})",
                 htmlContent: $html
             );
 
-            Log::info('BREVO DEBUG (masyarakat) - sent OK', ['to' => $user->email]);
         } catch (\Throwable $e) {
-            Log::error('BREVO DEBUG (masyarakat) - failed', [
-                'to' => $user->email,
+            Log::error('BREVO ERROR (masyarakat)', [
                 'ticket_id' => $submission->ticket_id,
                 'error' => $e->getMessage(),
             ]);
@@ -228,13 +180,11 @@ class SubmissionController extends Controller
     {
         $this->ensureMasyarakatUser();
 
-        $user = auth()->user();
-
-        if ($submission->user_id !== $user->id) {
-            abort(403, 'Unauthorized access.');
+        if ($submission->user_id !== auth()->id()) {
+            abort(403);
         }
 
-        $submission->load(['category', 'handler', 'statusHistories', 'documents']);
+        $submission->load(['handler', 'documents', 'statusHistories']);
 
         return view('masyarakat.submissions.show', compact('submission'));
     }
@@ -243,60 +193,47 @@ class SubmissionController extends Controller
     {
         $this->ensureMasyarakatUser();
 
-        $user = auth()->user();
-
-        if ($document->submission->user_id !== $user->id) {
-            abort(403, 'Unauthorized access.');
+        if ($document->submission->user_id !== auth()->id()) {
+            abort(403);
         }
 
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-        $bucket = env('SUPABASE_BUCKET', 'submissions');
-        $filePath = ltrim($document->file_path, '/');
+        $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', 'submissions');
+        $path = ltrim($document->file_path, '/');
 
-        if (Str::startsWith($filePath, 'submissions/')) {
-            $filePath = Str::after($filePath, 'submissions/');
+        if (Str::startsWith($path, 'submissions/')) {
+            $path = Str::after($path, 'submissions/');
         }
 
-        $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
-
-        return redirect()->away($publicUrl);
+        return redirect()->away("{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}");
     }
 
     public function downloadDocument(SubmissionDocument $document)
     {
         $this->ensureMasyarakatUser();
 
-        $user = auth()->user();
-
-        if ($document->submission->user_id !== $user->id) {
-            abort(403, 'Unauthorized access.');
+        if ($document->submission->user_id !== auth()->id()) {
+            abort(403);
         }
 
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-        $bucket = env('SUPABASE_BUCKET', 'submissions');
-        $filePath = ltrim($document->file_path, '/');
+        $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', 'submissions');
+        $path = ltrim($document->file_path, '/');
 
-        if (Str::startsWith($filePath, 'submissions/')) {
-            $filePath = Str::after($filePath, 'submissions/');
+        if (Str::startsWith($path, 'submissions/')) {
+            $path = Str::after($path, 'submissions/');
         }
 
-        $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
+        $url = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
 
-        try {
-            $response = Http::get($publicUrl);
+        $response = Http::get($url);
 
-            if ($response->successful()) {
-                $fileName = $document->original_name ?: basename($document->file_path);
-
-                return response($response->body(), 200)
-                    ->header('Content-Type', $document->file_type)
-                    ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
-            }
-
-            abort(404, 'File not found');
-        } catch (\Exception $e) {
-            Log::error('Download error: ' . $e->getMessage());
-            abort(500, 'Failed to download file');
+        if (!$response->successful()) {
+            abort(404, 'File tidak ditemukan');
         }
+
+        return response($response->body(), 200)
+            ->header('Content-Type', $document->file_type)
+            ->header('Content-Disposition', 'attachment; filename="'.$document->original_name.'"');
     }
 }

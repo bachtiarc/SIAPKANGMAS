@@ -148,11 +148,7 @@
             <!-- Left -->
             <div class="space-y-6">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-600">Kategori Permohonan</label>
-                    <p class="text-gray-900">{{ $submission->category->name }}</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600">Subjek Permohonan</label>
+                    <label class="block text-sm font-semibold text-gray-600">Judul Permohonan</label>
                     <p class="text-gray-900">{{ $submission->subject }}</p>
                 </div>
 
