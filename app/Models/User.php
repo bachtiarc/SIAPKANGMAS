@@ -27,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
     'nik',
     'phone',
     'address',
+    'pekerjaan',
     'bidang',
     'jabatan',
     'foto_ktp',

@@ -46,7 +46,6 @@ class LoginController extends Controller
         $request->session()->regenerate();
         $user = Auth::user();
 
-        // ❌ BLOM VERIFIKASI EMAIL
         if (!$user->hasVerifiedEmail()) {
             Auth::logout();
             $request->session()->invalidate();

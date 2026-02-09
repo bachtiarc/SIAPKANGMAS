@@ -25,10 +25,13 @@ class RegisterController extends Controller
             'nik'       => 'required|string|size:16|unique:users',
             'email'     => 'required|email|unique:users',
             'phone'     => ['required','regex:/^(08|62|\+62)[0-9]{9,13}$/'],
+            'pekerjaan' => 'required|string|max:255',
+            'pekerjaan_lainnya' => 'nullable|string|max:255',
             'kabupaten' => 'required|string',
             'kecamatan' => 'required|string',
             'desa'      => 'required|string',
             'alamat'    => 'required|string',
+
             'foto_ktp'  => 'required|image|mimes:jpg,jpeg,png|max:2048',
             'password'  => 'required|min:8|confirmed',
         ]);
@@ -36,6 +39,10 @@ class RegisterController extends Controller
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
+
+        $pekerjaan = $request->pekerjaan === 'Lainnya'
+            ? $request->pekerjaan_lainnya
+            : $request->pekerjaan;
 
         $file = $request->file('foto_ktp');
         $path = 'ktp/'.$request->nik.'/'.Str::uuid().'.'.$file->extension();
@@ -52,13 +59,13 @@ class RegisterController extends Controller
             'email'     => $request->email,
             'phone'     => $request->phone,
             'address'   => $request->alamat,
+            'pekerjaan' => $pekerjaan, 
             'foto_ktp'  => $path,
             'role'      => 'user',
             'user_type' => 'masyarakat_umum',
             'password'  => Hash::make($request->password),
         ]);
 
-        // KIRIM EMAIL VERIFIKASI PERTAMA
         $this->sendBrevoVerificationEmail($user);
 
         return redirect()
@@ -69,9 +76,7 @@ class RegisterController extends Controller
 
     public function resendVerification(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
+        $request->validate(['email' => 'required|email']);
 
         $user = User::where('email', $request->email)->first();
 
@@ -83,23 +88,7 @@ class RegisterController extends Controller
             return back()->with('toast_info', 'Email sudah diverifikasi');
         }
 
-        $hash = sha1($user->getEmailForVerification());
-
-        $url = route('verification.verify', [
-            'id'   => $user->id,
-            'hash' => $hash,
-        ]);
-
-        app(\App\Services\BrevoMailer::class)->sendTransactional(
-            toEmail: $user->email,
-            toName: $user->name,
-            subject: 'Verifikasi Akun SIAPKANGMAS',
-            htmlContent: "
-                <p>Halo <b>{$user->name}</b>,</p>
-                <p>Klik link berikut untuk verifikasi email:</p>
-                <p><a href='{$url}'>{$url}</a></p>
-            "
-        );
+        $this->sendBrevoVerificationEmail($user);
 
         return back()->with('toast_success', 'Email verifikasi berhasil dikirim ulang');
     }

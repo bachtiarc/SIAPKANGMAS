@@ -19,6 +19,7 @@
 
 @section('content')
 
+<!-- TOAST -->
 <div id="toast-container" class="fixed top-6 right-6 z-[9999]"></div>
 
 <!-- PAGE -->
@@ -36,7 +37,7 @@
             </p>
         </div>
 
-        {{-- VALIDATION ERRORS AS TOAST --}}
+        {{-- VALIDATION ERRORS --}}
         @if ($errors->any())
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
@@ -48,7 +49,10 @@
         @endif
 
         <!-- FORM -->
-        <form method="POST" action="{{ route('register.submit') }}" enctype="multipart/form-data" class="space-y-6">
+        <form method="POST"
+              action="{{ route('register.submit') }}"
+              enctype="multipart/form-data"
+              class="space-y-6">
             @csrf
 
             <div>
@@ -77,6 +81,34 @@
                 <p class="text-xs text-gray-500 mt-1">Format: 08…, 62…, atau +62…</p>
             </div>
 
+            <!-- PEKERJAAN -->
+            <div>
+                <label class="font-semibold">Pekerjaan</label>
+                <select id="pekerjaan" name="pekerjaan" required
+                        class="w-full mt-1 border rounded-lg px-4 py-2">
+                    <option value="">Pilih Pekerjaan</option>
+                    <option value="PNS" {{ old('pekerjaan')=='PNS'?'selected':'' }}>PNS</option>
+                    <option value="Wiraswasta" {{ old('pekerjaan')=='Wiraswasta'?'selected':'' }}>Wiraswasta</option>
+                    <option value="Pelaku UMKM" {{ old('pekerjaan')=='Pelaku UMKM'?'selected':'' }}>Pelaku UMKM</option>
+                    <option value="Mahasiswa" {{ old('pekerjaan')=='Mahasiswa'?'selected':'' }}>Mahasiswa</option>
+                    <option value="Ibu Rumah Tangga" {{ old('pekerjaan')=='Ibu Rumah Tangga'?'selected':'' }}>Ibu Rumah Tangga</option>
+                    <option value="Lainnya" {{ old('pekerjaan')=='Lainnya'?'selected':'' }}>Lainnya</option>
+                </select>
+            </div>
+
+            <!-- PEKERJAAN LAINNYA -->
+            <div id="pekerjaan_lainnya_wrapper"
+                 class="{{ old('pekerjaan')=='Lainnya' ? '' : 'hidden' }}">
+                <label class="font-semibold">Pekerjaan Lainnya</label>
+                <input type="text"
+                       id="pekerjaan_lainnya"
+                       name="pekerjaan_lainnya"
+                       value="{{ old('pekerjaan_lainnya') }}"
+                       placeholder="Tulis pekerjaan Anda"
+                       class="w-full mt-1 border rounded-lg px-4 py-2">
+            </div>
+
+            <!-- WILAYAH -->
             <div>
                 <label class="font-semibold">Kabupaten / Kota</label>
                 <select id="kabupaten" name="kabupaten" required
@@ -133,8 +165,10 @@
     </div>
 </div>
 
-<!-- MODAL VERIFIKASI EMAIL -->
-<div id="verificationModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-[9000]">
+<!-- MODAL VERIFIKASI EMAIL (INLINE, BUKAN PARTIAL) -->
+@if(session('show_verification_modal'))
+<div id="verificationModal"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000]">
     <div class="bg-white rounded-2xl max-w-md w-full p-8 text-center">
 
         <p class="text-sm text-gray-400 mb-4">VERIFIKASI EMAIL</p>
@@ -150,12 +184,12 @@
         <h2 class="text-xl font-bold mb-2">Cek Email Anda</h2>
 
         <p class="text-gray-600 mb-6">
-            Silakan cek inbox atau folder spam Anda dan klik link verifikasi untuk mengaktifkan akun.
             Email verifikasi telah dikirim ke
-            <strong>{{ session('registered_email') }}</strong>
+            <strong>{{ session('registered_email') }}</strong>.
+            Silakan klik link di email tersebut untuk mengaktifkan akun.
         </p>
 
-        <form id="resendForm" method="POST" action="{{ route('resend.verification') }}">
+        <form method="POST" action="{{ route('resend.verification') }}">
             @csrf
             <input type="hidden" name="email" value="{{ session('registered_email') }}">
             <button type="submit"
@@ -170,6 +204,7 @@
         </a>
     </div>
 </div>
+@endif
 
 @endsection
 
@@ -193,6 +228,7 @@ function showToast(msg, type='success') {
     }, 4000);
 }
 
+// FILE SIZE
 document.getElementById('foto_ktp')?.addEventListener('change', e => {
     if (e.target.files[0]?.size > 2 * 1024 * 1024) {
         showToast('Ukuran file maksimal 2MB', 'error');
@@ -200,6 +236,22 @@ document.getElementById('foto_ktp')?.addEventListener('change', e => {
     }
 });
 
+// PEKERJAAN LAINNYA
+document.getElementById('pekerjaan')?.addEventListener('change', function () {
+    const wrapper = document.getElementById('pekerjaan_lainnya_wrapper');
+    const input = document.getElementById('pekerjaan_lainnya');
+
+    if (this.value === 'Lainnya') {
+        wrapper.classList.remove('hidden');
+        input.setAttribute('required', 'required');
+    } else {
+        wrapper.classList.add('hidden');
+        input.removeAttribute('required');
+        input.value = '';
+    }
+});
+
+// WILAYAH
 fetch('/api/kabupaten').then(r=>r.json()).then(d=>{
     d.forEach(x=>kabupaten.innerHTML+=`<option value="${x.kode}">${x.nama}</option>`);
 });
@@ -218,16 +270,5 @@ kecamatan.onchange=e=>{
         d.forEach(x=>desa.innerHTML+=`<option value="${x.kode}">${x.nama}</option>`);
     });
 };
-
-document.addEventListener('DOMContentLoaded',()=>{
-    @if(session('show_verification_modal'))
-        verificationModal.classList.remove('hidden');
-        verificationModal.classList.add('flex');
-    @endif
-
-    resendForm?.addEventListener('submit',()=>{
-        showToast('Email verifikasi berhasil dikirim ulang','success');
-    });
-});
 </script>
 @endpush
