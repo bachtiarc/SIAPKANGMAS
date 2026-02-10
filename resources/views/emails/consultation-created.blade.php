@@ -101,10 +101,6 @@
                     <td>{{ $consultation->subject }}</td>
                 </tr>
                 <tr>
-                    <td>Kategori</td>
-                    <td>{{ $consultation->category->name ?? 'Kategori Konsultasi' }}</td>
-                </tr>
-                <tr>
                     <td>Tanggal Pengajuan</td>
                     <td>{{ $consultation->created_at->format('d F Y, H:i') }} WIB</td>
                 </tr>

@@ -189,11 +189,6 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Kategori Konsultasi</label>
-                    <p class="text-gray-900">{{ $consultation->category->name }}</p>
-                </div>
-
-                <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-2">Subjek Konsultasi</label>
                     <p class="text-gray-900">{{ $consultation->subject }}</p>
                 </div>

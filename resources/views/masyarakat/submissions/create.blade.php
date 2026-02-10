@@ -63,18 +63,30 @@
     </div>
     @endif
 
+
+    @php
+        $from = request()->query('from', 'index');
+        $backUrl = $from === 'dashboard'
+            ? route('masyarakat.dashboard')
+            : route('masyarakat.submission.index');
+    @endphp
+
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div class="flex items-center space-x-4">
-            <a href="{{ route('masyarakat.submissions.index') }}" class="text-gray-600 hover:text-gray-900">
+            <a href="{{ $backUrl }}" class="text-gray-600 hover:text-gray-900">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
             </a>
             <div>
-                <h1 class="font-montserrat text-3xl font-bold text-gray-900">Formulir Pengajuan Permohonan Informasi</h1>
+                <h1 class="font-montserrat text-3xl font-bold text-gray-900">
+                    Formulir Permohonan Informasi
+                </h1>
                 <p class="text-gray-600 mt-1">
-                    Silakan lengkapi formulir di bawah ini untuk mengajukan permohonan informasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Estimasi respon waktu 10 hari kerja.
+                    Silakan lengkapi formulir di bawah ini untuk mengajukan permohonan informasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah.
+                    Estimasi respon waktu 2x24 jam.
                 </p>
             </div>
         </div>

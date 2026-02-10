@@ -14,21 +14,45 @@ class ConsultationPdfController extends Controller
     public function download(Consultation $consultation)
     {
         $user = auth()->user();
-        
+
         if ($consultation->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
-        
+
         if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
+        
+        $consultation->load(['handler', 'user', 'documents']);
 
-        $consultation->load(['category', 'handler', 'user']);
+        $alamatDetail = trim($user->address ?? '');
+        $desa         = trim($user->desa ?? '');
+        $kecamatan    = trim($user->kecamatan ?? '');
+        $kabupaten    = trim($user->kabupaten ?? '');
+        $provinsi     = $user->provinsi ?? 'Jawa Tengah';
 
-        $pdf = Pdf::loadView('pdfs.submission', [
-            'submission' => $consultation, 
-            'user' => $user,
-            'submissionType' => 'KONSULTASI'
+        $isKota = str_contains(strtolower($kabupaten), 'kota');
+
+        $kabLabel = $isKota
+            ? 'Kota ' . trim(str_ireplace('kota', '', $kabupaten))
+            : 'Kab. ' . $kabupaten;
+
+        $desaLabel = $isKota
+            ? 'Kelurahan ' . $desa
+            : 'Desa ' . $desa;
+
+        $alamatLengkap = collect([
+            $alamatDetail ?: null,
+            $desa ? $desaLabel : null,
+            $kecamatan ? 'Kec. ' . $kecamatan : null,
+            $kabupaten ? $kabLabel : null,
+            $provinsi,
+        ])->filter()->implode(', ');
+
+        $pdf = Pdf::loadView('pdfs.masyarakat-consultation', [
+            'consultation'  => $consultation,
+            'user'          => $user,
+            'alamatLengkap' => $alamatLengkap,
         ]);
 
         $pdf->setPaper('a4', 'portrait');

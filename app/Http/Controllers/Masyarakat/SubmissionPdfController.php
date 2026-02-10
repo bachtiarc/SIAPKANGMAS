@@ -45,7 +45,7 @@ class SubmissionPdfController extends Controller
             'submission'     => $submission,
             'user'           => $user,
             'submissionType' => $submissionType,
-            'alamatLengkap'  => $alamatLengkap, // ⬅️ PENTING
+            'alamatLengkap'  => $alamatLengkap,
         ]);
 
         $pdf->setPaper('a4', 'portrait');

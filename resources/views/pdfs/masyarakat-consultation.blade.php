@@ -2,8 +2,9 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $submission->ticket_id }}</title>
+    <title>{{ $consultation->ticket_number ?? '-' }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -92,65 +93,28 @@
         .status-text { font-weight: bold; text-transform: uppercase; }
         .field-label { font-weight: bold; margin-top: 15px; margin-bottom: 5px; }
 
-        .admin-notes-box {
-            border: 2px solid #000;
-            padding: 12px;
-            margin-top: 10px;
-        }
-
         .document-info { margin-top: 10px; padding-left: 20px; }
     </style>
 </head>
 <body>
 @php
-    use Illuminate\Support\Str;
+    $ticket = $consultation->ticket_number ?? '-';
 
-    $isPermohonanInformasi = Str::contains(Str::lower($submissionType ?? ''), 'permohonan informasi');
+    $status = $consultation->status ?? 'pending';
+    $statusLabel = match ($status) {
+        'pending' => 'Menunggu Verifikasi',
+        'in_progress', 'on_progress' => 'Sedang Diproses',
+        'completed' => 'Selesai',
+        'rejected' => 'Ditolak',
+        default => ucwords(str_replace('_', ' ', $status)),
+    };
 
-    $cara = $submission->cara_penyampaian ?? null; // online | datang_langsung
-    $caraLabel = $cara === 'online'
-        ? 'Secara Online'
-        : ($cara === 'datang_langsung' ? 'Datang langsung di kantor Disperindag' : '-');
-
-    $rawOpsi = $submission->datang_langsung_opsi ?? null;
-
-    $opsiArr = [];
-    if (is_array($rawOpsi)) {
-        $opsiArr = $rawOpsi;
-    } elseif (is_string($rawOpsi)) {
-        $decoded = json_decode($rawOpsi, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            $opsiArr = $decoded;
-        } else {
-            $opsiArr = [$rawOpsi]; // string single
-        }
-    }
-
-    $opsiArr = array_values(array_filter(array_map(function ($v) {
-        return is_string($v) ? strtolower(trim($v)) : null;
-    }, $opsiArr)));
-
-    $opsiLabel = '-';
-    if (!empty($opsiArr)) {
-        $hasFlash = in_array('flashdisk', $opsiArr, true);
-        $hasCetak = in_array('cetak', $opsiArr, true);
-
-        if (in_array('keduanya', $opsiArr, true) || ($hasFlash && $hasCetak)) {
-            $opsiLabel = 'Keduanya (Flashdisk/Storage + Cetak biaya sendiri)';
-        } elseif ($hasFlash) {
-            $opsiLabel = 'Membawa flashdisk/storage untuk penyimpanan file';
-        } elseif ($hasCetak) {
-            $opsiLabel = 'Cetak hasil permohonan dengan biaya sendiri';
-        } else {
-            // fallback kalau ada nilai lain
-            $opsiLabel = strtoupper(implode(', ', $opsiArr));
-        }
-    }
+    $alamatPdf = $alamatLengkap ?? '-';
 @endphp
 
     <!-- Header -->
     <div class="header">
-        <h1>FORMULIR {{ $submissionType }}</h1>
+        <h1>FORMULIR KONSULTASI</h1>
         <h2>HELPDESK SIAPKANGMAS</h2>
         <h2>DINAS PERINDUSTRIAN DAN PERDAGANGAN PROVINSI JAWA TENGAH</h2>
     </div>
@@ -163,10 +127,7 @@
     <!-- Ticket Box -->
     <div class="ticket-box">
         <div class="label">NOMOR TIKET PENGAJUAN</div>
-        <div class="ticket-id">{{ $submission->ticket_id }}</div>
-        @if($submission->full_ticket_number)
-            <div class="full-ticket">{{ $submission->full_ticket_number }}</div>
-        @endif
+        <div class="ticket-id">{{ $ticket }}</div>
     </div>
 
     <!-- Section A -->
@@ -174,16 +135,19 @@
         <div class="section-title">A. Identitas Pemohon Pengajuan</div>
         <table class="info-table">
             <tr>
-                <td>Nama</td><td>:</td><td>{{ $user->name }}</td>
+                <td>Nama Lengkap</td><td>:</td><td>{{ $user->name ?? '-' }}</td>
             </tr>
             <tr class="divider">
-                <td>NIP</td><td>:</td><td>{{ $user->nip ?? '-' }}</td>
+                <td>NIK</td><td>:</td><td>{{ $user->nik ?? '-' }}</td>
             </tr>
             <tr class="divider">
-                <td>Bidang/Balai</td><td>:</td><td>{{ $user->bidang ?? '-' }}</td>
+                <td>Alamat</td><td>:</td><td>{{ $alamatPdf }}</td>
             </tr>
             <tr class="divider">
-                <td>Jabatan, Subbag, atau Seksi</td><td>:</td><td>{{ $user->jabatan ?? '-' }}</td>
+                <td>Nomor Telepon</td><td>:</td><td>{{ $user->phone ?? '-' }}</td>
+            </tr>
+            <tr class="divider">
+                <td>Email</td><td>:</td><td>{{ $user->email ?? '-' }}</td>
             </tr>
         </table>
     </div>
@@ -193,60 +157,32 @@
         <div class="section-title">B. Rincian Formulir Pengajuan</div>
         <table class="info-table">
             <tr>
-                <td>Judul</td><td>:</td><td>{{ $submission->title }}</td>
+                <td>Judul</td><td>:</td><td>{{ $consultation->subject ?? '-' }}</td>
             </tr>
+
             <tr class="divider">
-                <td>Kategori</td><td>:</td><td>{{ $submission->category->name }}</td>
-            </tr>
-            <tr class="divider">
-                <td>Tanggal Pengajuan</td><td>:</td><td>{{ $submission->created_at->format('d F Y, H:i') }} WIB</td>
+                <td>Tanggal Pengajuan</td><td>:</td><td>{{ optional($consultation->created_at)->format('d F Y, H:i') }} WIB</td>
             </tr>
             <tr class="divider">
                 <td>Status</td><td>:</td>
                 <td>
-                    @if($submission->status == 'pending')
-                        <span class="status-text">Menunggu Verifikasi</span>
-                    @elseif($submission->status == 'in_progress')
-                        <span class="status-text">Sedang Diproses</span>
-                    @elseif($submission->status == 'completed')
-                        <span class="status-text">Selesai</span>
-                    @else
-                        <span class="status-text">Ditolak</span>
-                    @endif
+                    <span class="status-text">{{ $statusLabel }}</span>
                 </td>
             </tr>
-
-            @if($isPermohonanInformasi)
-                <tr class="divider">
-                    <td>Tujuan Permohonan</td><td>:</td><td>{{ $submission->tujuan_permohonan }}</td>
-                </tr>
-                <tr class="divider">
-                    <td>Cara Penyampaian Feedback</td><td>:</td><td>{{ $caraLabel }}</td>
-                </tr>
-
-                @if(($submission->cara_penyampaian ?? null) === 'datang_langsung')
-                    <tr class="divider">
-                        <td>Opsi Datang Langsung</td><td>:</td><td>{{ $opsiLabel }}</td>
-                    </tr>
-                @endif
-            @endif
         </table>
 
         <div class="field-label">Deskripsi Lengkap:</div>
-        <div class="description-box">{{ $submission->description }}</div>
+        <div class="description-box">{{ $consultation->description ?? '-' }}</div>
 
-        @if($submission->document_path)
+        @if(($consultation->documents ?? collect())->count() > 0)
             <div class="field-label">Dokumen Pendukung:</div>
             <div class="document-info">
-                Nama File: {{ basename($submission->document_path) }}<br>
+                <ul>
+                    @foreach($consultation->documents as $doc)
+                        <li>{{ $doc->original_name ?? basename($doc->file_path ?? '-') }}</li>
+                    @endforeach
+                </ul>
                 <em>Dokumen dapat diakses melalui sistem atau cetak terpisah</em>
-            </div>
-        @endif
-
-        @if($submission->admin_notes)
-            <div class="field-label">Catatan Admin:</div>
-            <div class="admin-notes-box">
-                {{ $submission->admin_notes }}
             </div>
         @endif
     </div>
