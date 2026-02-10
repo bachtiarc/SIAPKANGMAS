@@ -68,7 +68,7 @@
         $from = request()->query('from', 'index');
         $backUrl = $from === 'dashboard'
             ? route('masyarakat.dashboard')
-            : route('masyarakat.submission.index');
+            : route('masyarakat.submissions.index');
     @endphp
 
     <!-- Header -->
