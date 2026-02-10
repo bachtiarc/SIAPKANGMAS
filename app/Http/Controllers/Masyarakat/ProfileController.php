@@ -69,9 +69,6 @@ class ProfileController extends Controller
         return $total;
     }
 
-    /**
-     * ✅ UPDATE FOTO PROFIL -> simpan ke Supabase (biar Railway & local sama-sama aman)
-     */
     public function updatePhoto(Request $request)
     {
         try {
@@ -86,16 +83,13 @@ class ProfileController extends Controller
                 return back()->with('photo_error', 'File foto tidak valid.');
             }
 
-            // 🧹 hapus foto lama (jika ada)
             if ($user->profile_photo) {
                 try {
                     Storage::disk('supabase_profile')->delete($user->profile_photo);
                 } catch (\Exception $e) {
-                    // tidak fatal
                 }
             }
 
-            // 📦 simpan ke Supabase bucket profile-photos
             $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
             $path = "users/{$user->id}/{$filename}";
 
@@ -108,7 +102,6 @@ class ProfileController extends Controller
                 ]
             );
 
-            // 💾 simpan PATH (bukan URL) ke DB
             $user->profile_photo = $path;
             $user->save();
 
