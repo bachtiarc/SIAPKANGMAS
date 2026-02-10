@@ -52,7 +52,7 @@
             display: inline-block;
             padding: 12px 28px;
             background-color: #2563eb;
-            color: #ffffff;
+            color: #ffffff !important;
             text-decoration: none;
             border-radius: 6px;
             font-weight: 600;
@@ -99,10 +99,6 @@
                 <tr>
                     <td>Subjek</td>
                     <td>{{ $consultation->subject }}</td>
-                </tr>
-                <tr>
-                    <td>Kategori</td>
-                    <td>{{ $consultation->category->name ?? 'Kategori Konsultasi' }}</td>
                 </tr>
                 <tr>
                     <td>Tanggal Pengajuan</td>

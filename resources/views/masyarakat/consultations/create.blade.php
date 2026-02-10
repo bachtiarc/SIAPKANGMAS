@@ -15,34 +15,56 @@
         </ol>
     </nav>
 
+    @php
+        $from = request()->query('from', 'index');
+        $backUrl = $from === 'dashboard'
+            ? route('masyarakat.dashboard')
+            : route('masyarakat.consultations.index');
+    @endphp
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h1 class="font-montserrat text-3xl font-bold text-gray-900 mb-2">Formulir Pengajuan Konsultasi</h1>
-        <p class="text-gray-600">
-            Silakan lengkapi formulir di bawah ini untuk mengajukan konsultasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah.
-            Estimasi respon waktu 1x24 jam.
-        </p>
-    </div>
-
-    <!-- Important Info  -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
-            <div class="flex items-start">
-                <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        <div class="flex items-center space-x-4">
+            <a href="{{ $backUrl }}" class="text-gray-600 hover:text-gray-900">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
-                <div class="flex-1">
-                    <h3 class="text-sm font-semibold text-yellow-800 mb-2">Perhatian:</h3>
-                    <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
-                        <li>Pastikan semua data yang Anda masukkan sudah benar</li>
-                        <li>Anda akan menerima notifikasi via email setelah permohonan diproses</li>
-                        <li>Simpan ID tiket Anda untuk melacak status permohonan</li>
-                    </ul>
-                </div>
+            </a>
+            <div>
+                <h1 class="font-montserrat text-3xl font-bold text-gray-900">
+                    Formulir Pengajuan Konsultasi
+                </h1>
+                <p class="text-gray-600 mt-1">
+                    Silakan lengkapi formulir di bawah ini untuk mengajukan konsultasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah.
+                    Estimasi respon waktu 1x24 jam.
+                </p>
             </div>
         </div>
-        
+    </div>
+    
+    <!-- Important Info  -->
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
+        <div class="flex items-start">
+            <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <div class="flex-1">
+                <h3 class="text-sm font-semibold text-yellow-800 mb-2">Perhatian:</h3>
+                <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                    <li>Pastikan semua data yang Anda masukkan sudah benar</li>
+                    <li>Anda akan menerima notifikasi via email setelah konsultasi diproses</li>
+                    <li>Simpan ID tiket Anda untuk melacak status konsultasi</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <!-- Form -->
-    <form action="{{ route('masyarakat.consultations.store') }}" method="POST" enctype="multipart/form-data" id="complaintForm">
+    <form
+        action="{{ route('masyarakat.consultations.store', ['from' => request('from', 'index')]) }}"
+        method="POST"
+        enctype="multipart/form-data"
+        id="consultationForm">
         @csrf
 
         <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
@@ -60,39 +82,20 @@
                         Subjek Konsultasi <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="subject" value="{{ old('subject') }}" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('subject') border-red-500 @enderror"
                         placeholder="Contoh: Konsultasi Layanan - Gangguan Sistem">
                     @error('subject')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Kategori Konsultasi -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Kategori Konsultasi <span class="text-red-500">*</span>
-                    </label>
-                    <select name="category_id" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Pilih Kategori Konsultasi</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('category_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-                
                 <!-- Deskripsi Konsultasi -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
                         Deskripsi Konsultasi <span class="text-red-500">*</span>
                     </label>
                     <textarea name="description" rows="6" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('description') border-red-500 @enderror"
                         placeholder="Jelaskan secara detail konsultasi Anda...">{{ old('description') }}</textarea>
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -104,11 +107,11 @@
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
                         Dokumen Pendukung <span class="text-gray-500">(Maksimal 3 file)</span>
                     </label>
-                    
+
                     <div class="space-y-4">
                         <!-- Upload Area 1 -->
-                        <div id="docBox1" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
-                            onclick="document.getElementById('document1').click()">
+                        <div id="docBox1" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
+                             onclick="document.getElementById('document1').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -125,13 +128,13 @@
                                     </svg>
                                 </button>
                             </div>
-                            <input id="document1" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
-                                onchange="displayFileName(1, this)">
+                            <input id="document1" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
+                                   onchange="displayFileName(1, this)">
                         </div>
 
                         <!-- Upload Area 2 -->
-                        <div id="docBox2" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
-                            onclick="document.getElementById('document2').click()">
+                        <div id="docBox2" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
+                             onclick="document.getElementById('document2').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -148,13 +151,13 @@
                                     </svg>
                                 </button>
                             </div>
-                            <input id="document2" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
-                                onchange="displayFileName(2, this)">
+                            <input id="document2" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
+                                   onchange="displayFileName(2, this)">
                         </div>
 
                         <!-- Upload Area 3 -->
-                        <div id="docBox3" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer" 
-                            onclick="document.getElementById('document3').click()">
+                        <div id="docBox3" class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
+                             onclick="document.getElementById('document3').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -171,8 +174,8 @@
                                     </svg>
                                 </button>
                             </div>
-                            <input id="document3" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" 
-                                onchange="displayFileName(3, this)">
+                            <input id="document3" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
+                                   onchange="displayFileName(3, this)">
                         </div>
                     </div>
 
@@ -296,7 +299,6 @@
 </style>
 
 <script>
-
 function formatFileSize(bytes) {
     if (!bytes) return '0 Bytes';
     const k = 1024;
@@ -305,26 +307,6 @@ function formatFileSize(bytes) {
     return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
 }
 
-function setDocBoxState(idx, state) {
-    const box = document.getElementById('docBox' + idx);
-    if (!box) return;
-
-    box.classList.remove('border-green-400', 'bg-green-50', 'border-red-400', 'bg-red-50');
-    box.classList.add('border-gray-300');
-    box.style.borderLeftWidth = '';
-
-    if (state === 'ok') {
-        box.classList.remove('border-gray-300');
-        box.classList.add('border-green-400', 'bg-green-50');
-        box.style.borderLeftWidth = '6px';
-    }
-
-    if (state === 'err') {
-        box.classList.remove('border-gray-300');
-        box.classList.add('border-red-400', 'bg-red-50');
-        box.style.borderLeftWidth = '6px';
-    }
-}
 
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
@@ -412,7 +394,7 @@ function displayFileName(idx, input) {
         return;
     }
 
-    nameEl.textContent = `${f.name} (${formatFileSize(f.size)})`;
+    nameEl.textContent = `✓ ${f.name} (${formatFileSize(f.size)})`;
     nameEl.classList.remove('hidden');
     clearBtn.classList.remove('hidden');
     setDocBoxState(idx, 'ok');
@@ -424,19 +406,22 @@ function clearFile(idx) {
     const errEl  = document.getElementById('fileErr' + idx);
     const clearBtn = document.getElementById('clearBtn' + idx);
 
-    input.value = '';
-    nameEl.textContent = '';
-    nameEl.classList.add('hidden');
+    if (input) input.value = '';
+
+    if (nameEl) {
+        nameEl.textContent = '';
+        nameEl.classList.add('hidden');
+    }
 
     if (errEl) {
         errEl.textContent = '';
         errEl.classList.add('hidden');
     }
 
-    clearBtn.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+
     setDocBoxState(idx, null);
 }
-
 
 function showSuccessModal(ticketNumber) {
     document.getElementById('ticketNumber').textContent = ticketNumber;

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\Consultation;
 use App\Models\ConsultationDocument;
 use Illuminate\Http\Request;
@@ -21,8 +20,8 @@ class ConsultationController extends Controller
         if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
-
-        $query = Consultation::where('user_id', $user->id)->with(['category', 'handler']);
+        
+        $query = Consultation::where('user_id', $user->id)->with(['handler']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -32,7 +31,6 @@ class ConsultationController extends Controller
             });
         }
 
-        // Filter by status
         if ($request->filled('status') && $request->status !== 'semua') {
             $statusFilter = strtolower($request->status);
 
@@ -69,18 +67,7 @@ class ConsultationController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        $userType = $user->user_type;
-
-        $categories = Category::active()
-            ->ofType('konsultasi')
-            ->where(function ($query) use ($userType) {
-                $query->where('user_type', $userType)
-                      ->orWhere('user_type', 'all');
-            })
-            ->orderBy('name')
-            ->get();
-
-        return view('masyarakat.consultations.create', compact('categories'));
+        return view('masyarakat.consultations.create');
     }
 
     public function store(Request $request, BrevoMailer $brevo)
@@ -94,7 +81,6 @@ class ConsultationController extends Controller
         $from = $request->query('from', 'index');
 
         $validated = $request->validate([
-            'category_id'  => 'required|exists:categories,id',
             'subject'      => 'required|string|max:255',
             'description'  => 'required|string',
             'documents.*'  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
@@ -138,7 +124,6 @@ class ConsultationController extends Controller
         $consultation = DB::transaction(function () use ($user, $validated, $ticketNumber, $request) {
             $consultation = Consultation::create([
                 'user_id'            => $user->id,
-                'category_id'        => $validated['category_id'],
                 'consultation_type'  => 'konsultasi',
                 'subject'            => $validated['subject'],
                 'description'        => $validated['description'],
@@ -148,7 +133,7 @@ class ConsultationController extends Controller
             ]);
 
             if ($request->hasFile('documents')) {
-                foreach ($request->file('documents') as $file) {
+                foreach (array_slice($request->file('documents'), 0, 3) as $file) {
                     if ($file && $file->isValid()) {
                         $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
                         $path = $consultation->id . '/' . $filename;
@@ -162,7 +147,7 @@ class ConsultationController extends Controller
                             'consultation_id' => $consultation->id,
                             'original_name'   => $file->getClientOriginalName(),
                             'file_path'       => $path,
-                            'file_type'       => $file->getClientOriginalExtension(),
+                            'file_type'       => $file->getMimeType(),
                             'file_size'       => $file->getSize(),
                         ]);
                     }
@@ -172,11 +157,9 @@ class ConsultationController extends Controller
             return $consultation;
         });
 
-        // =========================
-        // BREVO EMAIL INTEGRATION
-        // =========================
         try {
-            $consultation->load(['category', 'user']);
+
+            $consultation->load(['user']);
 
             $html = view('emails.consultation-created', [
                 'consultation' => $consultation,
@@ -219,7 +202,7 @@ class ConsultationController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        $consultation->load(['category', 'handler', 'statusHistories', 'documents']);
+        $consultation->load(['handler', 'statusHistories', 'documents']);
 
         return view('masyarakat.consultations.show', compact('consultation'));
     }

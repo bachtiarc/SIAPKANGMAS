@@ -106,21 +106,24 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($consultations as $consultation)
                         <tr class="hover:bg-gray-50">
+                            <!-- ID Tiket -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <!-- tiket jangan biru -->
                                 <div class="text-sm text-gray-900">{{ $consultation->ticket_number }}</div>
                             </td>
 
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900">{{ Str::limit($consultation->subject, 50) }}</div>
-                                <div class="text-xs text-gray-500">{{ $consultation->category->name ?? '-' }}</div>
+                            <!-- Subjek -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ $consultation->subject }}</div>
                             </td>
 
+                            <!-- Tanggal -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ $consultation->created_at->format('d M Y') }}</div>
                                 <div class="text-xs text-gray-500">{{ $consultation->created_at->format('H:i') }} WIB</div>
                             </td>
 
+                            <!-- Status -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @php
                                     $status = strtolower($consultation->status ?? '');
@@ -148,6 +151,7 @@
                                 </span>
                             </td>
 
+                            <!-- Aksi -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <a href="{{ route('masyarakat.consultations.show', $consultation->id) }}?from=index"
                                    class="text-blue-600 hover:text-blue-800"

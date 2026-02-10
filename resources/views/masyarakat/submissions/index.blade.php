@@ -100,15 +100,14 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ $submission->ticket_id }}</div>
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900">{{ Str::limit($submission->title, 50) }}</div>
-                                <div class="text-xs text-gray-500">{{ $submission->category->name }}</div>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ $submission->title }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ $submission->created_at->format('d M Y') }}</div>
                                 <div class="text-xs text-gray-500">{{ $submission->created_at->format('H:i') }} WIB</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-6 py-4 whitespace-nowrap">    
                                 <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $submission->status_badge }}">
                                     {{ $submission->status_label }}
                                 </span>

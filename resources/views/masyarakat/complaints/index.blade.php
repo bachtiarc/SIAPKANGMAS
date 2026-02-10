@@ -113,12 +113,9 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ $complaint->ticket_number }}</div>
                             </td>
-
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900">{{ Str::limit($complaint->subject, 50) }}</div>
-                                <div class="text-xs text-gray-500">{{ $complaint->category->name ?? '-' }}</div>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900 font-medium">{{ $complaint->subject }}</div>
                             </td>
-
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ $complaint->created_at->format('d M Y') }}</div>
                                 <div class="text-xs text-gray-500">{{ $complaint->created_at->format('H:i') }} WIB</div>

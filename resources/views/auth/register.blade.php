@@ -1,520 +1,274 @@
 @extends('layouts.app')
 
-@section('title', 'Registrasi Akun Baru')
+@section('title', 'Registrasi Akun Masyarakat')
 
 @push('styles')
 <style>
-    /* Gradient Animation */
-    @keyframes gradient-slow {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.8; }
-    }
-
-    .animate-gradient-slow {
-        animation: gradient-slow 20s ease-in-out infinite;
-    }
-
-    /* Blob Animation */
-    @keyframes blob-slow {
-        0%, 100% { transform: translate(0px, 0px) scale(1); }
-        33% { transform: translate(20px, -30px) scale(1.05); }
-        66% { transform: translate(-15px, 15px) scale(0.95); }
-    }
-
-    .animate-blob-slow {
-        animation: blob-slow 15s ease-in-out infinite;
-    }
-
-    .animation-delay-2000 { animation-delay: 5s; }
-    .animation-delay-4000 { animation-delay: 10s; }
-
-    /* Toggle Button Active State */
-    .toggle-btn-active {
-        background-color: #FF8C00;
-        color: white;
-    }
-
-    .toggle-btn-inactive {
-        background-color: transparent;
-        color: #FF8C00;
-    }
+@keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(400px); opacity: 0; }
+}
+.toast-enter { animation: slideIn .3s ease-out forwards; }
+.toast-exit { animation: slideOut .3s ease-in forwards; }
 </style>
 @endpush
 
 @section('content')
-<!-- Background -->
-<div class="min-h-screen bg-gradient-to-br from-white via-blue-50 to-white animate-gradient-slow relative overflow-hidden flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    
-    <!-- Floating Blobs -->
-    <div class="absolute top-0 -left-4 w-72 h-72 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob-slow"></div>
-    <div class="absolute top-0 -right-4 w-72 h-72 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob-slow animation-delay-2000"></div>
-    <div class="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob-slow animation-delay-4000"></div>
 
-    <!-- Main Container -->
-    <div class="max-w-6xl w-full relative z-10">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            
-            <!-- LEFT SIDE - Form Card -->
-            <div class="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8">
-                
-                <!-- Logo -->
-                <div class="flex justify-center mb-6">
-                    <img src="{{ asset('images/logo.png') }}" alt="SIAPKANGMAS" class="h-16">
-                </div>
+<!-- TOAST -->
+<div id="toast-container" class="fixed top-6 right-6 z-[9999]"></div>
 
-                <!-- Error Messages -->
-                @if ($errors->any())
-                    <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                        <ul class="list-disc list-inside text-sm font-lato">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+<!-- PAGE -->
+<div class="min-h-screen bg-gradient-to-br from-white via-blue-50 to-white flex items-center justify-center py-16 px-4">
+    <div class="w-full max-w-3xl bg-white/90 backdrop-blur rounded-3xl shadow-xl p-10">
 
-                <!-- Registration Form -->
-                <form method="POST" action="{{ route('register') }}" id="registerForm" enctype="multipart/form-data" class="space-y-4">
-                    @csrf
-                    
-                    <!-- Hidden user_type field -->
-                    <input type="hidden" name="user_type" id="user_type" value="masyarakat_umum">
-
-                    <!-- Nama Lengkap -->
-                    <div>
-                        <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">Nama Lengkap</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                </svg>
-                            </div>
-                            <input type="text" name="name" value="{{ old('name') }}" required
-                                class="font-lato block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50" 
-                                placeholder="Masukkan nama lengkap">
-                        </div>
-                    </div>
-
-                    <!-- NIK & Alamat (Masyarakat Only) -->
-                    <div id="nik-field">
-                        <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">NIK (Nomor Induk Kewarganegaraan)</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                            </div>
-                            <input type="text" name="nik" id="nik" value="{{ old('nik') }}"
-                                class="font-lato block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50" 
-                                placeholder="Masukkan 16 digit NIK" maxlength="16">
-                        </div>
-                    </div>
-
-                    <div id="address-field">
-                        <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">Alamat Lengkap</label>
-                        <div class="relative">
-                            <textarea name="address" id="address" rows="3"
-                                class="font-lato block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50" 
-                                placeholder="Masukkan alamat lengkap sesuai KTP">{{ old('address') }}</textarea>
-                        </div>
-                    </div>
-
-                    <!-- NIP (Pegawai Only) -->
-                    <div id="nip-field" class="hidden">
-                        <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">NIP (Nomor Induk Pegawai)</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                            </div>
-                            <input type="text" name="nip" id="nip" value="{{ old('nip') }}"
-                                class="font-lato block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50" 
-                                placeholder="Contoh: 199003xxxxxx">
-                        </div>
-                    </div>
-
-                    <!-- Email & Phone -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">Email</label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                    </svg>
-                                </div>
-                                <input type="email" name="email" value="{{ old('email') }}" required
-                                    class="font-lato block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50" 
-                                    placeholder="Contoh: nama@domain.com">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">Nomor Telepon</label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                    </svg>
-                                </div>
-                                <input type="text" name="phone" value="{{ old('phone') }}" required
-                                    class="font-lato block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50" 
-                                    placeholder="Contoh: 62xxxxxx">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Foto KTP (Masyarakat Only) -->
-                    <div id="ktp-field">
-                        <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">Foto KTP</label>
-                        <div id="drop-area" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition cursor-pointer bg-gray-50" onclick="document.getElementById('foto_ktp').click()">
-                            <div class="space-y-1 text-center">
-                                <div id="upload-icon-container">
-                                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                </div>
-                                
-                                <div class="font-lato text-sm text-gray-600">
-                                    <span id="upload-text" class="font-semibold text-blue-600 hover:text-blue-700">Klik untuk unggah</span> 
-                                    <span id="upload-subtext">atau seret file ke sini</span>
-                                </div>
-                                
-                                <div id="file-success-msg" class="hidden mt-2">
-                                    <p class="text-green-600 font-bold flex items-center justify-center">
-                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="Set10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        KTP Berhasil diunggah!
-                                    </p>
-                                    <p id="file-name-display" class="text-xs text-gray-500 italic"></p>
-                                </div>
-
-                                <p class="font-lato text-xs text-gray-500" id="format-hint">Format: JPEG, JPG, PNG (Maksimal 2MB)</p>
-                            </div>
-                            <input id="foto_ktp" name="foto_ktp" type="file" class="hidden" accept="image/jpeg,image/jpg,image/png">
-                        </div>
-                    </div>
-
-                    <!-- Bidang/Balai (Pegawai Only) -->
-                    <div id="bidang-field" class="hidden">
-                        <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">Bidang / Balai</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                </svg>
-                            </div>
-                            <select name="bidang" id="bidang"
-                                class="font-lato block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50">
-                                <option value="">Pilih bidang atau balai Anda</option>
-                                @if(isset($organizationStructure))
-                                    @foreach($organizationStructure as $bidang => $jabatans)
-                                        <option value="{{ $bidang }}" {{ old('bidang') == $bidang ? 'selected' : '' }}>{{ $bidang }}</option>
-                                    @endforeach
-                                @endif
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Jabatan (Pegawai Only) -->
-                    <div id="jabatan-field" class="hidden">
-                        <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">Jabatan</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                </svg>
-                            </div>
-                            <select name="jabatan" id="jabatan"
-                                class="font-lato block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50">
-                                <option value="">Pilih jabatan, subbag, atau seksi Anda</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Password -->
-                    <div>
-                        <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">Password</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                </svg>
-                            </div>
-                            <input type="password" name="password" required
-                                class="font-lato block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50" 
-                                placeholder="Masukkan password baru Anda">
-                        </div>
-                        <p class="font-lato text-xs text-gray-500 mt-1">Min. 8 karakter terdiri dari huruf dan angka.</p>
-                    </div>
-
-                    <!-- Confirm Password -->
-                    <div>
-                        <label class="font-montserrat block text-sm font-semibold text-gray-900 mb-2">Konfirmasi Password</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                </svg>
-                            </div>
-                            <input type="password" name="password_confirmation" required
-                                class="font-lato block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50" 
-                                placeholder="Masukkan ulang password baru Anda">
-                        </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="pt-4">
-                        <button type="submit" class="font-montserrat w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-lg transition">
-                            Daftar Sekarang
-                        </button>
-                    </div>
-
-                    <!-- Login Link -->
-                    <div class="text-center">
-                        <p class="font-lato text-sm text-gray-700">
-                            Sudah memiliki akun? 
-                            <a href="{{ route('login') }}" class="font-montserrat text-blue-600 hover:text-blue-700 font-semibold underline">Masuk disini.</a>
-                        </p>
-                    </div>
-                </form>
-
-            </div>
-
-            <!-- RIGHT SIDE - Info Card -->
-            <div>
-                <h1 class="font-montserrat text-4xl font-bold text-gray-900 mb-3">
-                    Registrasi Akun Baru
-                </h1>
-                <p class="font-lato text-gray-600 text-lg mb-8">
-                    Silahkan lengkapi data diri pegawai Anda untuk mengakses layanan Helpdesk Internal Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Pastikan data yang Anda masukkan telah valid.
-                </p>
-
-                <!-- Feature Cards -->
-                <div class="space-y-4 mb-8">
-                    <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-blue-100">
-                        <div class="flex items-start space-x-4">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="font-montserrat text-lg font-bold text-gray-900 mb-2">Layanan Terpadu</h3>
-                                <p class="font-lato text-sm text-gray-600">Akses bantuan lengkap bagi pegawai DISPERINDAG dalam satu pintu.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-blue-100">
-                        <div class="flex items-start space-x-4">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="font-montserrat text-lg font-bold text-gray-900 mb-2">Pelacakan Tiket</h3>
-                                <p class="font-lato text-sm text-gray-600">Pantau status permohonan dan kendala pegawai DISPERINDAG secara real-time.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Toggle Buttons (Orange for active) -->
-                <div class="flex space-x-4">
-                    <button type="button" id="btn-pegawai" onclick="toggleForm('pegawai')" class="toggle-btn-inactive flex-1 py-3 px-6 font-montserrat font-bold rounded-lg border-2 border-orange-500 transition">
-                        Pegawai
-                    </button>
-                    <button type="button" id="btn-masyarakat" onclick="toggleForm('masyarakat')" class="toggle-btn-active flex-1 py-3 px-6 font-montserrat font-bold rounded-lg border-2 border-orange-500 transition">
-                        Masyarakat Umum
-                    </button>
-                </div>
-
-            </div>
-
+        <!-- HEADER -->
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-gray-900 mb-3">
+                Registrasi Akun Masyarakat
+            </h1>
+            <p class="text-gray-600">
+                Layanan ini khusus untuk masyarakat yang ingin mengajukan permohonan,
+                konsultasi, atau pengaduan ke Disperindag Provinsi Jawa Tengah.
+            </p>
         </div>
+
+        {{-- VALIDATION ERRORS --}}
+        @if ($errors->any())
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    @foreach ($errors->all() as $e)
+                        showToast(@json($e), 'error');
+                    @endforeach
+                });
+            </script>
+        @endif
+
+        <!-- FORM -->
+        <form method="POST"
+              action="{{ route('register.submit') }}"
+              enctype="multipart/form-data"
+              class="space-y-6">
+            @csrf
+
+            <div>
+                <label class="font-semibold">Nama Lengkap</label>
+                <input type="text" name="name" value="{{ old('name') }}" required
+                       class="w-full mt-1 border rounded-lg px-4 py-2">
+            </div>
+
+            <div>
+                <label class="font-semibold">NIK</label>
+                <input type="text" name="nik" maxlength="16" value="{{ old('nik') }}" required
+                       class="w-full mt-1 border rounded-lg px-4 py-2">
+                <p class="text-xs text-gray-500 mt-1">16 digit angka</p>
+            </div>
+
+            <div>
+                <label class="font-semibold">Email</label>
+                <input type="email" name="email" value="{{ old('email') }}" required
+                       class="w-full mt-1 border rounded-lg px-4 py-2">
+            </div>
+
+            <div>
+                <label class="font-semibold">Nomor Telepon</label>
+                <input type="text" name="phone" value="{{ old('phone') }}" required
+                       class="w-full mt-1 border rounded-lg px-4 py-2">
+                <p class="text-xs text-gray-500 mt-1">Format: 08…, 62…, atau +62…</p>
+            </div>
+
+            <!-- PEKERJAAN -->
+            <div>
+                <label class="font-semibold">Pekerjaan</label>
+                <select id="pekerjaan" name="pekerjaan" required
+                        class="w-full mt-1 border rounded-lg px-4 py-2">
+                    <option value="">Pilih Pekerjaan</option>
+                    <option value="PNS" {{ old('pekerjaan')=='PNS'?'selected':'' }}>PNS</option>
+                    <option value="Wiraswasta" {{ old('pekerjaan')=='Wiraswasta'?'selected':'' }}>Wiraswasta</option>
+                    <option value="Pelaku UMKM" {{ old('pekerjaan')=='Pelaku UMKM'?'selected':'' }}>Pelaku UMKM</option>
+                    <option value="Mahasiswa" {{ old('pekerjaan')=='Mahasiswa'?'selected':'' }}>Mahasiswa</option>
+                    <option value="Ibu Rumah Tangga" {{ old('pekerjaan')=='Ibu Rumah Tangga'?'selected':'' }}>Ibu Rumah Tangga</option>
+                    <option value="Lainnya" {{ old('pekerjaan')=='Lainnya'?'selected':'' }}>Lainnya</option>
+                </select>
+            </div>
+
+            <!-- PEKERJAAN LAINNYA -->
+            <div id="pekerjaan_lainnya_wrapper"
+                 class="{{ old('pekerjaan')=='Lainnya' ? '' : 'hidden' }}">
+                <label class="font-semibold">Pekerjaan Lainnya</label>
+                <input type="text"
+                       id="pekerjaan_lainnya"
+                       name="pekerjaan_lainnya"
+                       value="{{ old('pekerjaan_lainnya') }}"
+                       placeholder="Tulis pekerjaan Anda"
+                       class="w-full mt-1 border rounded-lg px-4 py-2">
+            </div>
+
+            <!-- WILAYAH -->
+            <div>
+                <label class="font-semibold">Kabupaten / Kota</label>
+                <select id="kabupaten" name="kabupaten" required
+                        class="w-full mt-1 border rounded-lg px-4 py-2">
+                    <option value="">Pilih Kabupaten / Kota</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="font-semibold">Kecamatan</label>
+                <select id="kecamatan" name="kecamatan" required
+                        class="w-full mt-1 border rounded-lg px-4 py-2">
+                    <option value="">Pilih Kecamatan</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="font-semibold">Desa / Kelurahan</label>
+                <select id="desa" name="desa" required
+                        class="w-full mt-1 border rounded-lg px-4 py-2">
+                    <option value="">Pilih Desa</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="font-semibold">Alamat Lengkap</label>
+                <textarea name="alamat" rows="3" required
+                          class="w-full mt-1 border rounded-lg px-4 py-2">{{ old('alamat') }}</textarea>
+            </div>
+
+            <div>
+                <label class="font-semibold">Foto KTP</label>
+                <input type="file" id="foto_ktp" name="foto_ktp" accept="image/*" required>
+                <p class="text-xs text-gray-500 mt-1">JPG/JPEG/PNG — Maks 2MB</p>
+            </div>
+
+            <div>
+                <label class="font-semibold">Password</label>
+                <input type="password" name="password" required
+                       class="w-full mt-1 border rounded-lg px-4 py-2">
+            </div>
+
+            <div>
+                <label class="font-semibold">Konfirmasi Password</label>
+                <input type="password" name="password_confirmation" required
+                       class="w-full mt-1 border rounded-lg px-4 py-2">
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg">
+                Daftar Sekarang
+            </button>
+        </form>
     </div>
 </div>
 
-<!-- Success Modal -->
-<div id="successModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
-    <div class="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 text-center">
-        <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+<!-- MODAL VERIFIKASI EMAIL (INLINE, BUKAN PARTIAL) -->
+@if(session('show_verification_modal'))
+<div id="verificationModal"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000]">
+    <div class="bg-white rounded-2xl max-w-md w-full p-8 text-center">
+
+        <p class="text-sm text-gray-400 mb-4">VERIFIKASI EMAIL</p>
+
+        <div class="w-24 h-24 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M3 8l9 6 9-6M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"/>
             </svg>
         </div>
-        
-        <h2 class="font-montserrat text-2xl font-bold text-gray-900 mb-3">Cek Email Anda untuk Verifikasi</h2>
-        <p class="font-lato text-gray-600 mb-8">
-            Kami telah mengirimkan email verifikasi ke alamat email Anda. Silakan cek inbox atau folder spam Anda dan klik link verifikasi untuk mengaktifkan akun.
+
+        <h2 class="text-xl font-bold mb-2">Cek Email Anda</h2>
+
+        <p class="text-gray-600 mb-6">
+            Email verifikasi telah dikirim ke
+            <strong>{{ session('registered_email') }}</strong>.
+            Silakan klik link di email tersebut untuk mengaktifkan akun.
         </p>
-        
-        <a href="{{ route('login') }}" class="font-montserrat inline-block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">
+
+        <form method="POST" action="{{ route('resend.verification') }}">
+            @csrf
+            <input type="hidden" name="email" value="{{ session('registered_email') }}">
+            <button type="submit"
+                    class="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-lg font-semibold mb-3">
+                Kirim Ulang Email Verifikasi
+            </button>
+        </form>
+
+        <a href="{{ route('login') }}"
+           class="block w-full border border-gray-300 py-3 rounded-lg font-semibold text-gray-700">
             Kembali ke Halaman Login
         </a>
     </div>
 </div>
+@endif
+
 @endsection
 
 @push('scripts')
 <script>
-// Organization structure data
-const organizationStructure = @json($organizationStructure ?? []);
+function showToast(msg, type='success') {
+    const c = document.getElementById('toast-container');
+    const color = type === 'error'
+        ? 'border-red-500 text-red-600'
+        : 'border-green-500 text-green-600';
 
-// Toggle form between Pegawai and Masyarakat
-function toggleForm(type) {
-    const userTypeInput = document.getElementById('user_type');
-    const btnPegawai = document.getElementById('btn-pegawai');
-    const btnMasyarakat = document.getElementById('btn-masyarakat');
-    
-    // Fields
-    const nipField = document.getElementById('nip-field');
-    const nikField = document.getElementById('nik-field');
-    const ktpField = document.getElementById('ktp-field');
-    const bidangField = document.getElementById('bidang-field');
-    const jabatanField = document.getElementById('jabatan-field');
-    
-    // Inputs
-    const nipInput = document.getElementById('nip');
-    const nikInput = document.getElementById('nik');
-    const ktpInput = document.getElementById('foto_ktp');
-    const bidangInput = document.getElementById('bidang');
-    const jabatanInput = document.getElementById('jabatan');
-    
-    if (type === 'pegawai') {
-        // Update button styles
-        btnPegawai.classList.remove('toggle-btn-inactive');
-        btnPegawai.classList.add('toggle-btn-active');
-        btnMasyarakat.classList.remove('toggle-btn-active');
-        btnMasyarakat.classList.add('toggle-btn-inactive');
-        
-        // Show/hide fields
-        nipField.classList.remove('hidden');
-        bidangField.classList.remove('hidden');
-        jabatanField.classList.remove('hidden');
-        nikField.classList.add('hidden');
-        ktpField.classList.add('hidden');
-        
-        // Update required attributes
-        nipInput.required = true;
-        bidangInput.required = true;
-        jabatanInput.required = true;
-        nikInput.required = false;
-        ktpInput.required = false;
-        
-        // Update hidden field
-        userTypeInput.value = 'pegawai';
-        
-        // Update form action
-        document.getElementById('registerForm').action = '{{ route("register.pegawai") }}';
-        document.getElementById('address-field').classList.add('hidden');
-        document.getElementById('address').required = false;
-        
+    const t = document.createElement('div');
+    t.className = `toast-enter bg-white border-l-4 ${color} shadow rounded-lg p-4 mb-3 min-w-[320px]`;
+    t.innerText = msg;
+
+    c.appendChild(t);
+
+    setTimeout(() => {
+        t.classList.replace('toast-enter','toast-exit');
+        setTimeout(() => t.remove(), 300);
+    }, 4000);
+}
+
+// FILE SIZE
+document.getElementById('foto_ktp')?.addEventListener('change', e => {
+    if (e.target.files[0]?.size > 2 * 1024 * 1024) {
+        showToast('Ukuran file maksimal 2MB', 'error');
+        e.target.value = '';
+    }
+});
+
+// PEKERJAAN LAINNYA
+document.getElementById('pekerjaan')?.addEventListener('change', function () {
+    const wrapper = document.getElementById('pekerjaan_lainnya_wrapper');
+    const input = document.getElementById('pekerjaan_lainnya');
+
+    if (this.value === 'Lainnya') {
+        wrapper.classList.remove('hidden');
+        input.setAttribute('required', 'required');
     } else {
-        // Update button styles
-        btnMasyarakat.classList.remove('toggle-btn-inactive');
-        btnMasyarakat.classList.add('toggle-btn-active');
-        btnPegawai.classList.remove('toggle-btn-active');
-        btnPegawai.classList.add('toggle-btn-inactive');
-        
-        // Show/hide fields
-        nikField.classList.remove('hidden');
-        ktpField.classList.remove('hidden');
-        nipField.classList.add('hidden');
-        bidangField.classList.add('hidden');
-        jabatanField.classList.add('hidden');
-        
-        // Update required attributes
-        nikInput.required = false;
-        ktpInput.required = true;
-        nipInput.required = false;
-        bidangInput.required = false;
-        jabatanInput.required = false;
-        
-        // Update hidden field
-        userTypeInput.value = 'masyarakat_umum';
-        
-        // Update form action
-        document.getElementById('registerForm').action = '{{ route("register.masyarakat") }}';
-        document.getElementById('address-field').classList.remove('hidden');
-        document.getElementById('address').required = true;
-    }
-}
-
-// Bidang/Jabatan dynamic dropdown
-document.getElementById('bidang')?.addEventListener('change', function() {
-    const bidang = this.value;
-    const jabatanSelect = document.getElementById('jabatan');
-    
-    // Clear previous options
-    jabatanSelect.innerHTML = '<option value="">Pilih jabatan, subbag, atau seksi Anda</option>';
-    
-    if (bidang && organizationStructure[bidang]) {
-        organizationStructure[bidang].forEach(function(jabatan) {
-            const option = document.createElement('option');
-            option.value = jabatan;
-            option.textContent = jabatan;
-            jabatanSelect.appendChild(option);
-        });
+        wrapper.classList.add('hidden');
+        input.removeAttribute('required');
+        input.value = '';
     }
 });
 
-// Show modal if registration successful
-@if(session('registration_success'))
-    document.addEventListener('DOMContentLoaded', function() {
-        showSuccessModal();
+// WILAYAH
+fetch('/api/kabupaten').then(r=>r.json()).then(d=>{
+    d.forEach(x=>kabupaten.innerHTML+=`<option value="${x.kode}">${x.nama}</option>`);
+});
+
+kabupaten.onchange=e=>{
+    fetch(`/api/kecamatan/${e.target.value}`).then(r=>r.json()).then(d=>{
+        kecamatan.innerHTML='<option value="">Pilih Kecamatan</option>';
+        desa.innerHTML='<option value="">Pilih Desa</option>';
+        d.forEach(x=>kecamatan.innerHTML+=`<option value="${x.kode}">${x.nama}</option>`);
     });
-@endif
+};
 
-function showSuccessModal() {
-    document.getElementById('successModal').style.display = 'flex';
-}
-
-// Initialize form (default: masyarakat)
-document.addEventListener('DOMContentLoaded', function() {
-    toggleForm('masyarakat');
-});
-
-// Foto KTP upload 
-document.getElementById('foto_ktp').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    const dropArea = document.getElementById('drop-area');
-    const uploadText = document.getElementById('upload-text');
-    const uploadSubtext = document.getElementById('upload-subtext');
-    const uploadIcon = document.getElementById('upload-icon-container');
-    const successMsg = document.getElementById('file-success-msg');
-    const fileNameDisplay = document.getElementById('file-name-display');
-    const formatHint = document.getElementById('format-hint');
-
-    if (file) {
-        // 1. Ubah tampilan border menjadi hijau
-        dropArea.classList.remove('border-gray-300');
-        dropArea.classList.add('border-green-500', 'bg-green-50');
-
-        // 2. Sembunyikan instruksi awal
-        uploadText.classList.add('hidden');
-        uploadSubtext.classList.add('hidden');
-        formatHint.classList.add('hidden');
-
-        // 3. Tampilkan pesan sukses dan nama file
-        successMsg.classList.remove('hidden');
-        fileNameDisplay.textContent = "File: " + file.name;
-        
-        // 4. Ubah warna icon (opsional)
-        uploadIcon.innerHTML = `
-            <svg class="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-        `;
-    }
-});
+kecamatan.onchange=e=>{
+    fetch(`/api/desa/${e.target.value}`).then(r=>r.json()).then(d=>{
+        desa.innerHTML='<option value="">Pilih Desa</option>';
+        d.forEach(x=>desa.innerHTML+=`<option value="${x.kode}">${x.nama}</option>`);
+    });
+};
 </script>
 @endpush

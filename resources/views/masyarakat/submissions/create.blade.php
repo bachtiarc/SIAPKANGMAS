@@ -63,18 +63,30 @@
     </div>
     @endif
 
+
+    @php
+        $from = request()->query('from', 'index');
+        $backUrl = $from === 'dashboard'
+            ? route('masyarakat.dashboard')
+            : route('masyarakat.submission.index');
+    @endphp
+
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div class="flex items-center space-x-4">
-            <a href="{{ route('masyarakat.submissions.index') }}" class="text-gray-600 hover:text-gray-900">
+            <a href="{{ $backUrl }}" class="text-gray-600 hover:text-gray-900">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
             </a>
             <div>
-                <h1 class="font-montserrat text-3xl font-bold text-gray-900">Formulir Pengajuan Permohonan Informasi</h1>
+                <h1 class="font-montserrat text-3xl font-bold text-gray-900">
+                    Formulir Permohonan Informasi
+                </h1>
                 <p class="text-gray-600 mt-1">
-                    Silakan lengkapi formulir di bawah ini untuk mengajukan permohonan informasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Estimasi respon waktu 10 hari kerja.
+                    Silakan lengkapi formulir di bawah ini untuk mengajukan permohonan informasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah.
+                    Estimasi respon waktu 2x24 jam.
                 </p>
             </div>
         </div>
@@ -121,25 +133,6 @@
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('title') border-red-500 @enderror"
                         placeholder="Contoh: Permohonan Data Statistik Perdagangan Tahun 2023">
                     @error('title')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Category Selection -->
-                <div class="md:col-span-2">
-                    <label for="category_id" class="block text-sm font-semibold text-gray-900 mb-2">
-                        Kategori Informasi <span class="text-red-500">*</span>
-                    </label>
-                    <select name="category_id" id="category_id" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('category_id') border-red-500 @enderror">
-                        <option value="">Pilih Kategori Informasi</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('category_id')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>

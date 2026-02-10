@@ -16,7 +16,7 @@ class ComplaintPdfController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        $complaint->load(['category', 'handler']);
+        $complaint->load(['handler', 'user', 'documents']);
 
         $statusRaw = strtolower((string) ($complaint->status ?? 'pending'));
         $statusLabel = match ($statusRaw) {
@@ -27,14 +27,44 @@ class ComplaintPdfController extends Controller
             default => ucfirst($statusRaw),
         };
 
+        $alamatDetail = trim((string) ($user->address ?? ''));
+        $desa         = trim((string) ($user->desa ?? ''));
+        $kecamatan    = trim((string) ($user->kecamatan ?? ''));
+        $kabupaten    = trim((string) ($user->kabupaten ?? ''));
+        $provinsi     = trim((string) ($user->provinsi ?? 'Jawa Tengah'));
+        $isKota = str_contains(strtolower($kabupaten), 'kota');
+
+        $kabLabel = $kabupaten
+            ? ($isKota
+                ? 'Kota ' . trim(str_ireplace('kota', '', $kabupaten))
+                : 'Kab. ' . $kabupaten
+              )
+            : null;
+
+        $isKelurahan = (bool) ($user->is_kelurahan ?? false);
+
+        $desaLabel = $desa
+            ? ($isKelurahan ? 'Kelurahan ' . $desa : 'Desa ' . $desa)
+            : null;
+
+        $alamatLengkap = collect([
+            $alamatDetail ?: null,
+            $desaLabel,
+            $kecamatan ? 'Kec. ' . $kecamatan : null,
+            $kabLabel,
+            $provinsi ?: null,
+        ])->filter()->implode(', ');
+
         $data = [
-            'serviceTitle' => 'PENGADUAN',
-            'complaint' => $complaint,
-            'user' => $user,
-            'statusLabel' => $statusLabel,
+            'serviceTitle'   => 'PENGADUAN',
+            'complaint'      => $complaint,
+            'user'           => $user,
+            'statusLabel'    => $statusLabel,
+            'alamatLengkap'  => $alamatLengkap,
         ];
 
-        $pdf = Pdf::loadView('pdfs.masyarakat-complaint', $data)->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView('pdfs.masyarakat-complaint', $data)
+            ->setPaper('a4', 'portrait');
 
         return $pdf->download(($complaint->ticket_number ?? 'PENGADUAN') . '.pdf');
     }

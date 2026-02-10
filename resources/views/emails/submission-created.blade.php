@@ -52,7 +52,7 @@
         .button {
             display: inline-block;
             background-color: #2563eb;
-            color: #ffffff;
+            color: #ffffff !important;
             padding: 12px 24px;
             text-decoration: none;
             border-radius: 6px;
@@ -99,10 +99,6 @@
 
             <div class="info-row">
                 <span class="label">Judul:</span> {{ $submission->title ?? 'N/A' }}
-            </div>
-
-            <div class="info-row">
-                <span class="label">Kategori:</span> {{ $category->name ?? 'N/A' }}
             </div>
 
             <div class="info-row">

@@ -138,7 +138,7 @@
             <h2 class="font-montserrat text-lg font-bold text-gray-900 mb-4">Layanan Cepat</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Permohonan Informasi -->
-                <a href="{{ route('masyarakat.submissions.create') }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
+                <a href="{{ route('masyarakat.submissions.create', ['from' => 'dashboard']) }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">
                             <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition">
@@ -158,7 +158,7 @@
                 </a>
 
                 <!-- Konsultasi -->
-                <a href="{{ route('masyarakat.consultations.create') }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
+                <a href="{{ route('masyarakat.consultations.create', ['from' => 'dashboard']) }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">
                             <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition">
@@ -178,7 +178,6 @@
                 </a>
 
                 <!-- Buat Pengaduan -->
-                <!-- FIX BACK: kirim from=dashboard -->
                 <a href="{{ route('masyarakat.complaints.create', ['from' => 'dashboard']) }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">
