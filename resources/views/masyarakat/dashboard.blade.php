@@ -178,7 +178,6 @@
                 </a>
 
                 <!-- Buat Pengaduan -->
-                <!-- FIX BACK: kirim from=dashboard -->
                 <a href="{{ route('masyarakat.complaints.create', ['from' => 'dashboard']) }}" class="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">

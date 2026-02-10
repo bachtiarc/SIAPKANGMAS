@@ -12,7 +12,6 @@ class Complaint extends Model
     protected $fillable = [
         'ticket_number',
         'user_id',
-        'category_id',
         'subject',
         'description',
         'attachment',
@@ -78,58 +77,33 @@ class Complaint extends Model
         return ucfirst($status);
     }
 
-
-    /**
-     * Relationship to User (submitter)
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Relationship to Category
-     */
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
-
-    /**
-     * Relationship to User (handler/admin)
-     */
     public function handler()
     {
         return $this->belongsTo(User::class, 'handled_by');
     }
 
-    /**
-     * Polymorphic relationship to Status Histories
-     */
     public function statusHistories()
     {
         return $this->morphMany(StatusHistory::class, 'trackable')->orderBy('created_at', 'desc');
     }
 
-    /**
-     * Relationship to ComplaintDocuments (multiple files)
-     */
     public function documents()
     {
         return $this->hasMany(ComplaintDocument::class);
     }
 
-    /**
-     * Check if complaint has attachment
-     */
+
     public function hasAttachment()
     {
         return !empty($this->attachment);
     }
 
-    /**
-     * Get attachment URL
-     */
+
     public function getAttachmentUrlAttribute()
     {
         if ($this->attachment) {
@@ -138,9 +112,6 @@ class Complaint extends Model
         return null;
     }
 
-    /**
-     * Get attachment file extension
-     */
     public function getAttachmentExtensionAttribute()
     {
         if ($this->attachment) {
@@ -149,9 +120,6 @@ class Complaint extends Model
         return null;
     }
 
-    /**
-     * Check if attachment is image
-     */
     public function attachmentIsImage()
     {
         if (!$this->attachment) return false;
@@ -160,9 +128,7 @@ class Complaint extends Model
         return in_array(strtolower($this->attachment_extension), $imageExtensions);
     }
 
-    /**
-     * Check if attachment is PDF
-     */
+
     public function attachmentIsPdf()
     {
         if (!$this->attachment) return false;
@@ -176,17 +142,11 @@ class Complaint extends Model
         return $this->ticket_number;
     }
 
-    /**
-     * Accessor: title -> subject
-     */
     public function getTitleAttribute()
     {
         return $this->subject;
     }
 
-    /**
-     * Accessor: documents (untuk kompatibilitas PDF view)
-     */
     public function getDocumentsAttribute()
     {
         if ($this->relationLoaded('documents') && $this->getRelation('documents')->count() > 0) {
@@ -208,9 +168,7 @@ class Complaint extends Model
         return collect([]);
     }
 
-    /**
-     * Accessor: admin_notes -> admin_response 
-     */
+
     public function getAdminNotesAttribute()
     {
         return $this->attributes['admin_response'] ?? null;

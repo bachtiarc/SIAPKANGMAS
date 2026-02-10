@@ -119,9 +119,13 @@
         <h2>DINAS PERINDUSTRIAN DAN PERDAGANGAN PROVINSI JAWA TENGAH</h2>
     </div>
 
-    <!-- Note -->
+    <!-- NOTE (DOKUMEN PENDUKUNG) -->
     <div class="note">
-        <strong>Catatan:</strong> Dimohon dokumen pendukung harap dicetak sendiri jika diperlukan
+        <strong>Catatan:</strong>
+        Dokumen pendukung yang diunggah pada pengaduan ini
+        <u>tidak tercetak secara otomatis</u>.
+        Apabila diperlukan, dokumen pendukung dapat dicetak sendiri
+        atau diakses melalui sistem SIAPKANGMAS.
     </div>
 
     <!-- Ticket Box -->

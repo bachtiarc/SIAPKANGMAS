@@ -164,6 +164,14 @@
     <p>Jl. Pahlawan No. 4 Semarang 50132</p>
     <p>Website: www.disperindag.jatengprov.go.id</p>
 </div>
+<!-- NOTE (DOKUMEN PENDUKUNG) -->
+    <div class="note">
+        <strong>Catatan:</strong>
+        Dokumen pendukung yang diunggah pada pengaduan ini
+        <u>tidak tercetak secara otomatis</u>.
+        Apabila diperlukan, dokumen pendukung dapat dicetak sendiri
+        atau diakses melalui sistem SIAPKANGMAS.
+    </div>
 
 <!-- TITLE -->
 <div class="document-title">

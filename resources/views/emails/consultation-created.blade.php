@@ -52,7 +52,7 @@
             display: inline-block;
             padding: 12px 28px;
             background-color: #2563eb;
-            color: #ffffff;
+            color: #ffffff !important;
             text-decoration: none;
             border-radius: 6px;
             font-weight: 600;

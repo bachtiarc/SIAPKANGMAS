@@ -52,7 +52,7 @@
         .button {
             display: inline-block;
             background-color: #2563eb;
-            color: #ffffff;
+            color: #ffffff !important;
             padding: 12px 24px;
             text-decoration: none;
             border-radius: 6px;

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\Complaint;
 use App\Models\ComplaintDocument;
 use Illuminate\Http\Request;
@@ -25,7 +24,7 @@ class ComplaintController extends Controller
         }
 
         $query = Complaint::where('user_id', $user->id)
-            ->with(['category', 'handler']);
+            ->with(['handler']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -59,19 +58,7 @@ class ComplaintController extends Controller
      */
     public function create()
     {
-        $user = auth()->user();
-        $userType = $user->user_type;
-
-        $categories = Category::active()
-            ->ofType('pengaduan')
-            ->where(function ($query) use ($userType) {
-                $query->where('user_type', $userType)
-                      ->orWhere('user_type', 'all');
-            })
-            ->orderBy('name')
-            ->get();
-
-        return view('masyarakat.complaints.create', compact('categories'));
+        return view('masyarakat.complaints.create');
     }
 
     /**
@@ -89,7 +76,6 @@ class ComplaintController extends Controller
 
         $request->validate([
             'subject' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
             'description' => 'required|string',
 
             'documents' => 'nullable|array|max:3',
@@ -107,7 +93,6 @@ class ComplaintController extends Controller
 
         $complaint = Complaint::create([
             'user_id' => $user->id,
-            'category_id' => $request->category_id,
             'subject' => $request->subject,
             'description' => $request->description,
             'status' => 'pending',
@@ -154,7 +139,7 @@ class ComplaintController extends Controller
         // =========================
         try {
             // load relasi yang dipakai di blade
-            $complaint->load(['user', 'category']);
+            $complaint->load(['user']);
 
             // render view (nama file pakai dash)
             $html = view('emails.complaint-created', [
@@ -205,7 +190,7 @@ class ComplaintController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        $complaint->load(['category', 'handler', 'documents']);
+        $complaint->load(['handler', 'documents']);
 
         return view('masyarakat.complaints.show', compact('complaint'));
     }
@@ -226,18 +211,7 @@ class ComplaintController extends Controller
                 ->with('error', 'Pengaduan tidak dapat diedit karena sudah diproses.');
         }
 
-        $userType = $user->user_type;
-
-        $categories = Category::active()
-            ->ofType('pengaduan')
-            ->where(function ($query) use ($userType) {
-                $query->where('user_type', $userType)
-                      ->orWhere('user_type', 'all');
-            })
-            ->orderBy('name')
-            ->get();
-
-        return view('masyarakat.complaints.edit', compact('complaint', 'categories'));
+        return view('masyarakat.complaints.edit', compact('complaint'));
     }
 
     /**
@@ -258,7 +232,6 @@ class ComplaintController extends Controller
 
         $request->validate([
             'subject' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
             'description' => 'required|string',
 
             'documents' => 'nullable|array|max:3',
@@ -266,7 +239,6 @@ class ComplaintController extends Controller
         ]);
 
         $complaint->update([
-            'category_id' => $request->category_id,
             'subject' => $request->subject,
             'description' => $request->description,
         ]);

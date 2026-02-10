@@ -12,7 +12,6 @@ class Consultation extends Model
     protected $fillable = [
         'ticket_number',
         'user_id',
-        'category_id',
         'consultation_type',
         'subject',
         'description',
@@ -98,11 +97,6 @@ class Consultation extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
     }
 
     public function handler()
