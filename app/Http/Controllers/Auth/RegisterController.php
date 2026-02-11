@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB; 
 use App\Services\BrevoMailer;
 
 class RegisterController extends Controller
@@ -52,7 +53,11 @@ class RegisterController extends Controller
             ['ContentType' => $file->getMimeType()]
         );
 
-        $isKota = str_starts_with(strtolower($request->kabupaten), 'Kota');
+        $kabupatenName = DB::table('wilayah')->where('kode', $request->kabupaten)->value('nama') ?? $request->kabupaten;
+        $kecamatanName = DB::table('wilayah')->where('kode', $request->kecamatan)->value('nama') ?? $request->kecamatan;
+        $desaName      = DB::table('wilayah')->where('kode', $request->desa)->value('nama') ?? $request->desa;
+
+        $isKota = str_starts_with(strtolower($kabupatenName), 'Kota');
         $kecamatanKota = [
             'banjarnegara','purwokerto timur','purwokerto barat','purwokerto selatan','purwokerto utara',
             'batang','blora','boyolali','brebes','cilacap tengah','cilacap selatan','cilacap utara',
@@ -63,7 +68,7 @@ class RegisterController extends Controller
 
         $isKelurahan =
             $isKota ||
-            in_array(strtolower($request->kecamatan), $kecamatanKota);
+            in_array(strtolower($kecamatanName), $kecamatanKota);
 
         $user = User::create([
             'name'       => $request->name,
@@ -71,9 +76,9 @@ class RegisterController extends Controller
             'email'      => $request->email,
             'phone'      => $request->phone,
             'address'    => $request->alamat,
-            'desa'       => $request->desa,
-            'kecamatan'  => $request->kecamatan,
-            'kabupaten'  => $request->kabupaten,
+            'desa'       => $desaName,
+            'kecamatan'  => $kecamatanName,
+            'kabupaten'  => $kabupatenName, 
             'provinsi'   => 'Jawa Tengah',
             'is_kelurahan' => $isKelurahan,
             'pekerjaan'  => $pekerjaan,
