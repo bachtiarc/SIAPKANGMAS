@@ -55,32 +55,51 @@ class LoginController extends Controller
                 ->with('unverified', 'Akun Anda belum terverifikasi. Silakan cek email.');
         }
 
-        $selectedTab = $request->input('user_type', 'user');
-        $isAdmin = $user->role === 'admin';
+        $selectedTab = $request->input('user_type', 'user'); 
 
-        if (($selectedTab === 'admin' && !$isAdmin) || ($selectedTab === 'user' && $isAdmin)) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+        $superAdminEmail = 'admin@disperindag.jatengprov.go.id';
+        $coAdminEmail    = 'adminsiapkangmas@gmail.com';
 
-            return redirect()->route('login')
-                ->with('error', $isAdmin
-                    ? 'Anda Admin. Gunakan tab Admin.'
-                    : 'Anda Pengguna. Gunakan tab Pengguna.'
-                );
+        $emailLower = strtolower((string) $user->email);
+
+        $isSuperAdmin = ($emailLower === strtolower($superAdminEmail)) || ($user->role === 'admin');
+        $isCoAdmin    = ($emailLower === strtolower($coAdminEmail));
+
+        // Validasi tab
+        if ($selectedTab === 'admin') {
+            if (!($isSuperAdmin || $isCoAdmin)) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')
+                    ->with('error', 'Anda Pengguna. Gunakan tab Pengguna.');
+            }
+        } else { // tab user
+            if ($isSuperAdmin || $isCoAdmin) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')
+                    ->with('error', 'Anda Admin. Gunakan tab Admin.');
+            }
         }
 
         Log::info('User logged in', [
             'email' => $user->email,
             'role' => $user->role,
             'user_type' => $user->user_type,
+            'selected_tab' => $selectedTab,
+            'is_super_admin' => $isSuperAdmin,
+            'is_co_admin' => $isCoAdmin,
         ]);
 
-        if ($isAdmin) {
+        if ($isSuperAdmin && !$isCoAdmin) {
             return redirect()->intended(route('admin.dashboard'));
         }
 
-        if ($user->user_type === 'pegawai') {
+        if ($isCoAdmin || $user->user_type === 'pegawai') {
             return redirect()->intended(route('user.dashboard'));
         }
 
