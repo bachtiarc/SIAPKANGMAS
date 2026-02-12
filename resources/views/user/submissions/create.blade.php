@@ -550,7 +550,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Toggle opsi datang langsung
     const radios = document.querySelectorAll('input[name="cara_penyampaian"]');
     const box = document.getElementById('opsiDatangLangsung');
 
@@ -567,16 +566,13 @@ document.addEventListener('DOMContentLoaded', () => {
     radios.forEach(r => r.addEventListener('change', sync));
     sync();
 
-    // Load wilayah
     loadKabupaten();
 
-    // Restore old (jika ada)
     const oldKab = @json(old('kabupaten_kode'));
     const oldKec = @json(old('kecamatan_kode'));
     const oldDesa = @json(old('desa_kode'));
 
     if (oldKab) {
-        // tunggu kabupaten ter-load
         setTimeout(() => {
             document.getElementById('kabupaten_kode').value = oldKab;
             loadKecamatan(oldKab, oldKec, oldDesa);

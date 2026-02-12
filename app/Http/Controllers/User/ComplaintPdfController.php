@@ -8,22 +8,17 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ComplaintPdfController extends Controller
 {
-    /**
-     * Download complaint as PDF
-     */
     public function download(Complaint $complaint)
     {
         $user = auth()->user();
-        
-        if ($complaint->user_id !== $user->id) {
+
+        if ((int) $complaint->user_id !== (int) $user->id) {
             abort(403, 'Unauthorized access.');
         }
-        $complaint->load(['category', 'handler', 'user', 'documents']);
-
-        $pdf = Pdf::loadView('pdfs.submission', [
-            'submission' => $complaint,  
-            'user' => $user,
-            'submissionType' => 'PENGADUAN'
+        $complaint->load(['applicant', 'handler', 'documents']);
+        $pdf = Pdf::loadView('user.complaints.show', [
+            'complaint' => $complaint,
+            'isPdf'     => true, 
         ]);
 
         $pdf->setPaper('a4', 'portrait');
