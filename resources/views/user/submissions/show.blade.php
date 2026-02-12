@@ -66,10 +66,25 @@
         ])->filter(fn($v) => trim((string)$v) !== '' && trim((string)$v) !== '-')->implode(', ');
 
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-        $bucket = env('SUPABASE_BUCKET', 'submissions');
+        $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
 
-        $ktpPath = ltrim((string)($app->foto_ktp ?? ''), '/');
-        $ktpUrl = $ktpPath ? "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$ktpPath}" : null;
+        $ktpRaw = $submission->user->foto_ktp ?? ($app->foto_ktp ?? null);
+
+        $ktpUrl = null;
+        if ($ktpRaw && $supabaseUrl) {
+            $ktpRaw = ltrim((string) $ktpRaw, '/');
+
+            if (\Illuminate\Support\Str::startsWith($ktpRaw, ['http://', 'https://'])) {
+                $ktpUrl = $ktpRaw;
+            } else {
+                if (\Illuminate\Support\Str::startsWith($ktpRaw, $ktpBucket . '/')) {
+                    $ktpRaw = \Illuminate\Support\Str::after($ktpRaw, $ktpBucket . '/');
+                }
+                $ktpUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
+            }
+        }
+        
+        $bucket = env('SUPABASE_BUCKET', 'submissions');
     @endphp
 
     <!-- Breadcrumb -->

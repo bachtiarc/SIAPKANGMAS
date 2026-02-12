@@ -45,7 +45,7 @@ class RegisterController extends Controller
             : $request->pekerjaan;
 
         $file = $request->file('foto_ktp');
-        $path = 'ktp/'.$request->nik.'/'.Str::uuid().'.'.$file->extension();
+        $path = $request->nik.'/'.Str::uuid().'.'.$file->extension();
 
         Storage::disk('supabase_ktp')->put(
             $path,

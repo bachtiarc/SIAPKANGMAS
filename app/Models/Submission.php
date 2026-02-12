@@ -26,6 +26,9 @@ class Submission extends Model
         'tujuan_permohonan',
         'cara_penyampaian',
         'datang_langsung_opsi',
+        'diproses_bidang',
+        'diproses_kelompok',
+        'diproses_oleh',
     ];
 
     protected $casts = [

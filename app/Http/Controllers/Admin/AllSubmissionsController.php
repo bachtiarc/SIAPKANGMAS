@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\Consultation;
 use App\Models\Complaint;
 use App\Models\Submission;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Schema;
 
 class AllSubmissionsController extends Controller
 {
@@ -30,14 +30,9 @@ class AllSubmissionsController extends Controller
                 + Submission::where('status', 'pending')->count(),
         ];
 
-        $categories = Category::whereIn('type', ['konsultasi', 'pengaduan', 'permohonan'])
-            ->orderBy('type')
-            ->orderBy('name')
-            ->get();
-
-        $qConsultation = Consultation::with(['user', 'category']);
-        $qComplaint    = Complaint::with(['user', 'category']);
-        $qSubmission   = Submission::with(['user', 'category']);
+        $qConsultation = Consultation::with(['user']);
+        $qComplaint    = Complaint::with(['user']);
+        $qSubmission   = Submission::with(['user']);
 
         // ================= FILTER TANGGAL =================
         $hasStart = $request->filled('start_date');
@@ -65,19 +60,46 @@ class AllSubmissionsController extends Controller
             $qComplaint->whereDate('created_at', $request->end_date);
             $qSubmission->whereDate('created_at', $request->end_date);
         }
+        // ==================================================
 
+        // ================= FILTER JENIS PELAPOR =================
         if ($request->filled('type') && $request->type !== 'Semua') {
-            $qConsultation->whereHas('user', fn($q) => $q->where('user_type', $request->type));
-            $qComplaint->whereHas('user', fn($q) => $q->where('user_type', $request->type));
-            $qSubmission->whereHas('user', fn($q) => $q->where('user_type', $request->type));
+            $qConsultation->whereHas('user', fn ($q) => $q->where('user_type', $request->type));
+            $qComplaint->whereHas('user', fn ($q) => $q->where('user_type', $request->type));
+            $qSubmission->whereHas('user', fn ($q) => $q->where('user_type', $request->type));
         }
+        // ========================================================
 
-        if ($request->filled('category') && $request->category !== 'Semua') {
-            $qConsultation->where('category_id', $request->category);
-            $qComplaint->where('category_id', $request->category);
-            $qSubmission->where('category_id', $request->category);
+        // ================= FILTER DIPROSES OLEH (BIDANG) =================
+        $bidang = $request->get('diproses_bidang');
+        $filterBidangAktif = $bidang && $bidang !== 'Semua';
+
+        if ($filterBidangAktif) {
+            // Consultation
+            if (Schema::hasColumn('consultations', 'diproses_bidang')) {
+                $qConsultation->where('diproses_bidang', $bidang);
+            } elseif (Schema::hasColumn('consultations', 'diproses_oleh')) {
+                // fallback kalau yang ada cuma gabungan "Bidang - Kelompok"
+                $qConsultation->where('diproses_oleh', 'like', $bidang . ' - %');
+            }
+
+            // Complaint
+            if (Schema::hasColumn('complaints', 'diproses_bidang')) {
+                $qComplaint->where('diproses_bidang', $bidang);
+            } elseif (Schema::hasColumn('complaints', 'diproses_oleh')) {
+                $qComplaint->where('diproses_oleh', 'like', $bidang . ' - %');
+            }
+
+            // Submission
+            if (Schema::hasColumn('submissions', 'diproses_bidang')) {
+                $qSubmission->where('diproses_bidang', $bidang);
+            } elseif (Schema::hasColumn('submissions', 'diproses_oleh')) {
+                $qSubmission->where('diproses_oleh', 'like', $bidang . ' - %');
+            }
         }
+        // ==================================================================
 
+        // ================= FILTER STATUS =================
         if ($request->filled('status') && $request->status !== 'Semua') {
             $status = $request->status;
 
@@ -99,6 +121,7 @@ class AllSubmissionsController extends Controller
                 $qComplaint->where('status', 'ditolak');
             }
         }
+        // =================================================
 
         $consultations = $qConsultation->latest()->get()->map(function ($x) {
             return [
@@ -108,7 +131,6 @@ class AllSubmissionsController extends Controller
                 'name'       => $x->user->name ?? '-',
                 'email'      => $x->user->email ?? '-',
                 'user_type'  => $x->user->user_type ?? '-',
-                'category'   => $x->category->name ?? '-',
                 'subject'    => $x->title ?? $x->subject ?? '-',
                 'status'     => $x->status,
                 'show_route' => route('admin.consultations.show', $x->id),
@@ -123,7 +145,6 @@ class AllSubmissionsController extends Controller
                 'name'       => $x->user->name ?? '-',
                 'email'      => $x->user->email ?? '-',
                 'user_type'  => $x->user->user_type ?? '-',
-                'category'   => $x->category->name ?? '-',
                 'subject'    => $x->subject ?? $x->title ?? '-',
                 'status'     => $x->status,
                 'show_route' => route('admin.complaints.show', $x->id),
@@ -138,7 +159,6 @@ class AllSubmissionsController extends Controller
                 'name'       => $x->user->name ?? '-',
                 'email'      => $x->user->email ?? '-',
                 'user_type'  => $x->user->user_type ?? '-',
-                'category'   => $x->category->name ?? '-',
                 'subject'    => $x->title ?? $x->subject ?? '-',
                 'status'     => $x->status,
                 'show_route' => route('admin.submissions.show', $x->id),
@@ -146,7 +166,7 @@ class AllSubmissionsController extends Controller
         });
 
         $all = $consultations->concat($complaints)->concat($submissions)
-            ->sortByDesc(fn($x) => $x['created_at'])
+            ->sortByDesc(fn ($x) => $x['created_at'])
             ->values();
 
         $perPage = 10;
@@ -164,9 +184,8 @@ class AllSubmissionsController extends Controller
         );
 
         return view('admin.managements.semua', [
-            'items'      => $paginated,
-            'categories' => $categories,
-            'stats'      => $stats,
+            'items' => $paginated,
+            'stats' => $stats,
         ]);
     }
 }

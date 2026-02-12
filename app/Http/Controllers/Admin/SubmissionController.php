@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -21,14 +22,20 @@ class SubmissionController extends Controller
     public function index(Request $request)
     {
         $stats = [
-            'total' => Submission::count(),
-            'proses' => Submission::where('status', 'in_progress')->count(),
+            'total'   => Submission::count(),
+            'proses'  => Submission::where('status', 'in_progress')->count(),
             'selesai' => Submission::whereIn('status', ['completed', 'rejected'])->count(),
-            'belum' => Submission::where('status', 'pending')->count()
+            'belum'   => Submission::where('status', 'pending')->count()
         ];
 
-        $query = Submission::with(['user', 'category']);
-        
+        $hasCategories = Schema::hasTable('categories');
+
+        // Aman walau categories gak ada
+        $query = Submission::with(['user']);
+        if ($hasCategories) {
+            $query->with('category');
+        }
+
         // ================= FILTER TANGGAL =================
         $hasStart = $request->filled('start_date');
         $hasEnd   = $request->filled('end_date');
@@ -46,12 +53,13 @@ class SubmissionController extends Controller
         // ==================================================
 
         if ($request->filled('type') && $request->type != 'Semua') {
-            $query->whereHas('user', function($q) use ($request) {
+            $query->whereHas('user', function ($q) use ($request) {
                 $q->where('user_type', $request->type);
             });
         }
 
-        if ($request->filled('category') && $request->category != 'Semua') {
+        // category filter cuma jalan kalau tabel categories ada
+        if ($hasCategories && $request->filled('category') && $request->category != 'Semua') {
             $query->where('category_id', $request->category);
         }
 
@@ -64,21 +72,49 @@ class SubmissionController extends Controller
         }
 
         $submissions = $query->latest()->paginate(10)->withQueryString();
-        $categories = Category::where('type', 'permohonan')->get();
+
+        // dropdown categories aman walau tabel gak ada
+        $categories = $hasCategories
+            ? Category::where('type', 'permohonan')->get()
+            : collect();
 
         return view('admin.submissions.permohonan', compact('submissions', 'categories', 'stats'));
     }
 
     public function show($id)
     {
-        $submission = Submission::with(['user', 'category', 'documents', 'statusHistories.changedBy'])
-            ->findOrFail($id);
+        $hasCategories = Schema::hasTable('categories');
+
+        $with = [
+            'user',
+            'documents',
+            'statusHistories.changedBy',
+            'applicant', // ✅ penting
+        ];
+        if ($hasCategories) {
+            $with[] = 'category';
+        }
+
+        $submission = Submission::with($with)->findOrFail($id);
 
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
 
+        // =========================
+        // Tentukan pemohon
+        // =========================
+        $creator  = $submission->user;
+        $userType = $creator->user_type ?? null;
+
+        $pemohon = ($userType === 'pegawai')
+            ? ($submission->applicant ?? null)
+            : $creator;
+
+        // =========================
+        // Build KTP public URL
+        // =========================
         $ktpPublicUrl = null;
-        $ktpRaw = $submission->user->foto_ktp ?? null;
+        $ktpRaw = $pemohon->foto_ktp ?? null;
 
         if ($ktpRaw && $supabaseUrl) {
             $ktpRaw = ltrim($ktpRaw, '/');
@@ -86,32 +122,43 @@ class SubmissionController extends Controller
             if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
                 $ktpPublicUrl = $ktpRaw;
             } else {
+                // kalau ada prefix bucket, buang
                 if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
                     $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
                 }
+
                 $ktpPublicUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
             }
         }
 
-        return view('admin.submissions.show', compact('submission', 'ktpPublicUrl'));
+        // categoryName aman walau categories table gak ada
+        $categoryName = $hasCategories ? ($submission->category->name ?? '-') : '-';
+
+        return view('admin.submissions.show', compact('submission', 'ktpPublicUrl', 'categoryName'));
     }
 
     public function update(Request $request, $id, \App\Services\BrevoMailer $brevo)
     {
         $request->validate([
-            'status'      => 'required|in:pending,in_progress,completed,rejected',
-            'admin_notes' => 'nullable|string',
-            'notify_user' => 'nullable',
+            'status'            => 'required|in:pending,in_progress,completed,rejected',
+            'diproses_bidang'   => 'nullable|string|max:255',
+            'diproses_kelompok' => 'nullable|string|max:255',
+            'diproses_oleh'     => 'nullable|string|max:255',
+            'admin_notes'       => 'nullable|string',
+            'notify_user'       => 'nullable',
         ]);
 
         $submission = Submission::findOrFail($id);
         $oldStatus  = $submission->status;
 
         $submission->update([
-            'status'       => $request->status,
-            'admin_notes'  => $request->admin_notes,
-            'handled_by'   => Auth::id(),
-            'completed_at' => $request->status == 'completed' ? now() : null,
+            'status'            => $request->status,
+            'diproses_bidang'   => $request->diproses_bidang,
+            'diproses_kelompok' => $request->diproses_kelompok,
+            'diproses_oleh'     => $request->diproses_oleh, // "Bidang - Kelompok"
+            'admin_notes'       => $request->admin_notes,
+            'handled_by'        => Auth::id(),
+            'completed_at'      => $request->status == 'completed' ? now() : null,
         ]);
 
         if ($oldStatus !== $request->status) {
@@ -125,16 +172,22 @@ class SubmissionController extends Controller
 
         if ($request->has('notify_user') && $oldStatus !== $request->status) {
             try {
-                $submission->load(['user', 'category', 'handler']);
+                $hasCategories = Schema::hasTable('categories');
+
+                // Jangan load category kalau tabelnya gak ada
+                $relations = ['user', 'handler'];
+                if ($hasCategories) $relations[] = 'category';
+
+                $submission->load($relations);
 
                 $html = view('emails.submission_status_updated', [
                     'submission' => $submission,
                     'user'       => $submission->user,
-                    'category'   => $submission->category,
+                    'category'   => $hasCategories ? $submission->category : null,
                     'handler'    => $submission->handler,
                     'note'       => $request->admin_notes,
-                    'oldStatus'  => $oldStatus,          
-                    'newStatus'  => $request->status,    
+                    'oldStatus'  => $oldStatus,
+                    'newStatus'  => $request->status,
                 ])->render();
 
                 Log::info('BREVO DEBUG (admin) - about to send status update', [
@@ -218,12 +271,16 @@ class SubmissionController extends Controller
 
     public function downloadPdf($id)
     {
-        $submission = Submission::with([
+        $hasCategories = Schema::hasTable('categories');
+
+        $with = [
             'user',
-            'category',
             'documents',
-            'statusHistories.changedBy', 
-        ])->findOrFail($id);
+            'statusHistories.changedBy',
+        ];
+        if ($hasCategories) $with[] = 'category';
+
+        $submission = Submission::with($with)->findOrFail($id);
 
         $pdf = Pdf::loadView('admin.submissions.pdf', compact('submission'))
             ->setPaper('A4', 'portrait');
@@ -233,17 +290,23 @@ class SubmissionController extends Controller
 
     public function downloadKtp($id)
     {
-        $submission = Submission::with('user')->findOrFail($id);
+        $submission = Submission::with(['user', 'applicant'])->findOrFail($id);
 
-        $user = $submission->user;
-        if (!$user || ($user->user_type ?? null) !== 'masyarakat_umum') {
+        $creator  = $submission->user;
+        $userType = $creator->user_type ?? null;
+
+        $pemohon = ($userType === 'pegawai')
+            ? ($submission->applicant ?? null)
+            : $creator;
+
+        if (!$pemohon) {
             abort(404);
         }
 
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
 
-        $ktpRaw = $user->foto_ktp ?? null;
+        $ktpRaw = $pemohon->foto_ktp ?? null;
         if (!$ktpRaw || !$supabaseUrl) {
             abort(404);
         }
@@ -268,11 +331,11 @@ class SubmissionController extends Controller
 
         $ext = match (true) {
             str_contains($contentType, 'png') => 'png',
-            str_contains($contentType, 'jpeg'), str_contains($contentType, 'jpg') => 'jpg',
+            str_contains($contentType, 'jpeg') || str_contains($contentType, 'jpg') => 'jpg',
             default => pathinfo(parse_url($fileUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION) ?: 'jpg',
         };
 
-        $filename = 'KTP-' . ($user->nik ?? $user->id) . '.' . $ext;
+        $filename = 'KTP-' . ($pemohon->nik ?? $pemohon->id) . '.' . $ext;
 
         return response($res->body(), 200, [
             'Content-Type' => $contentType,
