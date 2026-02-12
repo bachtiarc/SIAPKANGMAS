@@ -15,6 +15,7 @@ class ConsultationApplicant extends Model
         'nik',
         'email',
         'phone',
+        'pekerjaan',
         'alamat_detail',
         'kabupaten_kode',
         'kabupaten_nama',

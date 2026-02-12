@@ -71,6 +71,10 @@ class ComplaintController extends Controller
             'phone' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
 
+            // pekerjaan optional, tapi kalau "Lainnya" => wajib isi pekerjaan_lainnya
+            'pekerjaan' => 'nullable|string|max:100',
+            'pekerjaan_lainnya' => 'nullable|string|max:100',
+
             'kabupaten_kode' => 'required|string|max:50',
             'kecamatan_kode' => 'required|string|max:50',
             'desa_kode' => 'required|string|max:50',
@@ -98,18 +102,36 @@ class ComplaintController extends Controller
             'documents.*.max' => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
 
-        if (!empty($validated['nik']) && !empty($validated['email']) && !empty($validated['phone'])) {
-            $existsUserAcc =
-                User::where('nik', $validated['nik'])->exists()
-                && User::where('email', $validated['email'])->exists()
-                && User::where('phone', $validated['phone'])->exists();
+        $pekerjaan = trim((string) ($validated['pekerjaan'] ?? ''));
+        $pekerjaanLainnya = trim((string) ($validated['pekerjaan_lainnya'] ?? ''));
 
-            if ($existsUserAcc) {
-                return back()
-                    ->withInput()
-                    ->with('toast_error', 'Untuk pengguna yang telah memiliki akun, silakan membuat pengajuan melalui dashboard sendiri.')
-                    ->with('toast_duration', 9000);
+        $pekerjaanFinal = null;
+        if ($pekerjaan !== '') {
+            if (strtolower($pekerjaan) === 'lainnya') {
+                $pekerjaanFinal = $pekerjaanLainnya !== '' ? $pekerjaanLainnya : null;
+            } else {
+                $pekerjaanFinal = $pekerjaan;
             }
+        }
+
+        if (strtolower($pekerjaan) === 'lainnya' && $pekerjaanFinal === null) {
+            return back()
+                ->withErrors(['pekerjaan_lainnya' => 'Pekerjaan lainnya wajib diisi jika memilih "Lainnya".'])
+                ->withInput();
+        }
+
+
+        $nik = (string) $validated['nik'];
+        $email = trim((string) ($validated['email'] ?? ''));
+
+        $existsByNik = User::where('nik', $nik)->exists();
+        $existsByEmail = ($email !== '') ? User::where('email', $email)->exists() : false;
+
+        if ($existsByNik || $existsByEmail) {
+            return back()
+                ->withInput()
+                ->with('toast_error', 'Data pemohon terdeteksi sudah memiliki akun. Silakan pemohon membuat pengaduan melalui dashboard sendiri.')
+                ->with('toast_duration', 9000);
         }
 
         if ($request->hasFile('documents')) {
@@ -118,13 +140,16 @@ class ComplaintController extends Controller
                 if ($f && $f->isValid()) $totalSize += (int) $f->getSize();
             }
             if ($totalSize > 6 * 1024 * 1024) {
-                return back()->withErrors(['documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'])->withInput();
+                return back()
+                    ->withErrors(['documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'])
+                    ->withInput();
             }
         }
 
         DB::beginTransaction();
 
         try {
+            // nomor tiket
             $ticketNumber = $this->generateTicketNumber($validated['nik']);
             while (Complaint::where('ticket_number', $ticketNumber)->exists()) {
                 $ticketNumber = $this->generateTicketNumber($validated['nik']);
@@ -138,22 +163,28 @@ class ComplaintController extends Controller
                 'status' => 'pending',
             ]);
 
+
             $kab  = DB::table('wilayah')->where('kode', $validated['kabupaten_kode'])->first();
             $kec  = DB::table('wilayah')->where('kode', $validated['kecamatan_kode'])->first();
             $desa = DB::table('wilayah')->where('kode', $validated['desa_kode'])->first();
+
             $kabName = $kab->nama ?? null;
             $kecName = $kec->nama ?? null;
             $isKelurahan = $this->detectIsKelurahan($kabName, $kecName);
 
             $ktpPath = null;
-            try {
-                $ktp = $request->file('foto_ktp');
-                $ktpName = 'ktp_' . Str::random(32) . '.' . $ktp->getClientOriginalExtension();
-                $ktpPath = Storage::disk('supabase_complaints')->putFileAs((string) $complaint->id, $ktp, $ktpName);
-            } catch (\Throwable $e) {
-                Log::error('Upload KTP complaint gagal: ' . $e->getMessage());
+            $ktp = $request->file('foto_ktp');
+
+            $ktpName = 'ktp_' . Str::random(32) . '.' . $ktp->getClientOriginalExtension();
+
+            $ktpPath = Storage::disk('supabase_ktp')
+                ->putFileAs((string) $complaint->id, $ktp, $ktpName);
+
+            if (!$ktpPath) {
+                throw new \RuntimeException('Upload KTP gagal (path kosong).');
             }
 
+            // simpan applicant
             ComplaintApplicant::create([
                 'complaint_id' => $complaint->id,
                 'nama_lengkap' => $validated['nama_lengkap'],
@@ -161,6 +192,8 @@ class ComplaintController extends Controller
                 'email' => $validated['email'] ?? null,
                 'phone' => $validated['phone'],
                 'alamat_detail' => $validated['alamat_detail'],
+
+                'pekerjaan' => $pekerjaanFinal,
 
                 'kabupaten_kode' => $validated['kabupaten_kode'],
                 'kabupaten_nama' => $kabName,
@@ -175,6 +208,7 @@ class ComplaintController extends Controller
                 'foto_ktp' => $ktpPath,
             ]);
 
+
             if ($request->hasFile('documents')) {
                 $docs = array_slice($request->file('documents'), 0, 3);
 
@@ -182,14 +216,19 @@ class ComplaintController extends Controller
                     if (!$doc || !$doc->isValid()) continue;
 
                     $filename = Str::random(40) . '.' . $doc->getClientOriginalExtension();
+
                     $path = Storage::disk('supabase_complaints')
                         ->putFileAs((string) $complaint->id, $doc, $filename);
+
+                    if (!$path) {
+                        throw new \RuntimeException('Upload dokumen gagal (path kosong).');
+                    }
 
                     ComplaintDocument::create([
                         'complaint_id' => $complaint->id,
                         'original_name' => $doc->getClientOriginalName(),
                         'file_path' => $path,
-                        'file_type' => $doc->getClientOriginalExtension(), // sesuai schema: varchar(10)
+                        'file_type' => $doc->getClientOriginalExtension(),
                         'file_size' => $doc->getSize(),
                     ]);
                 }
@@ -206,11 +245,20 @@ class ComplaintController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('STORE CO ADMIN (complaint) failed', ['error' => $e->getMessage()]);
+
+            Log::error('STORE CO ADMIN (complaint) failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // biar kamu tau akar masalahnya pas dev (tanpa ngubah UI)
+            $msg = app()->environment('local')
+                ? ('Terjadi kesalahan saat menyimpan pengaduan: ' . $e->getMessage())
+                : 'Terjadi kesalahan saat menyimpan pengaduan. Silakan coba lagi.';
 
             return back()
                 ->withInput()
-                ->with('toast_error', 'Terjadi kesalahan saat menyimpan pengaduan. Silakan coba lagi.')
+                ->with('toast_error', $msg)
                 ->with('toast_duration', 9000);
         }
     }
@@ -266,6 +314,7 @@ class ComplaintController extends Controller
     {
         $nik = preg_replace('/\D+/', '', $nik);
         $nik = str_pad($nik, 16, '0', STR_PAD_RIGHT);
+
         $nikPart = substr($nik, 8, 4) ?: '0000';
         $date = now()->format('dmY');
 
@@ -291,6 +340,7 @@ class ComplaintController extends Controller
     {
         $kab = strtolower((string) $kabName);
         $kec = strtolower((string) $kecName);
+
         return str_contains($kab, 'kota') || str_contains($kec, 'kota');
     }
 }

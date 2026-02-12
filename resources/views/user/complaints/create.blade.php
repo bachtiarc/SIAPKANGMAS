@@ -4,6 +4,10 @@
 
 @section('content')
 <div class="p-6">
+
+    <!-- ✅ TOAST CONTAINER (KANAN ATAS) -->
+    <div id="toastContainer" class="fixed top-6 right-6 z-[9999] space-y-3"></div>
+
     <!-- Breadcrumb -->
     <nav class="mb-6 text-sm">
         <ol class="flex items-center space-x-2">
@@ -162,6 +166,29 @@
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
+                {{-- PEKERJAAN --}}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">Pekerjaan</label>
+                    <select name="pekerjaan" id="pekerjaan"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Pilih Pekerjaan</option>
+                        <option value="Pelajar/Mahasiswa" {{ old('pekerjaan') == 'Pelajar/Mahasiswa' ? 'selected' : '' }}>Pelajar/Mahasiswa</option>
+                        <option value="PNS" {{ old('pekerjaan') == 'PNS' ? 'selected' : '' }}>PNS</option>
+                        <option value="Karyawan Swasta" {{ old('pekerjaan') == 'Karyawan Swasta' ? 'selected' : '' }}>Karyawan Swasta</option>
+                        <option value="Wiraswasta" {{ old('pekerjaan') == 'Wiraswasta' ? 'selected' : '' }}>Wiraswasta</option>
+                        <option value="Ibu Rumah Tangga" {{ old('pekerjaan') == 'Ibu Rumah Tangga' ? 'selected' : '' }}>Ibu Rumah Tangga</option>
+                        <option value="Lainnya" {{ old('pekerjaan') == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
+                    </select>
+                </div>
+
+                <div id="pekerjaanLainnyaWrapper" class="{{ old('pekerjaan') == 'Lainnya' ? '' : 'hidden' }}">
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">Pekerjaan Lainnya</label>
+                    <input type="text" name="pekerjaan_lainnya"
+                        value="{{ old('pekerjaan_lainnya') }}"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Tulis pekerjaan lainnya">
+                </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-gray-900 mb-2">Kabupaten/Kota <span class="text-red-500">*</span></label>
                     <select name="kabupaten_kode" id="kabupaten" required
@@ -221,20 +248,18 @@
             </div>
 
             <div class="grid grid-cols-1 gap-6">
-                <!-- Title -->
                 <div class="md:col-span-2">
                     <label for="title" class="block text-sm font-semibold text-gray-900 mb-2">
                         Judul Pengajuan Pengaduan <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="subject" id="title" value="{{ old('subject') }}" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('title') border-red-500 @enderror"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('subject') border-red-500 @enderror"
                         placeholder="Contoh: Pengaduan Toilet Pasar Rusak">
-                    @error('title')
+                    @error('subject')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Description -->
                 <div class="md:col-span-2">
                     <label for="description" class="block text-sm font-semibold text-gray-900 mb-2">
                         Deskripsi Lengkap <span class="text-red-500">*</span>
@@ -245,17 +270,14 @@
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
-                    </div>
+                </div>
 
-                <!-- Documents -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
                         Dokumen Pendukung <span class="text-gray-400">(Opsional)</span>
                     </label>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                        <!-- Upload 1 -->
                         <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document1').click()">
                             <div class="flex items-center space-x-3">
@@ -279,7 +301,6 @@
                                 onchange="displayFileName(1, this)">
                         </div>
 
-                        <!-- Upload 2 -->
                         <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document2').click()">
                             <div class="flex items-center space-x-3">
@@ -303,7 +324,6 @@
                                 onchange="displayFileName(2, this)">
                         </div>
 
-                        <!-- Upload 3 -->
                         <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document3').click()">
                             <div class="flex items-center space-x-3">
@@ -326,7 +346,6 @@
                             <input id="document3" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
                                 onchange="displayFileName(3, this)">
                         </div>
-
                     </div>
 
                     @error('documents.*')
@@ -336,7 +355,6 @@
             </div>
         </div>
 
-        <!-- Buttons -->
         <div class="flex items-center justify-between">
             <a href="{{ $backUrl }}"
                class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
@@ -379,17 +397,79 @@ function copyTicket() {
     if(!text) return;
 
     navigator.clipboard.writeText(text).then(() => {
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-6 right-6 z-50 px-5 py-4 rounded-xl shadow-lg bg-green-600 text-white text-sm';
-        toast.innerText = 'Nomor tiket berhasil disalin!';
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 300ms ease';
-            setTimeout(() => toast.remove(), 350);
-        }, 2500);
+        showToast('Nomor tiket berhasil disalin!', 'success', 2500);
     });
 }
+
+/** ✅ TOAST HELPER */
+function showToast(message, type='error', duration=9000){
+    const container = document.getElementById('toastContainer');
+    if(!container) return;
+
+    const toast = document.createElement('div');
+    const base = 'px-5 py-4 rounded-xl shadow-lg text-sm flex items-start gap-3';
+    const styles = (type === 'success')
+        ? 'bg-green-600 text-white'
+        : 'bg-red-600 text-white';
+
+    toast.className = `${base} ${styles}`;
+    toast.innerHTML = `
+        <div style="margin-top:2px;">
+            ${type === 'success'
+                ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                   </svg>`
+                : `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 5c-3.866 0-7 3.134-7 7s3.134 7 7 7 7-3.134 7-7-3.134-7-7-7z"></path>
+                   </svg>`
+            }
+        </div>
+        <div class="flex-1">${message}</div>
+        <button type="button" class="opacity-90 hover:opacity-100" aria-label="Close">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+
+    const closeBtn = toast.querySelector('button');
+    closeBtn.addEventListener('click', () => toast.remove());
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 250ms ease';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const pekerjaanSelect = document.getElementById('pekerjaan');
+    const pekerjaanLainnyaWrapper = document.getElementById('pekerjaanLainnyaWrapper');
+
+    if (pekerjaanSelect && pekerjaanLainnyaWrapper) {
+        function togglePekerjaan() {
+            if (pekerjaanSelect.value === 'Lainnya') {
+                pekerjaanLainnyaWrapper.classList.remove('hidden');
+            } else {
+                pekerjaanLainnyaWrapper.classList.add('hidden');
+            }
+        }
+        togglePekerjaan();
+        pekerjaanSelect.addEventListener('change', togglePekerjaan);
+    }
+
+    /** ✅ INI YANG HILANG DI FILE KAMU: render toast dari session */
+    @if(session('toast_error'))
+        showToast(@json(session('toast_error')), 'error', {{ (int) session('toast_duration', 9000) }});
+    @endif
+
+    @if(session('toast_success'))
+        showToast(@json(session('toast_success')), 'success', {{ (int) session('toast_duration', 3500) }});
+    @endif
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
     const kab = document.getElementById('kabupaten');

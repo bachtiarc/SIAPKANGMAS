@@ -11,6 +11,7 @@ class ComplaintApplicant extends Model
         'nama_lengkap',
         'nik',
         'email',
+        'pekerjaan',
         'phone',
         'alamat_detail',
         'kabupaten_kode',

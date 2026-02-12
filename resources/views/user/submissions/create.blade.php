@@ -196,6 +196,44 @@
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
+                <!-- Pekerjaan -->
+                <div class="md:col-span-2">
+                    <label for="pekerjaan" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Pekerjaan <span class="text-red-500">*</span>
+                    </label>
+
+                    <select name="pekerjaan" id="pekerjaan" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('pekerjaan') border-red-500 @enderror">
+                        <option value="">Pilih Pekerjaan</option>
+                        <option value="Pelajar/Mahasiswa" {{ old('pekerjaan')=='Pelajar/Mahasiswa' ? 'selected' : '' }}>Pelajar/Mahasiswa</option>
+                        <option value="PNS" {{ old('pekerjaan')=='PNS' ? 'selected' : '' }}>PNS</option>
+                        <option value="TNI/POLRI" {{ old('pekerjaan')=='TNI/POLRI' ? 'selected' : '' }}>TNI/POLRI</option>
+                        <option value="Pegawai Swasta" {{ old('pekerjaan')=='Pegawai Swasta' ? 'selected' : '' }}>Pegawai Swasta</option>
+                        <option value="Wiraswasta" {{ old('pekerjaan')=='Wiraswasta' ? 'selected' : '' }}>Wiraswasta</option>
+                        <option value="Ibu Rumah Tangga" {{ old('pekerjaan')=='Ibu Rumah Tangga' ? 'selected' : '' }}>Ibu Rumah Tangga</option>
+                        <option value="Tidak Bekerja" {{ old('pekerjaan')=='Tidak Bekerja' ? 'selected' : '' }}>Tidak Bekerja</option>
+                        <option value="Lainnya" {{ old('pekerjaan')=='Lainnya' ? 'selected' : '' }}>Lainnya</option>
+                    </select>
+
+                    @error('pekerjaan')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Pekerjaan (Lainnya) -->
+                <div id="wrap_pekerjaan_lainnya" class="md:col-span-2 {{ old('pekerjaan')==='Lainnya' ? '' : 'hidden' }}">
+                    <label for="pekerjaan_lainnya" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Pekerjaan (Lainnya) <span class="text-red-500">*</span>
+                    </label>
+
+                    <input type="text" name="pekerjaan_lainnya" id="pekerjaan_lainnya" value="{{ old('pekerjaan_lainnya') }}"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('pekerjaan_lainnya') border-red-500 @enderror"
+                        placeholder="Tulis pekerjaan pemohon">
+
+                    @error('pekerjaan_lainnya')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
                 <!-- Kabupaten -->
                 <div>
@@ -580,7 +618,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ========= TOAST =========
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -749,12 +786,12 @@ function closeErrorModal() {
     document.getElementById('errorModal').classList.add('hidden');
 }
 
-// ===== VALIDASI FRONTEND (biar modal error sama kayak masyarakat) =====
 document.getElementById('submissionForm').addEventListener('submit', function(e) {
     const requiredFields = [
         { id: 'nama_lengkap', label: 'Nama Lengkap' },
         { id: 'nik', label: 'NIK' },
         { id: 'phone', label: 'Nomor Telepon' },
+        { id: 'pekerjaan', label: 'Pekerjaan' },
         { id: 'kabupaten_kode', label: 'Kabupaten/Kota' },
         { id: 'kecamatan_kode', label: 'Kecamatan' },
         { id: 'desa_kode', label: 'Desa/Kelurahan' },
@@ -763,6 +800,16 @@ document.getElementById('submissionForm').addEventListener('submit', function(e)
         { id: 'description', label: 'Deskripsi Lengkap' },
         { id: 'tujuan_permohonan', label: 'Tujuan Permohonan' },
     ];
+
+    const pekerjaanEl = document.getElementById('pekerjaan');
+    const pekerjaanLainnyaWrap = document.getElementById('wrap_pekerjaan_lainnya');
+    const pekerjaanLainnyaEl = document.getElementById('pekerjaan_lainnya');
+
+    if (pekerjaanEl && pekerjaanEl.value === 'Lainnya') {
+        if (!pekerjaanLainnyaEl || !pekerjaanLainnyaEl.value || String(pekerjaanLainnyaEl.value).trim() === '') {
+            errors.push('Pekerjaan (Lainnya)');
+        }
+    }
 
     let errors = [];
 
@@ -834,6 +881,28 @@ function loadKecamatan(kabKode, setSelected = null, desaSelected = null) {
         })
         .catch(() => showToast('Gagal memuat data Kecamatan.', 'error'));
 }
+
+function togglePekerjaanLainnya() {
+    const pekerjaanEl = document.getElementById('pekerjaan');
+    const wrap = document.getElementById('wrap_pekerjaan_lainnya');
+    const input = document.getElementById('pekerjaan_lainnya');
+
+    if (!pekerjaanEl || !wrap) return;
+
+    if (pekerjaanEl.value === 'Lainnya') {
+        wrap.classList.remove('hidden');
+        if (input) input.required = true;
+    } else {
+        wrap.classList.add('hidden');
+        if (input) {
+            input.required = false;
+            input.value = '';
+        }
+    }
+}
+
+document.getElementById('pekerjaan')?.addEventListener('change', togglePekerjaanLainnya);
+togglePekerjaanLainnya();
 
 function loadDesa(kecKode, setSelected = null) {
     const desaEl = document.getElementById('desa_kode');

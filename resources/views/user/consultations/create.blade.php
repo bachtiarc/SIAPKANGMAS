@@ -134,7 +134,6 @@
         </div>
     </div>
 
-    {{-- Errors (tetap tampil) --}}
     @if($errors->any())
         <div class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6">
             <div class="font-semibold mb-2">Terdapat kesalahan pada input:</div>
@@ -197,6 +196,45 @@
                     <input type="email" name="email" value="{{ old('email') }}"
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="contoh: nama@email.com">
+                </div>
+
+                <!-- Pekerjaan -->
+                <div class="md:col-span-2">
+                    <label for="pekerjaan" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Pekerjaan <span class="text-red-500">*</span>
+                    </label>
+
+                    <select name="pekerjaan" id="pekerjaan" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('pekerjaan') border-red-500 @enderror">
+                        <option value="">Pilih Pekerjaan</option>
+                        <option value="Pelajar/Mahasiswa" {{ old('pekerjaan')=='Pelajar/Mahasiswa' ? 'selected' : '' }}>Pelajar/Mahasiswa</option>
+                        <option value="PNS" {{ old('pekerjaan')=='PNS' ? 'selected' : '' }}>PNS</option>
+                        <option value="TNI/POLRI" {{ old('pekerjaan')=='TNI/POLRI' ? 'selected' : '' }}>TNI/POLRI</option>
+                        <option value="Pegawai Swasta" {{ old('pekerjaan')=='Pegawai Swasta' ? 'selected' : '' }}>Pegawai Swasta</option>
+                        <option value="Wiraswasta" {{ old('pekerjaan')=='Wiraswasta' ? 'selected' : '' }}>Wiraswasta</option>
+                        <option value="Ibu Rumah Tangga" {{ old('pekerjaan')=='Ibu Rumah Tangga' ? 'selected' : '' }}>Ibu Rumah Tangga</option>
+                        <option value="Tidak Bekerja" {{ old('pekerjaan')=='Tidak Bekerja' ? 'selected' : '' }}>Tidak Bekerja</option>
+                        <option value="Lainnya" {{ old('pekerjaan')=='Lainnya' ? 'selected' : '' }}>Lainnya</option>
+                    </select>
+
+                    @error('pekerjaan')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Pekerjaan (Lainnya) -->
+                <div id="wrap_pekerjaan_lainnya" class="md:col-span-2 {{ old('pekerjaan')==='Lainnya' ? '' : 'hidden' }}">
+                    <label for="pekerjaan_lainnya" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Pekerjaan (Lainnya) <span class="text-red-500">*</span>
+                    </label>
+
+                    <input type="text" name="pekerjaan_lainnya" id="pekerjaan_lainnya" value="{{ old('pekerjaan_lainnya') }}"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('pekerjaan_lainnya') border-red-500 @enderror"
+                        placeholder="Tulis pekerjaan pemohon">
+
+                    @error('pekerjaan_lainnya')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div>
@@ -272,7 +310,7 @@
                     <input type="text" name="subject" id="title" value="{{ old('subject') }}" required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('title') border-red-500 @enderror"
                         placeholder="Contoh: Permohonan Konsultasi Mengenai...">
-                    @error('title')
+                    @error('subject')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -414,6 +452,62 @@ function copyTicket() {
             setTimeout(() => toast.remove(), 350);
         }, 2500);
     });
+}
+
+function togglePekerjaanLainnya() {
+    const pekerjaanEl = document.getElementById('pekerjaan');
+    const wrap = document.getElementById('wrap_pekerjaan_lainnya');
+    const input = document.getElementById('pekerjaan_lainnya');
+
+    if (!pekerjaanEl || !wrap) return;
+
+    if (pekerjaanEl.value === 'Lainnya') {
+        wrap.classList.remove('hidden');
+        if (input) input.required = true;
+    } else {
+        wrap.classList.add('hidden');
+        if (input) {
+            input.required = false;
+            input.value = '';
+        }
+    }
+}
+
+document.getElementById('pekerjaan')?.addEventListener('change', togglePekerjaanLainnya);
+togglePekerjaanLainnya();
+
+function displayFileName(index, input) {
+    const fileNameEl = document.getElementById(`fileName${index}`);
+    const clearBtn = document.getElementById(`clearBtn${index}`);
+
+    if (!input || !input.files || input.files.length === 0) {
+        if (fileNameEl) {
+            fileNameEl.textContent = '';
+            fileNameEl.classList.add('hidden');
+        }
+        if (clearBtn) clearBtn.classList.add('hidden');
+        return;
+    }
+
+    const file = input.files[0];
+    if (fileNameEl) {
+        fileNameEl.textContent = file.name;
+        fileNameEl.classList.remove('hidden');
+    }
+    if (clearBtn) clearBtn.classList.remove('hidden');
+}
+
+function clearFile(index) {
+    const input = document.getElementById(`document${index}`);
+    const fileNameEl = document.getElementById(`fileName${index}`);
+    const clearBtn = document.getElementById(`clearBtn${index}`);
+
+    if (input) input.value = '';
+    if (fileNameEl) {
+        fileNameEl.textContent = '';
+        fileNameEl.classList.add('hidden');
+    }
+    if (clearBtn) clearBtn.classList.add('hidden');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -120,6 +120,9 @@ class SubmissionController extends Controller
             'nik' => 'required|string|size:16',
             'email' => 'nullable|email|max:255',
             'phone' => 'required|string|max:20',
+            'pekerjaan' => 'required|string|max:255',
+            'pekerjaan_lainnya' => 'nullable|string|max:255',
+
             'kabupaten_kode' => 'required|string',
             'kecamatan_kode' => 'required|string',
             'desa_kode' => 'required|string',
@@ -139,15 +142,24 @@ class SubmissionController extends Controller
             'email.email' => 'Format email tidak valid. Contoh yang benar: ahmadsubari@gmail.com',
         ]);
 
+        $pekerjaanFinal = $validated['pekerjaan'] === 'Lainnya'
+            ? trim((string)($validated['pekerjaan_lainnya'] ?? ''))
+            : $validated['pekerjaan'];
+        if ($validated['pekerjaan'] === 'Lainnya' && $pekerjaanFinal === '') {
+            return back()
+                ->withInput()
+                ->withErrors(['pekerjaan_lainnya' => 'Pekerjaan (Lainnya) wajib diisi.']);
+        }
+
         if (!empty($validated['nik']) && !empty($validated['email']) && !empty($validated['phone'])) {
-            $existsUserAcc = User::where('nik', $validated['nik'])->exists() && User::where('email', $validated['email'])->exists() 
-            && User::where('phone', $validated['phone'])->exists();
+            $existsUserAcc = User::where('nik', $validated['nik'])->exists() || User::where('email', $validated['email'])->exists()
+            || User::where('phone', $validated['phone'])->exists();
 
             if ($existsUserAcc) {
                 return back()
                     ->withInput()
                     ->with('toast_error', 'Untuk pengguna yang telah memiliki akun, silakan membuat pengajuan melalui dashboard sendiri.')
-                    ->with('toast_duration', 9000); 
+                    ->with('toast_duration', 9000);
             }
         }
 
@@ -207,8 +219,6 @@ class SubmissionController extends Controller
 
             $kabName = $kab->nama ?? null;
             $kecName = $kec->nama ?? null;
-
-            // ✅ kelurahan/ desa label based on kab kota OR kecamatan kota (aman)
             $isKelurahan = $this->detectIsKelurahan($kabName, $kecName);
 
             $ktpPath = $request->file('foto_ktp')->store('ktp', 'supabase');
@@ -218,6 +228,9 @@ class SubmissionController extends Controller
                 'nik' => $validated['nik'],
                 'email' => $validated['email'] ?? null,
                 'phone' => $validated['phone'],
+
+                'pekerjaan' => $pekerjaanFinal,
+
                 'alamat_detail' => $validated['alamat_detail'],
 
                 'kabupaten_kode' => $validated['kabupaten_kode'],

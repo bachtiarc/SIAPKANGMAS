@@ -208,6 +208,11 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Pekerjaan</div>
+                <div class="md:col-span-2 text-gray-900">{{ $app->pekerjaan ?? '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="text-sm text-gray-600 font-semibold">Nomor Telepon/WA</div>
                 <div class="md:col-span-2 text-gray-900">{{ $app->phone ?? '-' }}</div>
             </div>
