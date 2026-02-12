@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+<!-- @extends('layouts.admin')
 
 @section('header_title', 'Manajemen Kategori')
 @section('title', 'Manajemen Kategori')
@@ -349,4 +349,4 @@
         if (e.key === 'Escape') closeDeleteModal();
     });
 </script>
-@endpush
+@endpush -->

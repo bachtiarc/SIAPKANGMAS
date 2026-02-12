@@ -4,6 +4,23 @@
 @section('title', 'Manajemen Pengajuan')
 
 @section('content')
+@php
+    // ====== LIST BIDANG (untuk filter) ======
+    $bidangOptions = [
+        'Sekretariat',
+        'Bidang Pembangunan Sumber Daya Industri Dan Perwilayahan Industri',
+        'Bidang Pemberdayaan Industri',
+        'Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri',
+        'Bidang Perdagangan Dalam Negeri',
+        'Bidang Perdagangan Luar Negeri',
+        'Balai Industri Logam dan Kayu (BILK) Kelas A',
+        'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Surakarta Kelas A',
+        'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Semarang',
+        'Balai Industri Produk Tekstil dan Alas Kaki (BIPTAK)',
+        'Balai Industri Kreatif Digital dan Kemasan Kelas A (BIKDK)',
+    ];
+@endphp
+
 <div class="space-y-6">
     <div class="flex flex-col gap-2">
         <p class="font-lato text-gray-600">
@@ -58,37 +75,37 @@
 
     <div class="bg-white/75 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/70 overflow-hidden">
 
-    <div class="p-4 border-b border-gray-200/70">
-        @php
-            $tabBase = 'flex-1 text-center px-6 py-3 font-montserrat font-semibold text-sm transition rounded-2xl ring-1 ring-transparent';
-            $tabOff  = 'text-gray-600 bg-white/60 ring-gray-200/70 hover:bg-gray-50/70 hover:text-blue-600 hover:ring-gray-200/80';
-            $tabOn   = 'text-blue-700 bg-blue-100/70 ring-blue-200/70 shadow-sm';
-        @endphp
+        <div class="p-4 border-b border-gray-200/70">
+            @php
+                $tabBase = 'flex-1 text-center px-6 py-3 font-montserrat font-semibold text-sm transition rounded-2xl ring-1 ring-transparent';
+                $tabOff  = 'text-gray-600 bg-white/60 ring-gray-200/70 hover:bg-gray-50/70 hover:text-blue-600 hover:ring-gray-200/80';
+                $tabOn   = 'text-blue-700 bg-blue-100/70 ring-blue-200/70 shadow-sm';
+            @endphp
 
-        <div class="bg-gray-50/70 p-2 rounded-3xl ring-1 ring-gray-200/60">
-            <div class="flex w-full gap-3">
-                <a href="{{ route('admin.management.semua') }}"
-                   class="{{ $tabBase }} {{ request()->routeIs('admin.management.semua') ? $tabOn : $tabOff }}">
-                    Semua
-                </a>
+            <div class="bg-gray-50/70 p-2 rounded-3xl ring-1 ring-gray-200/60">
+                <div class="flex w-full gap-3">
+                    <a href="{{ route('admin.management.semua') }}"
+                       class="{{ $tabBase }} {{ request()->routeIs('admin.management.semua') ? $tabOn : $tabOff }}">
+                        Semua
+                    </a>
 
-                <a href="{{ route('admin.consultations.konsultasi') }}"
-                   class="{{ $tabBase }} {{ request()->routeIs('admin.consultations.konsultasi') ? $tabOn : $tabOff }}">
-                    Konsultasi
-                </a>
+                    <a href="{{ route('admin.consultations.konsultasi') }}"
+                       class="{{ $tabBase }} {{ request()->routeIs('admin.consultations.konsultasi') ? $tabOn : $tabOff }}">
+                        Konsultasi
+                    </a>
 
-                <a href="{{ route('admin.complaints.pengaduan') }}"
-                   class="{{ $tabBase }} {{ request()->routeIs('admin.complaints.pengaduan') ? $tabOn : $tabOff }}">
-                    Pengaduan
-                </a>
+                    <a href="{{ route('admin.complaints.pengaduan') }}"
+                       class="{{ $tabBase }} {{ request()->routeIs('admin.complaints.pengaduan') ? $tabOn : $tabOff }}">
+                        Pengaduan
+                    </a>
 
-                <a href="{{ route('admin.submissions.permohonan') }}"
-                   class="{{ $tabBase }} {{ request()->routeIs('admin.submissions.permohonan') ? $tabOn : $tabOff }}">
-                    Permohonan Informasi
-                </a>
+                    <a href="{{ route('admin.submissions.permohonan') }}"
+                       class="{{ $tabBase }} {{ request()->routeIs('admin.submissions.permohonan') ? $tabOn : $tabOff }}">
+                        Permohonan Informasi
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
 
         <form action="{{ route('admin.management.semua') }}" method="GET" class="w-full">
             <div class="p-4 border-b border-gray-200/70">
@@ -127,14 +144,15 @@
                             </div>
                         </div>
 
+                        {{-- ====== DIPROSES OLEH (BIDANG) ====== --}}
                         <div class="shrink-0 w-72">
-                            <label class="block text-xs font-semibold text-gray-600 mb-2">Kategori :</label>
+                            <label class="block text-xs font-semibold text-gray-600 mb-2">Diproses oleh (Bidang) :</label>
                             <div class="relative">
-                                <select name="category" class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300/80 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500/60 bg-white/70 text-gray-600 truncate shadow-sm">
+                                <select name="diproses_bidang" class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300/80 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500/60 bg-white/70 text-gray-600 truncate shadow-sm">
                                     <option value="Semua">Semua</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat->id }}" {{ (string)request('category') === (string)$cat->id ? 'selected' : '' }}>
-                                            {{ strtoupper($cat->type) }} - {{ $cat->name }}
+                                    @foreach($bidangOptions as $b)
+                                        <option value="{{ $b }}" {{ request('diproses_bidang') === $b ? 'selected' : '' }}>
+                                            {{ $b }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -186,7 +204,6 @@
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[190px]">Nama Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[240px]">Email Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[140px]">Jenis Pelapor</th>
-                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[220px]">Kategori</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[320px]">Subjek</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[150px]">Status</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[90px]">Aksi</th>
@@ -215,18 +232,18 @@
 
                             <tr class="hover:bg-gray-50/70 transition">
                                 <td class="px-4 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">
-                                <a href="{{ $row['show_route'] }}"
-                                class="group inline-block rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/15"
-                                title="Lihat Detail">
-                                    <div class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1 group-hover:text-blue-600">
-                                        {{ $row['service'] }}
-                                    </div>
+                                    <a href="{{ $row['show_route'] }}"
+                                       class="group inline-block rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/15"
+                                       title="Lihat Detail">
+                                        <div class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1 group-hover:text-blue-600">
+                                            {{ $row['service'] }}
+                                        </div>
 
-                                    <span class="underline-offset-4 group-hover:underline group-hover:text-blue-700">
-                                        {{ $row['ticket'] }}
-                                    </span>
-                                </a>
-                            </td>
+                                        <span class="underline-offset-4 group-hover:underline group-hover:text-blue-700">
+                                            {{ $row['ticket'] }}
+                                        </span>
+                                    </a>
+                                </td>
 
                                 <td class="px-4 py-4 text-sm text-gray-600 whitespace-nowrap text-center">
                                     {{ isset($row['created_at']) && $row['created_at'] ? \Carbon\Carbon::parse($row['created_at'])->format('d F Y') : '-' }}
@@ -241,19 +258,12 @@
                                 </td>
 
                                 <td class="px-4 py-4 text-sm text-gray-600 whitespace-nowrap text-center">
-                                    @php
-                                        $ut = strtolower($row['user_type'] ?? '');
-                                    @endphp
-
+                                    @php $ut = strtolower($row['user_type'] ?? ''); @endphp
                                     {{ match($ut) {
                                         'masyarakat_umum', 'masyarakat' => 'Masyarakat Umum',
                                         'pegawai'                      => 'Pegawai',
                                         default                        => '-',
                                     } }}
-                                </td>
-
-                                <td class="px-4 py-4 text-sm text-gray-600">
-                                    <div class="max-w-[260px] truncate">{{ $row['category'] ?? '-' }}</div>
                                 </td>
 
                                 <td class="px-4 py-4 text-sm text-gray-900 font-medium">
@@ -279,7 +289,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="p-10 text-center text-gray-500">Tidak ada data.</td>
+                                <td colspan="8" class="p-10 text-center text-gray-500">Tidak ada data.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use App\Services\BrevoMailer;
+use Illuminate\Support\Facades\Storage;
 
 class SubmissionController extends Controller
 {
@@ -221,7 +222,14 @@ class SubmissionController extends Controller
             $kecName = $kec->nama ?? null;
             $isKelurahan = $this->detectIsKelurahan($kabName, $kecName);
 
-            $ktpPath = $request->file('foto_ktp')->store('ktp', 'supabase');
+            $file = $request->file('foto_ktp');
+            $ktpPath = $validated['nik'].'/'.Str::uuid().'.'.$file->extension();
+
+            Storage::disk('supabase_ktp')->put(
+                $ktpPath,
+                file_get_contents($file->getRealPath()),
+                ['ContentType' => $file->getMimeType()]
+            );
 
             $submission->applicant()->create([
                 'nama_lengkap' => $validated['nama_lengkap'],

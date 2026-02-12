@@ -129,7 +129,7 @@
                         <span class="ml-2 whitespace-nowrap sidebar-text">Manajemen Pengajuan</span>
                     </a>
 
-                    <!-- Manajemen Kategori -->
+                    <!-- Manajemen Kategori
                     <a href="{{ route('admin.categories.kategori') }}"
                        class="{{ $navBase }}
                        {{
@@ -143,7 +143,7 @@
                                   d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                         </svg>
                         <span class="ml-2 whitespace-nowrap sidebar-text">Manajemen Kategori</span>
-                    </a>
+                    </a> -->
 
                 </div>
             </nav>

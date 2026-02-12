@@ -116,11 +116,12 @@
                 </div>
                 <div class="p-6 space-y-6">
                     <div>
-                        <h4 class="font-bold text-gray-900 text-sm mb-2">Judul / Topik</h4>
+                        <h4 class="font-bold text-gray-900 text-sm mb-2">Judul</h4>
                         <p class="text-gray-700 font-lato">{{ $consultation->title }}</p>
                     </div>
+                    // Kategori Konsultasi
                     <div>
-                        <h4 class="font-bold text-gray-900 text-sm mb-2">Uraian Masalah</h4>
+                        <h4 class="font-bold text-gray-900 text-sm mb-2">Deskripsi Lengkap</h4>
                         <div class="p-4 bg-gray-50 rounded-lg text-gray-700 font-lato text-sm leading-relaxed border border-gray-100 min-h-[100px]">
                             {{ $consultation->description }}
                         </div>
