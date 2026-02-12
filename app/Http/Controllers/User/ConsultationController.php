@@ -293,7 +293,7 @@ class ConsultationController extends Controller
         $nik = preg_replace('/\D+/', '', $nik);
         $nik = str_pad($nik, 16, '0', STR_PAD_RIGHT);
 
-        $nikConsultation = substr($nik, 9, 13);
+        $nikConsultation = substr($nik, 8, 4) ?: '0000';
         $date = now()->format('dmY');
 
         $todayPrefix = "KL.CA{$nikConsultation}.{$date}_";

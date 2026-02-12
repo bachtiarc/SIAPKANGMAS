@@ -266,7 +266,7 @@ class ComplaintController extends Controller
     {
         $nik = preg_replace('/\D+/', '', $nik);
         $nik = str_pad($nik, 16, '0', STR_PAD_RIGHT);
-        $nikPart = substr($nik, 9, 13);
+        $nikPart = substr($nik, 8, 4) ?: '0000';
         $date = now()->format('dmY');
 
         $todayPrefix = "PD.CA{$nikPart}.{$date}_";
