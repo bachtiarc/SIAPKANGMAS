@@ -139,10 +139,11 @@ class SubmissionController extends Controller
             'email.email' => 'Format email tidak valid. Contoh yang benar: ahmadsubari@gmail.com',
         ]);
 
-        if (!empty($validated['nik'])) {
-            $existsUserNik = User::where('nik', $validated['nik'])->exists();
+        if (!empty($validated['nik']) && !empty($validated['email']) && !empty($validated['phone'])) {
+            $existsUserAcc = User::where('nik', $validated['nik'])->exists() && User::where('email', $validated['email'])->exists() 
+            && User::where('phone', $validated['phone'])->exists();
 
-            if ($existsUserNik) {
+            if ($existsUserAcc) {
                 return back()
                     ->withInput()
                     ->with('toast_error', 'Untuk pengguna yang telah memiliki akun, silakan membuat pengajuan melalui dashboard sendiri.')
