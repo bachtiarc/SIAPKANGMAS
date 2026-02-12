@@ -4,295 +4,293 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
+use App\Models\ComplaintApplicant;
 use App\Models\ComplaintDocument;
-use App\Models\Category;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use App\Services\BrevoMailer;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ComplaintController extends Controller
 {
-    /**
-     * Display a listing of complaints
-     */
     public function index(Request $request)
     {
         $user = auth()->user();
-
-        if ($user->user_type !== 'pegawai') {
-            abort(403, 'Unauthorized access.');
-        }
+        if ($user->user_type !== 'pegawai') abort(403, 'Unauthorized access.');
 
         $query = Complaint::where('user_id', $user->id)
-            ->with(['category', 'handler']);
+            ->with(['applicant', 'handler']);
 
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($q) use ($search) {
                 $q->where('ticket_number', 'ilike', "%{$search}%")
                   ->orWhere('subject', 'ilike', "%{$search}%");
             });
         }
 
-        if ($request->has('status') && $request->status != 'semua' && $request->status != '') {
-            $statusFilter = strtolower($request->status);
+        if ($request->filled('status') && $request->status !== 'semua') {
+            $statusFilter = strtolower((string) $request->status);
 
-            $query->where(function($q) use ($statusFilter) {
+            $query->where(function ($q) use ($statusFilter) {
                 if ($statusFilter === 'pending') {
                     $q->whereIn('status', ['pending', 'belum diproses']);
-                }
-                elseif ($statusFilter === 'diproses') {
-                    $q->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
-                }
-                elseif ($statusFilter === 'selesai') {
-                    $q->whereIn('status', ['completed', 'selesai']);
-                }
-                elseif ($statusFilter === 'ditolak') {
-                    $q->whereIn('status', ['rejected', 'ditolak']);
+                } elseif ($statusFilter === 'diproses') {
+                    $q->whereIn('status', ['diproses', 'in_progress', 'on_progress', 'sedang diproses']);
+                } elseif ($statusFilter === 'selesai') {
+                    $q->whereIn('status', ['selesai', 'completed']);
+                } elseif ($statusFilter === 'ditolak') {
+                    $q->whereIn('status', ['ditolak', 'rejected']);
                 }
             });
         }
 
         $complaints = $query->latest()->paginate(10)->withQueryString();
-
         return view('user.complaints.index', compact('complaints'));
     }
 
-    /**
-     * Show the form for creating a new complaint
-     */
     public function create()
     {
         $user = auth()->user();
-        $userType = $user->user_type;
+        if ($user->user_type !== 'pegawai') abort(403, 'Unauthorized access.');
 
-        $categories = Category::active()
-            ->ofType('pengaduan')
-            ->where(function($query) use ($userType) {
-                $query->where('user_type', $userType)
-                    ->orWhere('user_type', 'all');
-            })
-            ->orderBy('name')
-            ->get();
-
-        return view('user.complaints.create', compact('categories'));
+        return view('user.complaints.create');
     }
 
-    /**
-     * Store a newly created complaint in storage
-     */
-    public function store(Request $request, BrevoMailer $brevo)
+    public function store(Request $request)
     {
         $user = auth()->user();
-
-        if ($user->user_type !== 'pegawai') {
-            abort(403, 'Unauthorized access.');
-        }
+        if ($user->user_type !== 'pegawai') abort(403, 'Unauthorized access.');
 
         $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
+            'nama_lengkap' => 'required|string|max:255',
+            'nik' => 'required|string|size:16',
+            'phone' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+
+            'kabupaten_kode' => 'required|string|max:50',
+            'kecamatan_kode' => 'required|string|max:50',
+            'desa_kode' => 'required|string|max:50',
+            'alamat_detail' => 'required|string',
+
+            'foto_ktp' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
             'subject' => 'required|string|max:255',
             'description' => 'required|string',
             'documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ], [
-            'category_id.required' => 'Kategori pengaduan wajib dipilih.',
-            'category_id.exists' => 'Kategori tidak valid.',
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+            'nik.required' => 'NIK wajib diisi.',
+            'nik.size' => 'NIK harus 16 digit.',
+            'phone.required' => 'Nomor telepon/WA wajib diisi.',
+            'kabupaten_kode.required' => 'Kabupaten/Kota wajib dipilih.',
+            'kecamatan_kode.required' => 'Kecamatan wajib dipilih.',
+            'desa_kode.required' => 'Desa/Kelurahan wajib dipilih.',
+            'alamat_detail.required' => 'Alamat lengkap wajib diisi.',
+            'foto_ktp.required' => 'Foto KTP wajib diupload.',
+            'foto_ktp.image' => 'Foto KTP harus berupa gambar.',
+            'foto_ktp.max' => 'Ukuran Foto KTP maksimal 2MB.',
             'subject.required' => 'Subjek pengaduan wajib diisi.',
             'description.required' => 'Deskripsi lengkap wajib diisi.',
             'documents.*.mimes' => 'Format dokumen harus PDF, JPG, JPEG, atau PNG.',
             'documents.*.max' => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
 
-        // total size max 6MB
-        if ($request->hasFile('documents')) {
-            $totalSize = 0;
-            foreach ($request->file('documents') as $file) {
-                if ($file && $file->isValid()) {
-                    $totalSize += $file->getSize();
-                }
-            }
-            if ($totalSize > 6291456) {
-                return back()->withErrors([
-                    'documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'
-                ])->withInput();
+        if (!empty($validated['nik']) && !empty($validated['email']) && !empty($validated['phone'])) {
+            $existsUserAcc =
+                User::where('nik', $validated['nik'])->exists()
+                && User::where('email', $validated['email'])->exists()
+                && User::where('phone', $validated['phone'])->exists();
+
+            if ($existsUserAcc) {
+                return back()
+                    ->withInput()
+                    ->with('toast_error', 'Untuk pengguna yang telah memiliki akun, silakan membuat pengajuan melalui dashboard sendiri.')
+                    ->with('toast_duration', 9000);
             }
         }
 
-        $kodeLayanan = "PD";
-        $kodeBalai = $user->bidang_code ?? "01";
-        $kodeSubBagian = $user->sub_bagian_code ?? "106";
-
-        $tanggal = now()->format('dmY');
-
-        $count = Complaint::whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year)
-                    ->count() + 1;
-
-        $urutan = str_pad($count, 3, '0', STR_PAD_LEFT);
-
-        $ticketNumber = "{$kodeLayanan}.{$kodeBalai}.{$kodeSubBagian}.{$tanggal}_{$urutan}";
-
-        $complaint = Complaint::create([
-            'user_id' => $user->id,
-            'category_id' => $validated['category_id'],
-            'subject' => $validated['subject'],
-            'description' => $validated['description'],
-            'ticket_number' => $ticketNumber,
-            'status' => 'pending',
-        ]);
-
         if ($request->hasFile('documents')) {
-            $documents = array_slice($request->file('documents'), 0, 3);
+            $totalSize = 0;
+            foreach ($request->file('documents') as $f) {
+                if ($f && $f->isValid()) $totalSize += (int) $f->getSize();
+            }
+            if ($totalSize > 6 * 1024 * 1024) {
+                return back()->withErrors(['documents' => 'Total ukuran semua dokumen tidak boleh lebih dari 6MB.'])->withInput();
+            }
+        }
 
-            foreach ($documents as $document) {
-                if ($document && $document->isValid()) {
-                    $filename = Str::random(40) . '.' . $document->getClientOriginalExtension();
+        DB::beginTransaction();
 
+        try {
+            $ticketNumber = $this->generateTicketNumber($validated['nik']);
+            while (Complaint::where('ticket_number', $ticketNumber)->exists()) {
+                $ticketNumber = $this->generateTicketNumber($validated['nik']);
+            }
+
+            $complaint = Complaint::create([
+                'user_id' => $user->id,
+                'subject' => $validated['subject'],
+                'description' => $validated['description'],
+                'ticket_number' => $ticketNumber,
+                'status' => 'pending',
+            ]);
+
+            $kab  = DB::table('wilayah')->where('kode', $validated['kabupaten_kode'])->first();
+            $kec  = DB::table('wilayah')->where('kode', $validated['kecamatan_kode'])->first();
+            $desa = DB::table('wilayah')->where('kode', $validated['desa_kode'])->first();
+            $kabName = $kab->nama ?? null;
+            $kecName = $kec->nama ?? null;
+            $isKelurahan = $this->detectIsKelurahan($kabName, $kecName);
+
+            $ktpPath = null;
+            try {
+                $ktp = $request->file('foto_ktp');
+                $ktpName = 'ktp_' . Str::random(32) . '.' . $ktp->getClientOriginalExtension();
+                $ktpPath = Storage::disk('supabase_complaints')->putFileAs((string) $complaint->id, $ktp, $ktpName);
+            } catch (\Throwable $e) {
+                Log::error('Upload KTP complaint gagal: ' . $e->getMessage());
+            }
+
+            ComplaintApplicant::create([
+                'complaint_id' => $complaint->id,
+                'nama_lengkap' => $validated['nama_lengkap'],
+                'nik' => $validated['nik'],
+                'email' => $validated['email'] ?? null,
+                'phone' => $validated['phone'],
+                'alamat_detail' => $validated['alamat_detail'],
+
+                'kabupaten_kode' => $validated['kabupaten_kode'],
+                'kabupaten_nama' => $kabName,
+                'kecamatan_kode' => $validated['kecamatan_kode'],
+                'kecamatan_nama' => $kecName,
+                'desa_kode' => $validated['desa_kode'],
+                'desa_nama' => $desa->nama ?? null,
+
+                'provinsi' => 'Jawa Tengah',
+                'is_kelurahan' => $isKelurahan,
+
+                'foto_ktp' => $ktpPath,
+            ]);
+
+            if ($request->hasFile('documents')) {
+                $docs = array_slice($request->file('documents'), 0, 3);
+
+                foreach ($docs as $doc) {
+                    if (!$doc || !$doc->isValid()) continue;
+
+                    $filename = Str::random(40) . '.' . $doc->getClientOriginalExtension();
                     $path = Storage::disk('supabase_complaints')
-                        ->putFileAs((string) $complaint->id, $document, $filename);
+                        ->putFileAs((string) $complaint->id, $doc, $filename);
 
                     ComplaintDocument::create([
                         'complaint_id' => $complaint->id,
-                        'original_name' => $document->getClientOriginalName(),
+                        'original_name' => $doc->getClientOriginalName(),
                         'file_path' => $path,
-                        'file_type' => $document->getClientOriginalExtension(),
-                        'file_size' => $document->getSize(),
+                        'file_type' => $doc->getClientOriginalExtension(), // sesuai schema: varchar(10)
+                        'file_size' => $doc->getSize(),
                     ]);
                 }
             }
-        }
 
-        // =========================
-        // SEND EMAIL VIA BREVO API
-        // =========================
-        try {
-            // load relasi yang dipakai blade
-            $complaint->load(['user', 'category']);
+            DB::commit();
 
-            // render view (nama file kamu pakai dash)
-            $html = view('emails.complaint-created', [
-                'complaint' => $complaint,
-            ])->render();
+            $from = $request->query('from', 'index');
 
-            Log::info('BREVO DEBUG (complaint pegawai) - about to send', [
-                'to' => $user->email,
-                'has_api_key' => (bool) config('brevo.api_key'),
-                'ticket_number' => $complaint->ticket_number,
-                'app_env' => config('app.env'),
-            ]);
-
-            $brevo->sendTransactional(
-                toEmail: $user->email,
-                toName: $user->name ?? null,
-                subject: "Pengaduan Diterima ({$complaint->ticket_number})",
-                htmlContent: $html
-            );
-
-            Log::info('BREVO DEBUG (complaint pegawai) - sent OK', [
-                'to' => $user->email,
-                'ticket_number' => $complaint->ticket_number,
-            ]);
+            return redirect()->route('user.complaints.create', ['from' => $from])
+                ->with('success', true)
+                ->with('ticket_id', $complaint->ticket_number)
+                ->with('complaint_id', $complaint->id);
 
         } catch (\Throwable $e) {
-            Log::error('BREVO DEBUG (complaint pegawai) - failed', [
-                'to' => $user->email,
-                'ticket_number' => $complaint->ticket_number,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            DB::rollBack();
+            Log::error('STORE CO ADMIN (complaint) failed', ['error' => $e->getMessage()]);
+
+            return back()
+                ->withInput()
+                ->with('toast_error', 'Terjadi kesalahan saat menyimpan pengaduan. Silakan coba lagi.')
+                ->with('toast_duration', 9000);
         }
-
-        $from = $request->query('from', 'index');
-
-        return redirect()->route('user.complaints.create', ['from' => $from])
-            ->with('success', true)
-            ->with('ticket_id', $complaint->ticket_number)
-            ->with('complaint_id', $complaint->id);
     }
 
-    /**
-     * Display the specified complaint
-     */
     public function show(Complaint $complaint)
     {
         $user = auth()->user();
+        if ($complaint->user_id !== $user->id) abort(403, 'Unauthorized access.');
 
-        if ($complaint->user_id !== $user->id) {
-            abort(403, 'Unauthorized access.');
-        }
-
-        $complaint->load(['category', 'handler', 'statusHistories', 'documents']);
-
+        $complaint->load(['applicant', 'handler', 'statusHistories', 'documents']);
         return view('user.complaints.show', compact('complaint'));
     }
 
-    /**
-     * View specific document
-     */
     public function viewDocument(ComplaintDocument $document)
     {
         $user = auth()->user();
-
-        if ($document->complaint->user_id !== $user->id) {
-            abort(403, 'Unauthorized access.');
-        }
+        if ($document->complaint->user_id !== $user->id) abort(403, 'Unauthorized access.');
 
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
 
-        $path = ltrim($document->file_path, '/');
-        if (Str::startsWith($path, 'complaints/')) {
-            $path = Str::after($path, 'complaints/');
-        }
+        $path = ltrim((string) $document->file_path, '/');
+        if (Str::startsWith($path, 'complaints/')) $path = Str::after($path, 'complaints/');
 
         $urlNormal = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
-        $urlLegacy = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/complaints/{$path}";
-
-        $res = Http::get($urlNormal);
-        $finalUrl = $res->successful() ? $urlNormal : $urlLegacy;
-
-        return redirect()->away($finalUrl);
+        return redirect()->away($urlNormal);
     }
 
-    /**
-     * Download complaint document
-     */
     public function downloadDocument(ComplaintDocument $document)
     {
         $user = auth()->user();
-
-        if ($document->complaint->user_id !== $user->id) {
-            abort(403, 'Unauthorized access.');
-        }
+        if ($document->complaint->user_id !== $user->id) abort(403, 'Unauthorized access.');
 
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
-        $filePath = ltrim($document->file_path, '/');
 
-        if (Str::startsWith($filePath, 'complaints/')) {
-            $filePath = Str::after($filePath, 'complaints/');
-        }
+        $filePath = ltrim((string) $document->file_path, '/');
+        if (Str::startsWith($filePath, 'complaints/')) $filePath = Str::after($filePath, 'complaints/');
 
         $publicUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$filePath}";
 
-        try {
-            $response = Http::get($publicUrl);
+        $response = Http::get($publicUrl);
+        if (!$response->successful()) abort(404, 'File not found');
 
-            if ($response->successful()) {
-                $fileName = $document->original_name ?? basename($document->file_path);
+        $fileName = $document->original_name ?? basename((string) $document->file_path);
 
-                return response($response->body(), 200)
-                    ->header('Content-Type', $response->header('Content-Type') ?? 'application/octet-stream')
-                    ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
-            }
+        return response($response->body(), 200)
+            ->header('Content-Type', $response->header('Content-Type') ?? 'application/octet-stream')
+            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+    }
 
-            abort(404, 'File not found');
-        } catch (\Exception $e) {
-            Log::error('Download error: ' . $e->getMessage());
-            abort(500, 'Failed to download file');
+    private function generateTicketNumber(string $nik): string
+    {
+        $nik = preg_replace('/\D+/', '', $nik);
+        $nik = str_pad($nik, 16, '0', STR_PAD_RIGHT);
+        $nikPart = substr($nik, 8, 4) ?: '0000';
+        $date = now()->format('dmY');
+
+        $todayPrefix = "PD.CA{$nikPart}.{$date}_";
+
+        $last = Complaint::where('ticket_number', 'like', $todayPrefix . '%')
+            ->orderBy('ticket_number', 'desc')
+            ->value('ticket_number');
+
+        $nextSeq = 1;
+        if ($last) {
+            $parts = explode('_', $last);
+            $lastSeq = (int) ($parts[1] ?? 0);
+            $nextSeq = $lastSeq + 1;
         }
+
+        $sequence = str_pad((string) $nextSeq, 3, '0', STR_PAD_LEFT);
+
+        return "PD.CA{$nikPart}.{$date}_{$sequence}";
+    }
+
+    private function detectIsKelurahan(?string $kabName, ?string $kecName): bool
+    {
+        $kab = strtolower((string) $kabName);
+        $kec = strtolower((string) $kecName);
+        return str_contains($kab, 'kota') || str_contains($kec, 'kota');
     }
 }

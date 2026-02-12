@@ -8,27 +8,40 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ConsultationPdfController extends Controller
 {
-    /**
-     * Download consultation as PDF
-     */
     public function download(Consultation $consultation)
     {
         $user = auth()->user();
-        
-        if ($consultation->user_id !== $user->id) {
+
+        if ($user->user_type !== 'pegawai') {
             abort(403, 'Unauthorized access.');
         }
 
-        $consultation->load(['category', 'handler', 'user']);
+        if ((int) $consultation->user_id !== (int) $user->id) {
+            abort(403, 'Unauthorized access.');
+        }
 
-        $pdf = Pdf::loadView('pdfs.submission', [
-            'submission' => $consultation, 
-            'user' => $user,
-            'submissionType' => 'KONSULTASI'
+        $consultation->load(['handler', 'documents', 'applicant']);
+
+        $app = $consultation->applicant;
+
+        $userData = (object)[
+            'name' => $app?->nama_lengkap,
+            'nik' => $app?->nik,
+            'email' => $app?->email,
+            'phone' => $app?->phone,
+            'address' => $app?->alamat_detail,
+            'desa' => $app?->desa_nama,
+            'kecamatan' => $app?->kecamatan_nama,
+            'kabupaten' => $app?->kabupaten_nama,
+            'provinsi' => $app?->provinsi ?? 'Jawa Tengah',
+            'is_kelurahan' => (bool) ($app?->is_kelurahan ?? false),
+        ];
+
+        $pdf = Pdf::loadView('pdfs.masyarakat-consultation', [
+            'consultation' => $consultation,
+            'user' => $userData,
         ]);
 
-        $pdf->setPaper('a4', 'portrait');
-
-        return $pdf->download($consultation->ticket_number . '.pdf');
+        return $pdf->download("Konsultasi-{$consultation->ticket_number}.pdf");
     }
 }

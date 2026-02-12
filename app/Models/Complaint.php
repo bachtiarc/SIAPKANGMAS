@@ -173,4 +173,10 @@ class Complaint extends Model
     {
         return $this->attributes['admin_response'] ?? null;
     }
+
+    public function applicant()
+    {
+        return $this->hasOne(\App\Models\ComplaintApplicant::class);
+    }
+
 }

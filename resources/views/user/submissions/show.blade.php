@@ -4,84 +4,115 @@
 
 @section('content')
 <div class="p-6 bg-gray-50 min-h-screen">
+
+    @php
+        $from = request()->get('from', 'index');
+
+        if ($from === 'dashboard') {
+            $backUrl = route('user.dashboard');
+        } elseif ($from === 'history') {
+            $backUrl = route('user.history.index');
+        } elseif ($from === 'search') {
+            $searchQuery = request()->get('q', '');
+            $backUrl = route('search.result', ['q' => $searchQuery]);
+        } else {
+            $backUrl = route('user.submissions.index');
+        }
+
+        $statusLower = strtolower((string) $submission->status);
+        $isPending    = in_array($statusLower, ['pending','belum diproses'], true);
+        $isProcessing = in_array($statusLower, ['in_progress','on_progress','diproses','sedang diproses'], true);
+        $isCompleted  = in_array($statusLower, ['completed','selesai'], true);
+        $isRejected   = in_array($statusLower, ['rejected','ditolak'], true);
+        $isFinished   = $isCompleted || $isRejected;
+
+        if ($isPending) $progressWidth = '25%';
+        elseif ($isProcessing) $progressWidth = '58%';
+        elseif ($isFinished) $progressWidth = '100%';
+        else $progressWidth = '0%';
+
+        $cara = $submission->cara_penyampaian;
+        $opsi = $submission->datang_langsung_opsi ?? [];
+        if (!is_array($opsi)) $opsi = [];
+        if (in_array('keduanya', $opsi, true)) $opsi = ['flashdisk','cetak'];
+
+        $app = $submission->applicant;
+
+        $alamatDetail = trim((string)($app->alamat_detail ?? ''));
+
+        $desaNama = $app->desa_nama ?? '-';
+        $kecNama  = $app->kecamatan_nama ?? '-';
+        $kabNama  = $app->kabupaten_nama ?? '-';
+
+        $desaLabel = ($app && $app->is_kelurahan)
+            ? 'Kelurahan ' . $desaNama
+            : 'Desa ' . $desaNama;
+
+        $kabLower = strtolower(trim($kabNama));
+        $isKotaKab = str_starts_with($kabLower, 'kota');
+
+        $kabClean = $isKotaKab
+            ? trim(preg_replace('/^kota\s+/i', '', $kabNama))
+            : trim(preg_replace('/^kab\.?\s+/i', '', $kabNama));
+
+        $kabLabel = $isKotaKab ? ('Kota ' . $kabClean) : ('Kab. ' . $kabClean);
+
+        $alamatLengkap = collect([
+            $alamatDetail,
+            $desaLabel,
+            'Kec. ' . $kecNama,
+            $kabLabel,
+            $app->provinsi ?? 'Jawa Tengah',
+        ])->filter(fn($v) => trim((string)$v) !== '' && trim((string)$v) !== '-')->implode(', ');
+
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $bucket = env('SUPABASE_BUCKET', 'submissions');
+
+        $ktpPath = ltrim((string)($app->foto_ktp ?? ''), '/');
+        $ktpUrl = $ktpPath ? "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$ktpPath}" : null;
+    @endphp
+
+    <!-- Breadcrumb -->
+    <nav class="mb-6 text-sm">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{{ route('user.dashboard') }}" class="text-blue-600 hover:text-blue-800">Beranda</a></li>
+            <li class="text-gray-400">/</li>
+            <li><a href="{{ route('user.submissions.index') }}" class="text-blue-600 hover:text-blue-800">Permohonan Informasi</a></li>
+            <li class="text-gray-400">/</li>
+            <li class="text-gray-600">Detail</li>
+        </ol>
+    </nav>
+
+    <!-- Header Action -->
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center space-x-4">
-            @php
-                $from = request()->get('from', 'index');
-                if ($from === 'dashboard') {
-                    $backUrl = route('user.dashboard');
-                } elseif ($from === 'history') {
-                    $backUrl = route('user.history.index');
-                } elseif ($from === 'search') {
-                    $searchQuery = request()->get('q', '');
-                    $backUrl = route('search.result', ['q' => $searchQuery]);
-                } else {
-                    $backUrl = route('user.submissions.index');
-                }
-
-                $statusLower = strtolower($submission->status);
-
-                $isPending    = in_array($statusLower, ['pending', 'belum diproses']);
-                $isProcessing = in_array($statusLower, ['in_progress', 'on_progress', 'diproses', 'sedang diproses']);
-                $isCompleted  = in_array($statusLower, ['completed', 'selesai']);
-                $isRejected   = in_array($statusLower, ['rejected', 'ditolak']);
-
-                $isFinished = $isCompleted || $isRejected;
-
-                if ($isPending) $progressWidth = '25%';
-                elseif ($isProcessing) $progressWidth = '58%';
-                elseif ($isFinished) $progressWidth = '100%';
-                else $progressWidth = '0%';
-
-                if ($isPending) $statusText = 'Menunggu Diproses';
-                elseif ($isProcessing) $statusText = 'Diproses';
-                elseif ($isCompleted) $statusText = 'Selesai';
-                else $statusText = 'Ditolak';
-
-                $fallbackBadge =
-                    $isPending ? 'bg-yellow-100 text-yellow-800' :
-                    ($isProcessing ? 'bg-blue-100 text-blue-800' :
-                    ($isCompleted ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'));
-
-                $cara = $submission->cara_penyampaian; // 'online'|'datang_langsung'|null
-
-                $opsiArr = $submission->datang_langsung_opsi;
-
-                if (is_string($opsiArr)) {
-                    // just in case nyimpen string
-                    $opsiArr = [$opsiArr];
-                }
-                if (!is_array($opsiArr)) {
-                    $opsiArr = [];
-                }
-
-                $opsiLabel = '-';
-                $hasFlash = in_array('flashdisk', $opsiArr, true);
-                $hasCetak = in_array('cetak', $opsiArr, true);
-
-                if ($hasFlash && $hasCetak) $opsiLabel = 'Keduanya (Flashdisk/Storage + Cetak sendiri)';
-                elseif ($hasFlash) $opsiLabel = 'Membawa flashdisk/storage untuk penyimpanan file';
-                elseif ($hasCetak) $opsiLabel = 'Cetak hasil permohonan dengan biaya sendiri';
-            @endphp
-
             <a href="{{ $backUrl }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
                 Kembali
             </a>
 
-            <h1 class="text-2xl font-bold text-blue-700">Tiket {{ $submission->ticket_id }}</h1>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Detail Permohonan</h1>
+                <p class="text-sm text-gray-600">Tiket: <span class="font-semibold text-blue-700">{{ $submission->ticket_id }}</span></p>
+            </div>
         </div>
 
-        <a href="{{ route('user.submissions.download', $submission) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            Download PDF
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('user.submissions.download', $submission) }}"
+               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Download PDF
+            </a>
+        </div>
     </div>
 
+    <!-- Progres -->
     <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
         <h2 class="flex items-center text-lg font-bold text-gray-900 mb-6">
             <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,49 +123,40 @@
 
         <div class="relative">
             <div class="absolute top-6 left-0 w-full h-0.5 bg-gray-200"></div>
-            <div class="absolute top-6 left-0 h-0.5 bg-green-500" style="width: {{ $progressWidth }};"></div>
+            <div class="absolute top-6 left-0 h-0.5 bg-green-500 transition-all duration-500" style="width: {{ $progressWidth }};"></div>
 
             <div class="relative flex justify-between">
-                {{-- STEP 1 --}}
                 <div class="flex flex-col items-center w-1/4">
                     <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white z-10">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                     </div>
-                    <p class="font-semibold text-sm">Permohonan Terkirim</p>
+                    <p class="font-semibold text-sm mt-2">Terkirim</p>
                     <p class="text-xs text-gray-500">{{ $submission->created_at->format('d M Y, H:i') }}</p>
                 </div>
 
-                {{-- STEP 2 --}}
                 <div class="flex flex-col items-center w-1/4">
-                    {{-- KUNING DIEM (no animate) --}}
                     <div class="w-12 h-12 rounded-full {{ $isPending ? 'bg-yellow-400' : 'bg-green-500' }} flex items-center justify-center text-white z-10">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 2h12M6 22h12M8 2v6l4 4-4 4v6M16 2v6l-4 4 4 4v6"/>
                         </svg>
                     </div>
-                    <p class="font-semibold text-sm">Menunggu Proses</p>
-                    <p class="text-xs text-gray-500">
-                        {{ $submission->waiting_at?->format('d M Y, H:i') ?? $submission->updated_at->format('d M Y, H:i') }}
-                    </p>
+                    <p class="font-semibold text-sm mt-2">Menunggu Diproses</p>
+                    <p class="text-xs text-gray-500">{{ $submission->updated_at->format('d M Y, H:i') }}</p>
                 </div>
 
-                {{-- STEP 3 --}}
                 <div class="flex flex-col items-center w-1/4">
                     <div class="w-12 h-12 rounded-full {{ $isProcessing ? 'bg-blue-500' : ($isFinished ? 'bg-green-500' : 'bg-gray-300') }} flex items-center justify-center text-white z-10">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"/>
                         </svg>
                     </div>
-                    <p class="font-semibold text-sm">Sedang Diproses</p>
-                    <p class="text-xs text-gray-500">
-                        {{ $submission->processing_at?->format('d M Y, H:i') ?? $submission->updated_at->format('d M Y, H:i') }}
-                    </p>
+                    <p class="font-semibold text-sm mt-2">Sedang Diproses</p>
+                    <p class="text-xs text-gray-500">{{ $submission->updated_at->format('d M Y, H:i') }}</p>
                 </div>
 
-                {{-- STEP 4 --}}
                 <div class="flex flex-col items-center w-1/4">
                     <div class="w-12 h-12 rounded-full {{ $isCompleted ? 'bg-green-500' : ($isRejected ? 'bg-red-500' : 'bg-gray-300') }} flex items-center justify-center text-white z-10">
                         @if($isRejected)
@@ -147,171 +169,183 @@
                             </svg>
                         @endif
                     </div>
-                    <p class="font-semibold text-sm">{{ $isCompleted ? 'Selesai' : ($isRejected ? 'Ditolak' : 'Menunggu') }}</p>
+                    <p class="font-semibold text-sm mt-2">{{ $isCompleted ? 'Selesai' : ($isRejected ? 'Ditolak' : 'Menunggu') }}</p>
                     @if($submission->completed_at)
                         <p class="text-xs text-gray-500">{{ $submission->completed_at->format('d M Y, H:i') }}</p>
                     @endif
                 </div>
             </div>
         </div>
+
+        <div class="mt-6">
+            <span class="inline-flex px-4 py-2 text-sm font-semibold rounded-lg {{ $submission->status_badge }}">
+                Status: {{ $submission->status_label }}
+            </span>
+        </div>
     </div>
 
+    <!-- Section I: Data Pemohon -->
     <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {{-- LEFT --}}
-            <div class="space-y-6">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600">Kategori Permohonan</label>
-                    <p class="text-gray-900">{{ $submission->category->name }}</p>
-                </div>
+        <h2 class="text-lg font-bold text-gray-900 mb-6 border-b pb-3">I. Data Pemohon</h2>
 
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600">Subjek Permohonan</label>
-                    <p class="text-gray-900">{{ $submission->subject }}</p>
-                </div>
+        <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Nama Lengkap</div>
+                <div class="md:col-span-2 text-gray-900">{{ $app->nama_lengkap ?? '-' }}</div>
+            </div>
 
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600">Status</label>
-                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full {{ $submission->status_badge ?? $fallbackBadge }}">
-                        {{ $submission->status_label ?? $statusText }}
-                    </span>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">NIK</div>
+                <div class="md:col-span-2 text-gray-900">{{ $app->nik ?? '-' }}</div>
+            </div>
 
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600">Tanggal Pengajuan</label>
-                    <p class="text-gray-900">{{ $submission->created_at->format('d F Y, H:i') }} WIB</p>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Email</div>
+                <div class="md:col-span-2 text-gray-900">{{ $app->email ?? '-' }}</div>
+            </div>
 
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600">Tujuan Permohonan</label>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-gray-900 whitespace-pre-line">{{ $submission->tujuan_permohonan ?? '-' }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Nomor Telepon</div>
+                <div class="md:col-span-2 text-gray-900">{{ $app->phone ?? '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Alamat</div>
+                <div class="md:col-span-2 text-gray-900">
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 whitespace-pre-line">
+                        {{ $alamatLengkap ?: '-' }}
                     </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600">Penyampaian Feedback</label>
-                    <p class="text-gray-900">
-                        @if($cara === 'online')
-                            Secara Online
-                        @elseif($cara === 'datang_langsung')
-                            Datang langsung di kantor Disperindag
-                        @else
-                            -
-                        @endif
-                    </p>
-
-                    @if($cara === 'datang_langsung')
-                        <div class="mt-3">
-                            <label class="block text-sm font-semibold text-gray-600">Opsi saat datang langsung</label>
-                            <p class="text-gray-900">{{ $opsiLabel }}</p>
-                        </div>
-                    @endif
                 </div>
             </div>
 
-            {{-- RIGHT --}}
-            <div class="space-y-6">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600">Deskripsi Lengkap</label>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-gray-900 whitespace-pre-line">{{ $submission->description }}</p>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-gray-600">Dokumen Pendukung</label>
-                    @if($submission->documents && $submission->documents->count() > 0)
-                        <div class="space-y-2">
-                            @foreach($submission->documents as $doc)
-                                @php
-                                    $fileName = $doc->original_name ?? basename($doc->file_path);
-                                    $ext = pathinfo($fileName, PATHINFO_EXTENSION);
-
-                                    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-                                    $bucket = env('SUPABASE_BUCKET', 'submissions');
-
-                                    $path = ltrim($doc->file_path, '/');
-                                    if (\Illuminate\Support\Str::startsWith($path, 'submissions/')) {
-                                        $path = \Illuminate\Support\Str::after($path, 'submissions/');
-                                    }
-
-                                    $documentUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
-                                @endphp
-
-                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition group">
-                                    <div class="flex items-center space-x-3 min-w-0 flex-1">
-                                        @if(in_array(strtolower($ext), ['jpg','jpeg','png','gif','webp']))
-                                            <svg class="w-8 h-8 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
-                                            </svg>
-                                        @else
-                                            <svg class="w-8 h-8 text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
-                                            </svg>
-                                        @endif
-
-                                        <div class="overflow-hidden">
-                                            <p class="text-sm font-medium text-gray-900 truncate max-w-[150px] md:max-w-[240px]">{{ $fileName }}</p>
-                                            <p class="text-xs text-gray-500">{{ number_format($doc->file_size / 1024, 2) }} KB</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs text-gray-500 group-hover:text-blue-600">.{{ strtoupper($ext) }}</span>
-
-                                        <a href="{{ route('user.submissions.document.download', $doc) }}"
-                                        class="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition"
-                                        title="Download">
-                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                            </svg>
-                                        </a>
-
-                                        <a href="{{ $documentUrl }}" target="_blank"
-                                        class="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition"
-                                        title="Lihat">
-                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                            </svg>
-                                        </a>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Foto KTP</div>
+                <div class="md:col-span-2">
+                    @if($ktpUrl)
+                        <a href="{{ $ktpUrl }}" target="_blank"
+                           class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-blue-600">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            Lihat Foto KTP
+                        </a>
                     @else
-                        <p class="text-sm text-gray-500 italic">Tidak ada dokumen pendukung</p>
+                        <span class="text-gray-500">-</span>
                     @endif
                 </div>
-
-                {{-- ADMIN RESPONSE --}}
-                @if($submission->admin_response || $submission->admin_notes)
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-600 mb-2">Respon dari Admin</label>
-                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
-                            <div class="flex items-start">
-                                <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                                </svg>
-                                <div class="flex-1">
-                                    <p class="text-gray-900 whitespace-pre-line">{{ $submission->admin_response ?? $submission->admin_notes }}</p>
-
-                                    @if($submission->handler)
-                                        <p class="text-xs text-blue-700 mt-3 font-semibold">Ditangani oleh: {{ $submission->handler->name }}</p>
-                                    @endif
-
-                                    @if($submission->completed_at)
-                                        <p class="text-xs text-gray-500 mt-1">{{ $submission->completed_at->format('d M Y, H:i') }} WIB</p>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
             </div>
         </div>
     </div>
+
+    <!-- Section II: Rincian Permohonan -->
+    <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-6 border-b pb-3">II. Rincian Permohonan</h2>
+
+        <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Judul Permohonan</div>
+                <div class="md:col-span-2 text-gray-900">{{ $submission->title }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Tanggal Pengajuan</div>
+                <div class="md:col-span-2 text-gray-900">{{ $submission->created_at->format('d F Y, H:i') }} WIB</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Tujuan Permohonan</div>
+                <div class="md:col-span-2 text-gray-900">
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 whitespace-pre-line">
+                        {{ $submission->tujuan_permohonan ?? '-' }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Penyampaian Feedback</div>
+                <div class="md:col-span-2 text-gray-900">
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <p class="font-semibold">
+                            @if($cara === 'online')
+                                Secara Online
+                            @elseif($cara === 'datang_langsung')
+                                Datang langsung ke kantor Disperindag
+                            @else
+                                -
+                            @endif
+                        </p>
+
+                        @if($cara === 'datang_langsung')
+                            <ul class="list-disc list-inside mt-2 text-gray-800">
+                                @if(in_array('flashdisk', $opsi))
+                                    <li>Membawa flashdisk / media penyimpanan</li>
+                                @endif
+                                @if(in_array('cetak', $opsi))
+                                    <li>Cetak hasil permohonan dengan biaya sendiri</li>
+                                @endif
+                                @if(!in_array('flashdisk', $opsi) && !in_array('cetak', $opsi))
+                                    <li>-</li>
+                                @endif
+                            </ul>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <p class="text-sm font-semibold text-gray-600 mb-2">Deskripsi Lengkap</p>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-5 whitespace-pre-line text-gray-900">
+                    {{ $submission->description }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dokumen Pendukung -->
+    <div class="bg-white rounded-lg shadow-sm p-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-6 border-b pb-3">III. Dokumen Pendukung</h2>
+
+        @if($submission->documents && $submission->documents->count() > 0)
+            <div class="space-y-3">
+                @foreach($submission->documents as $doc)
+                    @php
+                        $fileName = $doc->original_name ?? basename($doc->file_path);
+                        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+                        $path = ltrim($doc->file_path, '/');
+                        if (\Illuminate\Support\Str::startsWith($path, 'submissions/')) {
+                            $path = \Illuminate\Support\Str::after($path, 'submissions/');
+                        }
+                        $docUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
+                    @endphp
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+                        <div class="min-w-0">
+                            <p class="font-semibold text-gray-900 truncate max-w-[260px]">{{ $fileName }}</p>
+                            <p class="text-xs text-gray-500">{{ number_format($doc->file_size / 1024, 2) }} KB</p>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <a href="{{ $docUrl }}" target="_blank"
+                               class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-blue-600">
+                                Lihat
+                            </a>
+
+                            <a href="{{ route('user.submissions.document.download', $doc) }}"
+                               class="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                Download
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <p class="text-gray-500">Tidak ada dokumen pendukung.</p>
+        @endif
+    </div>
+
 </div>
 @endsection

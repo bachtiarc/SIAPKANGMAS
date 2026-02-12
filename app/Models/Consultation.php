@@ -131,4 +131,9 @@ class Consultation extends Model
             $q->where('user_type', $type);
         });
     }
+
+    public function applicant()
+    {
+        return $this->hasOne(\App\Models\ConsultationApplicant::class, 'consultation_id');
+    }
 }

@@ -158,9 +158,12 @@ class Submission extends Model
         parent::boot();
 
         static::creating(function ($submission) {
+            if (!empty($submission->ticket_id)) {
+                return;
+            }
             $user = $submission->user;
 
-            if ($user->user_type === 'pegawai') {
+            if ($user && $user->user_type === 'pegawai') {
                 $submission->ticket_id = self::generateTicketIdPegawai($user);
             } else {
                 $submission->ticket_id = self::generateTicketIdMasyarakat($user);
@@ -314,5 +317,10 @@ class Submission extends Model
     public function documents()
     {
         return $this->hasMany(SubmissionDocument::class);
+    }
+
+    public function applicant()
+    {
+        return $this->hasOne(\App\Models\SubmissionApplicant::class);
     }
 }

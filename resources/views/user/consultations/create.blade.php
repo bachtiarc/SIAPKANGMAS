@@ -1,8 +1,6 @@
-<!-- resources/views/user/consultations/create.blade.php -->
-
 @extends('layouts.dashboard')
 
-@section('title', 'Formulir Pengajuan Konsultasi')
+@section('title', 'Buat Konsultasi (CO ADMIN)')
 
 @section('content')
 <div class="p-6">
@@ -13,104 +11,300 @@
             <li class="text-gray-400">/</li>
             <li><a href="{{ route('user.consultations.index') }}" class="text-blue-600 hover:text-blue-800">Konsultasi</a></li>
             <li class="text-gray-400">/</li>
-            <li class="text-gray-600">Formulir Pengajuan Konsultasi</li>
+            <li class="text-gray-600">Buat Baru</li>
         </ol>
     </nav>
 
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h1 class="font-montserrat text-3xl font-bold text-gray-900 mb-2">Formulir Pengajuan Konsultasi</h1>
-        <p class="text-gray-600">Silakan lengkapi formulir di bawah ini untuk mengajukan konsultasi kepada Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Estimasi respon waktu 1x24 jam.</p>
-    </div>
+    @if(session('toast_error'))
+        <script>
+            window.addEventListener('load', function () {
+                const message = @json(session('toast_error'));
+                const duration = Number(@json(session('toast_duration', 8000)));
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-6 right-6 z-50 px-5 py-4 rounded-xl shadow-lg bg-red-600 text-white text-sm';
+                toast.innerText = message;
+                document.body.appendChild(toast);
 
-    <!-- Important Info -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
-            <div class="flex items-start">
-                <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-                <div class="flex-1">
-                    <h3 class="text-sm font-semibold text-yellow-800 mb-2">Perhatian:</h3>
-                    <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
-                        <li>Pastikan semua data yang Anda masukkan sudah benar</li>
-                        <li>Anda akan menerima notifikasi via email setelah permohonan diproses</li>
-                        <li>Simpan ID tiket Anda untuk melacak status permohonan</li>
-                    </ul>
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 300ms ease';
+                    setTimeout(() => toast.remove(), 350);
+                }, duration);
+            });
+        </script>
+    @endif
+
+    <!-- Success Modal -->
+    @if(session('success') && session('ticket_id'))
+    <div id="successModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100">
+                    <svg class="h-10 w-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Formulir Berhasil Terkirim!</h3>
+                <div class="mt-4 px-7 py-3">
+                    <p class="text-sm text-gray-600 mb-4">
+                        Pengajuan konsultasi berhasil dibuat oleh CO ADMIN. Jika Email pemohon diisi, notifikasi akan dikirim ke email pemohon.
+                    </p>
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                        <p class="text-xs text-gray-600 mb-1">Nomor Tiket</p>
+                        <div class="flex items-center justify-between">
+                            <p class="font-bold text-blue-900 text-lg" id="ticketNumber">{{ session('ticket_id') }}</p>
+                            <button type="button" onclick="copyTicket()" class="text-blue-600 hover:text-blue-800" title="Copy">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-2">Simpan ID tiket ini untuk pelacakan status.</p>
+                    </div>
+                </div>
+
+                <div class="items-center px-4 py-3 space-y-2">
+                    @if(session('consultation_id'))
+                    <button type="button"
+                        onclick="window.location.href='{{ route('user.consultations.show', session('consultation_id')) }}?from=create'"
+                        class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
+                        Lihat Detail Pengajuan
+                    </button>
+                    @endif
+
+                    <button type="button" onclick="window.location.href='{{ route('user.consultations.create') }}'"
+                        class="px-4 py-2 bg-gray-100 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-200 focus:outline-none">
+                        Buat Pengajuan Baru
+                    </button>
+
+                    <button type="button" onclick="window.location.href='{{ route('user.consultations.index') }}'"
+                        class="px-4 py-2 bg-white border border-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-50 focus:outline-none">
+                        Lihat Daftar Konsultasi
+                    </button>
                 </div>
             </div>
         </div>
-        
-    <!-- Form -->
+    </div>
+    @endif
+
+    @php
+        $from = request()->query('from', 'index');
+        $backUrl = $from === 'dashboard'
+            ? route('user.dashboard')
+            : route('user.consultations.index');
+    @endphp
+
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex items-center space-x-4">
+            <a href="{{ $backUrl }}" class="text-gray-600 hover:text-gray-900">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="font-montserrat text-3xl font-bold text-gray-900">
+                    Formulir Konsultasi (CO ADMIN)
+                </h1>
+                <p class="text-gray-600 mt-1">
+                    Silakan lengkapi formulir berikut untuk membuat permohonan konsultasi atas nama pemohon.
+                    Estimasi respon waktu 2x24 jam.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Important Info -->
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
+        <div class="flex items-start">
+            <svg class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <div class="flex-1">
+                <h3 class="text-sm font-semibold text-yellow-800 mb-2">Perhatian:</h3>
+                <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                    <li>Pastikan semua data pemohon yang dimasukkan sudah benar.</li>
+                    <li>Jika Email pemohon diisi, sistem akan mengirim notifikasi ke Email pemohon.</li>
+                    <li>Simpan ID tiket untuk pelacakan status.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    {{-- Errors (tetap tampil) --}}
+    @if($errors->any())
+        <div class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6">
+            <div class="font-semibold mb-2">Terdapat kesalahan pada input:</div>
+            <ul class="list-disc list-inside text-sm space-y-1">
+                @foreach($errors->all() as $e)
+                    <li>{{ $e }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <form action="{{ route('user.consultations.store') }}" method="POST" enctype="multipart/form-data" id="consultationForm">
         @csrf
-        
+
         <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
             <div class="flex items-center mb-6">
-                <svg class="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
-                </svg>
-                <h2 class="font-montserrat text-xl font-bold text-gray-900">Detail Konsultasi</h2>
+                <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center mr-3">
+                    <svg class="w-6 h-6 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M16 7a4 4 0 10-8 0 4 4 0 008 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-montserrat text-xl font-bold text-gray-900">Data Pemohon</h2>
+                    <p class="text-sm text-gray-600">Data ini digunakan untuk identitas pemohon.</p>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Subjek Konsultasi -->
-                <div class="md:col-span-2">
+                <div>
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Subjek Konsultasi <span class="text-red-500">*</span>
+                        Nama Lengkap <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" name="subject" value="{{ old('subject') }}" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Contoh: Konsultasi Kepegawaian - Kenaikan Pangkat">
-                    @error('subject')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                    <input type="text" name="nama_lengkap" value="{{ old('nama_lengkap') }}" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
-                <!-- Kategori Konsultasi -->
-                <div class="md:col-span-2">
+                <div>
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Kategori Konsultasi <span class="text-red-500">*</span>
+                        NIK <span class="text-red-500">*</span>
                     </label>
-                    <select name="category_id" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Pilih Kategori Konsultasi</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
+                    <input type="text" name="nik" value="{{ old('nik') }}" required maxlength="16"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="16 digit NIK">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Nomor Telepon/WA <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="phone" value="{{ old('phone') }}" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="contoh: 08xxxxxxxxxx">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Email (Opsional)
+                    </label>
+                    <input type="email" name="email" value="{{ old('email') }}"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="contoh: nama@email.com">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Kabupaten/Kota <span class="text-red-500">*</span>
+                    </label>
+                    <select name="kabupaten_kode" id="kabupaten" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Pilih Kabupaten/Kota</option>
                     </select>
-                    @error('category_id')
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Kecamatan <span class="text-red-500">*</span>
+                    </label>
+                    <select name="kecamatan_kode" id="kecamatan" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Pilih Kecamatan</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Desa/Kelurahan <span class="text-red-500">*</span>
+                    </label>
+                    <select name="desa_kode" id="desa" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Pilih Desa/Kelurahan</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Alamat Lengkap (RT/RW, No Jalan, Dusun, dll) <span class="text-red-500">*</span>
+                    </label>
+                    <textarea name="alamat_detail" rows="3" required
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Tulis RT/RW, nomor jalan, dusun, dll...">{{ old('alamat_detail') }}</textarea>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Foto KTP <span class="text-red-500">*</span>
+                    </label>
+                    <input type="file" name="foto_ktp" accept="image/*" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white">
+                    <p class="text-xs text-gray-500 mt-2">Format: JPG/PNG/WEBP. Maks 2MB.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center mr-3">
+                    <svg class="w-6 h-6 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-montserrat text-xl font-bold text-gray-900">Detail Konsultasi</h2>
+                    <p class="text-sm text-gray-600">Jelaskan kebutuhan konsultasi dengan jelas.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6">
+                <!-- Title -->
+                <div class="md:col-span-2">
+                    <label for="title" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Judul Pengajuan Konsultasi <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="subject" id="title" value="{{ old('subject') }}" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('title') border-red-500 @enderror"
+                        placeholder="Contoh: Permohonan Konsultasi Mengenai...">
+                    @error('title')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Deskripsi Lengkap -->
+                <!-- Description -->
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                    <label for="description" class="block text-sm font-semibold text-gray-900 mb-2">
                         Deskripsi Lengkap <span class="text-red-500">*</span>
                     </label>
-                    <textarea name="description" rows="6" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Jelaskan secara spesifik permasalahan atau topik yang ingin dikonsultasikan. Sertakan detail atau konteks yang relevan.">{{ old('description') }}</textarea>
+                    <textarea name="description" id="description" rows="6" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('description') border-red-500 @enderror"
+                        placeholder="Jelaskan secara detail informasi yang diperlukan...">{{ old('description') }}</textarea>
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Dokumen Pendukung (Multiple Upload) -->
+               <!-- Documents -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
-                        Dokumen Pendukung <span class="text-gray-500">(Maksimal 3 file)</span>
+                        Dokumen Pendukung <span class="text-gray-400">(Opsional)</span>
                     </label>
 
-                    <div class="space-y-4">
-                        <!-- Upload Area 1 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                        <!-- Upload 1 -->
                         <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document1').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 1 <span class="text-gray-400">(Opsional)</span></p>
@@ -119,7 +313,8 @@
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(1)" id="clearBtn1" class="hidden text-red-500 hover:text-red-700">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
                                 </button>
                             </div>
@@ -127,12 +322,13 @@
                                 onchange="displayFileName(1, this)">
                         </div>
 
-                        <!-- Upload Area 2 -->
+                        <!-- Upload 2 -->
                         <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document2').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 2 <span class="text-gray-400">(Opsional)</span></p>
@@ -141,7 +337,8 @@
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(2)" id="clearBtn2" class="hidden text-red-500 hover:text-red-700">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
                                 </button>
                             </div>
@@ -149,12 +346,13 @@
                                 onchange="displayFileName(2, this)">
                         </div>
 
-                        <!-- Upload Area 3 -->
+                        <!-- Upload 3 -->
                         <div class="border-2 border-gray-300 border-dashed rounded-lg p-4 hover:border-blue-400 transition cursor-pointer"
                             onclick="document.getElementById('document3').click()">
                             <div class="flex items-center space-x-3">
                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                 </svg>
                                 <div class="flex-1">
                                     <p class="text-sm font-semibold text-gray-700">Dokumen 3 <span class="text-gray-400">(Opsional)</span></p>
@@ -163,13 +361,15 @@
                                 </div>
                                 <button type="button" onclick="event.stopPropagation(); clearFile(3)" id="clearBtn3" class="hidden text-red-500 hover:text-red-700">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
                                 </button>
                             </div>
                             <input id="document3" name="documents[]" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png"
                                 onchange="displayFileName(3, this)">
                         </div>
+
                     </div>
 
                     @error('documents.*')
@@ -179,20 +379,18 @@
             </div>
         </div>
 
-        <!-- Action Buttons -->
+        <!-- Submit Buttons -->
         <div class="flex items-center justify-between">
-            @php
-                $from = request()->query('from', 'index');
-                $backUrl = $from === 'dashboard' ? route('user.dashboard') : route('user.complaints.index');
-            @endphp
             <a href="{{ $backUrl }}"
                 class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
                 Kembali
             </a>
+
             <button type="submit"
                 class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 Kirim Pengajuan
             </button>
@@ -200,245 +398,103 @@
     </form>
 </div>
 
-<!-- SUCCESS MODAL -->
-<div id="successModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100">
-                <svg class="h-10 w-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
-            <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Formulir Anda Berhasil Terkirim!</h3>
-            <div class="mt-4 px-7 py-3">
-                <p class="text-sm text-gray-600 mb-4">
-                    Terima kasih telah mengirimkan konsultasi. Pengajuan Anda akan segera ditinjau. Silakan cek Email untuk melihat bukti konfirmasi formulir telah terkirim.
-                </p>
-                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                    <p class="text-xs text-gray-600 mb-1">Nomor Tiket Anda</p>
-                    <div class="flex items-center justify-between">
-                        <p class="font-bold text-blue-900 text-lg" id="ticketNumber"></p>
-                        <button type="button" onclick="copyTicket()" class="text-blue-600 hover:text-blue-800" title="Copy">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="items-center px-4 py-3 space-y-2">
-                @if(session('ticket_id'))
-                <button type="button"
-                    onclick="window.location.href='{{ route('user.consultations.show', session('ticket_id')) }}'"
-                    class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
-                    Lihat Detail Konsultasi
-                </button>
-                @endif
-                <button type="button" onclick="window.location.href='{{ route('user.consultations.index') }}'"
-                    class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
-                    Lihat Semua Konsultasi
-                </button>
-                <button type="button" onclick="window.location.href='{{ route('user.dashboard') }}'"
-                    class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none">
-                    Kembali ke Dashboard
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ERROR MODAL -->
-<div id="errorModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100">
-                <svg class="h-10 w-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-            </div>
-            <h3 class="text-xl leading-6 font-bold text-gray-900 mt-5">Formulir Anda Kurang Lengkap</h3>
-            <div class="mt-4 px-7 py-3">
-                <p class="text-sm text-gray-600 mb-3">
-                    Mohon lengkapi semua field yang wajib diisi sebelum mengirimkan formulir.
-                </p>
-                <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded text-left">
-                    <p class="text-xs text-gray-700 font-semibold mb-2">Field yang perlu dilengkapi:</p>
-                    <ul id="errorList" class="text-sm text-red-700 list-disc list-inside space-y-1"></ul>
-                </div>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button type="button" onclick="closeErrorModal()"
-                    class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none">
-                    Kembali & Lengkapi
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- TOAST CONTAINER -->
-<div id="toast-container" class="fixed top-5 right-5 z-[9999] space-y-3"></div>
-
-<style>
-  .toast-enter { transform: translateX(120%); opacity: 0; }
-  .toast-enter-active { transform: translateX(0); opacity: 1; transition: all .25s ease; }
-  .toast-exit { transform: translateX(120%); opacity: 0; transition: all .25s ease; }
-</style>
-
 <script>
-function showToast(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
+function copyTicket() {
+    const text = document.getElementById('ticketNumber')?.innerText || '';
+    if(!text) return;
 
-    let borderColor, iconColor, icon;
-
-    if (type === 'success') {
-        borderColor = 'border-green-500';
-        iconColor = 'text-green-500';
-        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
-    } else if (type === 'error') {
-        borderColor = 'border-red-500';
-        iconColor = 'text-red-500';
-        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
-    } else {
-        borderColor = 'border-blue-500';
-        iconColor = 'text-blue-500';
-        icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
-    }
-
-    const toast = document.createElement('div');
-    toast.className = `toast-enter bg-white shadow-lg rounded-lg p-4 mb-3 flex items-center space-x-3 min-w-[320px] border-l-4 ${borderColor}`;
-
-    toast.innerHTML = `
-        <div class="flex-shrink-0">
-            <svg class="w-6 h-6 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                ${icon}
-            </svg>
-        </div>
-        <div class="flex-1">
-            <p class="font-montserrat text-sm font-semibold text-gray-900">${message}</p>
-        </div>
-        <button type="button" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-        </button>
-    `;
-
-    toast.querySelector('button').addEventListener('click', () => {
-        toast.classList.add('toast-exit');
-        setTimeout(() => toast.remove(), 250);
+    navigator.clipboard.writeText(text).then(() => {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-6 right-6 z-50 px-5 py-4 rounded-xl shadow-lg bg-green-600 text-white text-sm';
+        toast.innerText = 'Nomor tiket berhasil disalin!';
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 300ms ease';
+            setTimeout(() => toast.remove(), 350);
+        }, 2500);
     });
-
-    container.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('toast-enter-active'));
-
-    setTimeout(() => {
-        toast.classList.remove('toast-enter-active');
-        toast.classList.add('toast-exit');
-        setTimeout(() => toast.remove(), 250);
-    }, 4000);
 }
 
-function canUpload(idx) {
-    if (idx === 1) return true;
+document.addEventListener('DOMContentLoaded', async () => {
+    const kab = document.getElementById('kabupaten');
+    const kec = document.getElementById('kecamatan');
+    const desa = document.getElementById('desa');
 
-    const prevInput = document.getElementById('document' + (idx - 1));
-    const prevHasFile = prevInput && prevInput.files && prevInput.files.length > 0;
+    const oldKab = @json(old('kabupaten_kode'));
+    const oldKec = @json(old('kecamatan_kode'));
+    const oldDesa = @json(old('desa_kode'));
 
-    if (!prevHasFile) {
-        showToast(`Mohon upload Dokumen ${idx - 1} dulu sebelum Dokumen ${idx}.`, 'error');
-        return false;
-    }
-    return true;
-}
-
-function displayFileName(index, input) {
-    const fileNameDisplay = document.getElementById('fileName' + index);
-    const clearBtn = document.getElementById('clearBtn' + index);
-
-    if (!canUpload(index)) {
-        input.value = '';
-        if (fileNameDisplay) fileNameDisplay.classList.add('hidden');
-        if (clearBtn) clearBtn.classList.add('hidden');
-        return;
+    async function fetchJson(url){
+        const res = await fetch(url);
+        if(!res.ok) return [];
+        return await res.json();
     }
 
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const maxBytes = 2 * 1024 * 1024;
+    async function loadKabupaten(){
+        const data = await fetchJson('/api/kabupaten');
+        kab.innerHTML = '<option value="">Pilih Kabupaten/Kota</option>';
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.kode;
+            opt.textContent = item.nama;
+            if (oldKab && oldKab === item.kode) opt.selected = true;
+            kab.appendChild(opt);
+        });
+    }
 
-        if (file.size > maxBytes) {
-            input.value = '';
-            if (fileNameDisplay) fileNameDisplay.classList.add('hidden');
-            if (clearBtn) clearBtn.classList.add('hidden');
-            showToast(`Dokumen ${index}: ukuran file melebihi 2MB.`, 'error');
+    async function loadKecamatan(kabKode, setOld = false){
+        if(!kabKode){
+            kec.innerHTML = '<option value="">Pilih Kecamatan</option>';
+            desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
             return;
         }
 
-        const fileSize = (file.size / 1024 / 1024).toFixed(2);
-        fileNameDisplay.textContent = `✓ ${file.name} (${fileSize} MB)`;
-        fileNameDisplay.classList.remove('hidden');
-        clearBtn.classList.remove('hidden');
+        const data = await fetchJson(`/api/kecamatan/${kabKode}`);
+        kec.innerHTML = '<option value="">Pilih Kecamatan</option>';
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.kode;
+            opt.textContent = item.nama;
+            if (setOld && oldKec && oldKec === item.kode) opt.selected = true;
+            kec.appendChild(opt);
+        });
     }
-}
 
-function clearFile(index) {
-    const fileInput = document.getElementById('document' + index);
-    const fileNameDisplay = document.getElementById('fileName' + index);
-    const clearBtn = document.getElementById('clearBtn' + index);
+    async function loadDesa(kecKode, setOld = false){
+        if(!kecKode){
+            desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+            return;
+        }
 
-    if (fileInput) fileInput.value = '';
-    if (fileNameDisplay) fileNameDisplay.classList.add('hidden');
-    if (clearBtn) clearBtn.classList.add('hidden');
-}
+        const data = await fetchJson(`/api/desa/${kecKode}`);
+        desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.kode;
+            opt.textContent = item.nama;
+            if (setOld && oldDesa && oldDesa === item.kode) opt.selected = true;
+            desa.appendChild(opt);
+        });
+    }
 
-function showSuccessModal(ticketNumber) {
-    document.getElementById('ticketNumber').textContent = ticketNumber;
-    document.getElementById('successModal').classList.remove('hidden');
-}
+    await loadKabupaten();
 
-function copyTicket() {
-    const ticketNumber = document.getElementById('ticketNumber').textContent;
-    navigator.clipboard.writeText(ticketNumber).then(() => {
-        showToast('Nomor tiket berhasil disalin!', 'success');
+    if(oldKab){
+        await loadKecamatan(oldKab, true);
+    }
+    if(oldKec){
+        await loadDesa(oldKec, true);
+    }
+
+    kab.addEventListener('change', async (e) => {
+        await loadKecamatan(e.target.value);
+        desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
     });
-}
 
-function showErrorModal(errors) {
-    const errorList = document.getElementById('errorList');
-    errorList.innerHTML = '';
-
-    if (Array.isArray(errors)) {
-        errors.forEach(error => {
-            const li = document.createElement('li');
-            li.textContent = error;
-            errorList.appendChild(li);
-        });
-    } else if (typeof errors === 'object') {
-        Object.values(errors).forEach(errorArray => {
-            errorArray.forEach(error => {
-                const li = document.createElement('li');
-                li.textContent = error;
-                errorList.appendChild(li);
-            });
-        });
-    }
-
-    document.getElementById('errorModal').classList.remove('hidden');
-}
-
-function closeErrorModal() {
-    document.getElementById('errorModal').classList.add('hidden');
-}
-
-@if(session('success'))
-    showSuccessModal('{{ session('ticket_id') ?? 'N/A' }}');
-@endif
-
-@if($errors->any())
-    const errors = @json($errors->all());
-    showErrorModal(errors);
-@endif
+    kec.addEventListener('change', async (e) => {
+        await loadDesa(e.target.value);
+    });
+});
 </script>
 @endsection
