@@ -201,7 +201,6 @@
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[190px]">Nama Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[240px]">Email Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[140px]">Jenis Pelapor</th>
-                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[240px]">Diproses oleh</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[300px]">Subjek</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[150px]">Status</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[90px]">Aksi</th>
@@ -237,13 +236,6 @@
                                     'pegawai'         => 'Pegawai',
                                     default           => '-',
                                 } }}
-                            </td>
-
-                            {{-- ✅ Diproses oleh (admin handler) --}}
-                            <td class="px-4 py-4 text-sm text-gray-600">
-                                <div class="max-w-[280px] truncate">
-                                    {{ $item->handler->name ?? ($item->handled_by ? 'Admin #' . $item->handled_by : '-') }}
-                                </div>
                             </td>
 
                             <td class="px-4 py-4 text-sm text-gray-900 font-medium">

@@ -240,7 +240,6 @@
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[190px]">Nama Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[240px]">Email Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[140px]">Jenis Pelapor</th>
-                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[260px]">Diproses oleh</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[260px]">Subjek</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[150px]">Status</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[90px]">Aksi</th>
@@ -282,13 +281,6 @@
                                     'pegawai'         => 'Pegawai',
                                     default           => '-',
                                 } }}
-                            </td>
-
-                            {{-- ✅ Diproses oleh --}}
-                            <td class="px-4 py-4 text-sm text-gray-600">
-                                <div class="max-w-[320px] truncate">
-                                    {{ $item->diproses_oleh ?? '-' }}
-                                </div>
                             </td>
 
                             <td class="px-4 py-4 text-sm text-gray-900 font-medium">
