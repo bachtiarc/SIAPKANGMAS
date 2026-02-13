@@ -21,6 +21,9 @@ class Consultation extends Model
         'admin_notes',
         'handled_by',
         'completed_at',
+        'diproses_bidang',
+        'diproses_kelompok',
+        'diproses_oleh',
     ];
 
     protected $casts = [

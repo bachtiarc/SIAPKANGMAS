@@ -167,10 +167,13 @@ class ConsultationController extends Controller
             // ✅ FIX: FOTO KTP MASUK BUCKET CONSULTATIONS
             // sebelumnya: $request->file('foto_ktp')->store('ktp', 'supabase');
             $ktpFile = $request->file('foto_ktp');
-            $ktpName = Str::random(40) . '.' . $ktpFile->getClientOriginalExtension();
-            $ktpPath = 'ktp/' . $ktpName;
+            $ktpName = (string) Str::uuid() . '.' . $ktpFile->getClientOriginalExtension();
 
-            Storage::disk('supabase_consultations')->put(
+            // ✅ simpan sesuai target: <NIK>/<filename>
+            $ktpPath = $validated['nik'] . '/' . $ktpName;
+
+            // ✅ upload ke bucket ktp-photos via disk supabase_ktp
+            Storage::disk('supabase_ktp')->put(
                 $ktpPath,
                 file_get_contents($ktpFile)
             );

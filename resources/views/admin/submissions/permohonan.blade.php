@@ -5,6 +5,28 @@
 @section('title', 'Manajemen Pengajuan')
 
 @section('content')
+@php
+    /**
+     * BIDANG options (level 1)
+     * Disamakan dengan yang ada di show.blade.php (optgroup-nya)
+     */
+    $bidangOptions = [
+        'Sekretariat',
+        'Bidang Pembangunan Sumber Daya Industri Dan Perwilayahan Industri',
+        'Bidang Pemberdayaan Industri',
+        'Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri',
+        'Bidang Perdagangan Dalam Negeri',
+        'Bidang Perdagangan Luar Negeri',
+        'Balai Industri Logam dan Kayu (BILK) Kelas A',
+        'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Surakarta Kelas A',
+        'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Semarang',
+        'Balai Industri Produk Tekstil dan Alas Kaki (BIPTAK)',
+        'Balai Industri Kreatif Digital dan Kemasan Kelas A (BIKDK)',
+    ];
+
+    $selectedBidang = request('diproses_bidang');
+@endphp
+
 <div class="space-y-6">
     <div class="flex flex-col gap-2">
         <p class="font-lato text-gray-600">Kelola dan unduh laporan pengajuan layanan bantuan Dinas Perindustrian dan Perdagangan Jawa Tengah.</p>
@@ -56,43 +78,44 @@
     </div>
 
     <div class="bg-white/75 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/70 overflow-hidden">
-    <div class="p-4 border-b border-gray-200/70">
-        @php
-            $tabBase = 'flex-1 text-center px-6 py-3 font-montserrat font-semibold text-sm transition rounded-2xl ring-1 ring-transparent';
-            $tabOff  = 'text-gray-600 bg-white/60 ring-gray-200/70 hover:bg-gray-50/70 hover:text-blue-600 hover:ring-gray-200/80';
-            $tabOn   = 'text-blue-700 bg-blue-100/70 ring-blue-200/70 shadow-sm';
-        @endphp
+        <div class="p-4 border-b border-gray-200/70">
+            @php
+                $tabBase = 'flex-1 text-center px-6 py-3 font-montserrat font-semibold text-sm transition rounded-2xl ring-1 ring-transparent';
+                $tabOff  = 'text-gray-600 bg-white/60 ring-gray-200/70 hover:bg-gray-50/70 hover:text-blue-600 hover:ring-gray-200/80';
+                $tabOn   = 'text-blue-700 bg-blue-100/70 ring-blue-200/70 shadow-sm';
+            @endphp
 
-        <div class="bg-gray-50/70 p-2 rounded-3xl ring-1 ring-gray-200/60">
-            <div class="flex w-full gap-3">
-                <a href="{{ route('admin.management.semua') }}"
-                   class="{{ $tabBase }} {{ request()->routeIs('admin.management.semua') ? $tabOn : $tabOff }}">
-                    Semua
-                </a>
+            <div class="bg-gray-50/70 p-2 rounded-3xl ring-1 ring-gray-200/60">
+                <div class="flex w-full gap-3">
+                    <a href="{{ route('admin.management.semua') }}"
+                       class="{{ $tabBase }} {{ request()->routeIs('admin.management.semua') ? $tabOn : $tabOff }}">
+                        Semua
+                    </a>
 
-                <a href="{{ route('admin.consultations.konsultasi') }}"
-                   class="{{ $tabBase }} {{ request()->routeIs('admin.consultations.konsultasi') ? $tabOn : $tabOff }}">
-                    Konsultasi
-                </a>
+                    <a href="{{ route('admin.consultations.konsultasi') }}"
+                       class="{{ $tabBase }} {{ request()->routeIs('admin.consultations.konsultasi') ? $tabOn : $tabOff }}">
+                        Konsultasi
+                    </a>
 
-                <a href="{{ route('admin.complaints.pengaduan') }}"
-                   class="{{ $tabBase }} {{ request()->routeIs('admin.complaints.pengaduan') ? $tabOn : $tabOff }}">
-                    Pengaduan
-                </a>
+                    <a href="{{ route('admin.complaints.pengaduan') }}"
+                       class="{{ $tabBase }} {{ request()->routeIs('admin.complaints.pengaduan') ? $tabOn : $tabOff }}">
+                        Pengaduan
+                    </a>
 
-                <a href="{{ route('admin.submissions.permohonan') }}"
-                   class="{{ $tabBase }} {{ request()->routeIs('admin.submissions.permohonan') ? $tabOn : $tabOff }}">
-                    Permohonan Informasi
-                </a>
+                    <a href="{{ route('admin.submissions.permohonan') }}"
+                       class="{{ $tabBase }} {{ request()->routeIs('admin.submissions.permohonan') ? $tabOn : $tabOff }}">
+                        Permohonan Informasi
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
 
         <form action="{{ route('admin.submissions.permohonan') }}" method="GET" class="w-full">
             <div class="p-4 border-b border-gray-200/70">
                 <div class="overflow-x-auto">
                     <div class="min-w-max flex items-end gap-4">
 
+                        {{-- Rentang Tanggal --}}
                         <div class="shrink-0">
                             <label class="block text-xs font-semibold text-gray-600 mb-2">Rentang Tanggal :</label>
                             <div class="flex items-center gap-2">
@@ -100,7 +123,7 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                     </div>
                                     <input type="date" name="start_date" value="{{ request('start_date') }}"
@@ -113,7 +136,7 @@
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                     </div>
                                     <input type="date" name="end_date" value="{{ request('end_date') }}"
@@ -140,19 +163,20 @@
                             </div>
                         </div>
 
-                        {{-- Kategori --}}
-                        <div class="shrink-0 w-64">
-                            <label class="block text-xs font-semibold text-gray-600 mb-2">Kategori :</label>
+                        {{-- ✅ Diproses oleh (Bidang) --}}
+                        <div class="shrink-0 w-[360px]">
+                            <label class="block text-xs font-semibold text-gray-600 mb-2">Diproses oleh (Bidang) :</label>
                             <div class="relative">
-                                <select name="category"
+                                <select name="diproses_bidang"
                                         class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300/80 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500/60 bg-white/70 text-gray-600 truncate shadow-sm">
-                                    <option value="Semua">Semua</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat->id }}" {{ request('category') == $cat->id ? 'selected' : '' }}>
-                                            {{ $cat->name }}
+                                    <option value="">Semua</option>
+                                    @foreach($bidangOptions as $b)
+                                        <option value="{{ $b }}" {{ (string)$selectedBidang === (string)$b ? 'selected' : '' }}>
+                                            {{ $b }}
                                         </option>
                                     @endforeach
                                 </select>
+
                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -196,7 +220,7 @@
                                title="Unduh Excel">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
                             </a>
                         </div>
@@ -216,7 +240,7 @@
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[190px]">Nama Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[240px]">Email Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[140px]">Jenis Pelapor</th>
-                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[190px]">Kategori</th>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[260px]">Diproses oleh</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[260px]">Subjek</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[150px]">Status</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[90px]">Aksi</th>
@@ -228,8 +252,8 @@
                         <tr class="hover:bg-gray-50/70 transition">
                             <td class="px-4 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">
                                 <a href="{{ route('admin.submissions.show', $item->id) }}"
-                                class="group inline-block rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/15"
-                                title="Lihat Detail">
+                                   class="group inline-block rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/15"
+                                   title="Lihat Detail">
                                     <span class="underline-offset-4 group-hover:underline group-hover:text-blue-700">
                                         {{ $item->ticket_id }}
                                     </span>
@@ -260,9 +284,10 @@
                                 } }}
                             </td>
 
+                            {{-- ✅ Diproses oleh --}}
                             <td class="px-4 py-4 text-sm text-gray-600">
-                                <div class="max-w-[240px] truncate">
-                                    {{ $item->category->name ?? '-' }}
+                                <div class="max-w-[320px] truncate">
+                                    {{ $item->diproses_oleh ?? '-' }}
                                 </div>
                             </td>
 
