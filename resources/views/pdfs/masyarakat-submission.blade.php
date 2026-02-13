@@ -161,7 +161,7 @@
 <div class="header">
     <h1>PEMERINTAH PROVINSI JAWA TENGAH</h1>
     <h2>DINAS PERINDUSTRIAN DAN PERDAGANGAN</h2>
-    <p>Jl. Pahlawan No. 4 Semarang 50132</p>
+    <p>Jl. Pahlawan No.4, Pleburan, Kec. Semarang Sel., Kota Semarang, Jawa Tengah 50241</p>
     <p>Website: www.disperindag.jatengprov.go.id</p>
 </div>
 <!-- NOTE (DOKUMEN PENDUKUNG) -->
@@ -210,7 +210,7 @@
     <div class="info-row">
         <div class="info-label">Email</div>
         <div class="info-sep">:</div>
-        <div class="info-content">{{ $user->email }}</div>
+        <div class="info-content">{{ filled($user->email ?? null) ? $user->email : '-' }}</div>
     </div>
 
     <div class="info-row">

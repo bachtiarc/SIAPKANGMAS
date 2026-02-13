@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $consultation->ticket_number ?? '-' }}</title>
+    <title>{{ $consultation->ticket_number }}</title>
+
     <style>
+        @page { margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Times New Roman', Times, serif;
+            font-family: "Times New Roman", Times, serif;
             font-size: 12pt;
-            line-height: 1.5;
+            line-height: 1.6;
             color: #000;
             padding: 30px 40px;
         }
@@ -19,183 +20,238 @@
         .header {
             text-align: center;
             margin-bottom: 30px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 15px;
+            border-bottom: 3px solid #000;
+            padding-bottom: 20px;
         }
 
         .header h1 {
+            font-size: 16pt;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .header h2 {
             font-size: 14pt;
             font-weight: bold;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            margin-top: 5px;
         }
 
-        .header h2 { font-size: 12pt; font-weight: normal; margin-bottom: 4px; }
-
-        .note {
-            border: 1px solid #000;
-            padding: 10px 15px;
-            margin-bottom: 25px;
-            font-size: 11pt;
-            font-style: italic;
+        .header p {
+            font-size: 10pt;
+            margin-top: 4px;
         }
 
-        .ticket-box {
-            border: 2px solid #000;
-            padding: 15px;
+        .document-title {
             text-align: center;
-            margin-bottom: 25px;
+            margin: 30px 0;
+            font-size: 14pt;
+            font-weight: bold;
+            text-decoration: underline;
+            text-transform: uppercase;
         }
 
-        .ticket-box .label { font-size: 11pt; margin-bottom: 8px; font-weight: bold; }
-        .ticket-box .ticket-id { font-size: 14pt; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
-        .ticket-box .full-ticket { font-size: 10pt; }
+        .ticket-info {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #000;
+            background: #f2f2f2;
+        }
 
-        .section { margin-bottom: 30px; }
+        .ticket-id {
+            font-weight: bold;
+            font-size: 13pt;
+        }
 
-        .section-title {
-            background-color: #000;
-            color: #fff;
-            padding: 8px 15px;
+        .content-section {
+            margin-top: 25px;
+        }
+
+        .content-section h3 {
             font-size: 12pt;
             font-weight: bold;
-            margin-bottom: 15px;
-            text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
         }
 
-        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        .info-table td { padding: 6px 0; vertical-align: top; line-height: 1.5; }
-        .info-table td:first-child { width: 220px; font-weight: normal; }
-        .info-table td:nth-child(2) { width: 20px; text-align: center; }
-        .info-table td:last-child { font-weight: normal; }
+        .info-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 8px;
+        }
 
-        .divider { border-bottom: 1px solid #ccc; }
+        .info-label {
+            display: table-cell;
+            width: 35%;
+            font-weight: bold;
+            vertical-align: top;
+        }
 
-        .description-box {
+        .info-sep {
+            display: table-cell;
+            width: 5%;
+        }
+
+        .info-content {
+            display: table-cell;
+            width: 60%;
+            text-align: justify;
+        }
+
+        .box {
             border: 1px solid #000;
-            padding: 15px;
+            padding: 12px;
+            margin-top: 8px;
+            background: #fafafa;
             white-space: pre-line;
-            min-height: 80px;
-            margin-top: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            border: 1px solid #000;
+            padding: 4px 12px;
+            font-weight: bold;
+        }
+
+        .signature {
+            margin-top: 50px;
+            text-align: right;
+        }
+
+        .signature-space {
+            height: 80px;
         }
 
         .footer {
-            margin-top: 50px;
+            margin-top: 40px;
+            border-top: 1px solid #000;
+            padding-top: 15px;
+            font-size: 9pt;
             text-align: center;
-            font-size: 11pt;
-            border-top: 2px solid #000;
-            padding-top: 20px;
+            color: #444;
         }
-
-        .footer p { margin-bottom: 5px; }
-
-        .status-text { font-weight: bold; text-transform: uppercase; }
-        .field-label { font-weight: bold; margin-top: 15px; margin-bottom: 5px; }
-
-        .document-info { margin-top: 10px; padding-left: 20px; }
     </style>
 </head>
 <body>
-@php
-    $ticket = $consultation->ticket_number ?? '-';
 
-    $status = $consultation->status ?? 'pending';
-    $statusLabel = match ($status) {
-        'pending' => 'Menunggu Verifikasi',
-        'in_progress', 'on_progress' => 'Sedang Diproses',
-        'completed' => 'Selesai',
-        'rejected' => 'Ditolak',
-        default => ucwords(str_replace('_', ' ', $status)),
-    };
+<!-- HEADER -->
+<div class="header">
+    <h1>PEMERINTAH PROVINSI JAWA TENGAH</h1>
+    <h2>DINAS PERINDUSTRIAN DAN PERDAGANGAN</h2>
+    <p>Jl. Pahlawan No.4, Pleburan, Kec. Semarang Sel., Kota Semarang, Jawa Tengah 50241</p>
+    <p>Website: www.disperindag.jatengprov.go.id</p>
+</div>
 
-    $alamatPdf = $alamatLengkap ?? '-';
-@endphp
+<!-- NOTE -->
+<div style="margin-bottom:20px; font-size:11pt;">
+    <strong>Catatan:</strong>
+    Dokumen pendukung yang diunggah pada konsultasi ini
+    <u>tidak tercetak secara otomatis</u>.
+    Apabila diperlukan, dokumen pendukung dapat dicetak sendiri
+    atau diakses melalui sistem SIAPKANGMAS.
+</div>
 
-    <!-- Header -->
-    <div class="header">
-        <h1>FORMULIR KONSULTASI</h1>
-        <h2>HELPDESK SIAPKANGMAS</h2>
-        <h2>DINAS PERINDUSTRIAN DAN PERDAGANGAN PROVINSI JAWA TENGAH</h2>
+<!-- TITLE -->
+<div class="document-title">
+    FORMULIR KONSULTASI
+</div>
+
+<!-- TICKET -->
+<div class="ticket-info">
+    <p>Nomor Tiket</p>
+    <p class="ticket-id">{{ $consultation->ticket_number }}</p>
+    <p>Tanggal: {{ $consultation->created_at->format('d F Y') }}</p>
+</div>
+
+<!-- DATA PEMOHON -->
+<div class="content-section">
+    <h3>I. DATA PEMOHON</h3>
+
+    <div class="info-row">
+        <div class="info-label">Nama Lengkap</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $user->name ?? '-' }}</div>
     </div>
 
-    <!-- NOTE (DOKUMEN PENDUKUNG) -->
-    <div class="note">
-        <strong>Catatan:</strong>
-        Dokumen pendukung yang diunggah pada pengaduan ini
-        <u>tidak tercetak secara otomatis</u>.
-        Apabila diperlukan, dokumen pendukung dapat dicetak sendiri
-        atau diakses melalui sistem SIAPKANGMAS.
+    <div class="info-row">
+        <div class="info-label">NIK</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $user->nik ?? '-' }}</div>
     </div>
 
-    <!-- Ticket Box -->
-    <div class="ticket-box">
-        <div class="label">NOMOR TIKET PENGAJUAN</div>
-        <div class="ticket-id">{{ $ticket }}</div>
+    <div class="info-row">
+        <div class="info-label">Pekerjaan</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $user->pekerjaan ?? '-' }}</div>
     </div>
 
-    <!-- Section A -->
-    <div class="section">
-        <div class="section-title">A. Identitas Pemohon Pengajuan</div>
-        <table class="info-table">
-            <tr>
-                <td>Nama Lengkap</td><td>:</td><td>{{ $user->name ?? '-' }}</td>
-            </tr>
-            <tr class="divider">
-                <td>NIK</td><td>:</td><td>{{ $user->nik ?? '-' }}</td>
-            </tr>
-            <tr class="divider">
-                <td>Alamat</td><td>:</td><td>{{ $alamatPdf }}</td>
-            </tr>
-            <tr class="divider">
-                <td>Nomor Telepon</td><td>:</td><td>{{ $user->phone ?? '-' }}</td>
-            </tr>
-            <tr class="divider">
-                <td>Email</td><td>:</td><td>{{ $user->email ?? '-' }}</td>
-            </tr>
-        </table>
+    <div class="info-row">
+        <div class="info-label">Email</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">
+            {{ filled($user->email ?? null) ? $user->email : '-' }}
+        </div>
     </div>
 
-    <!-- Section B -->
-    <div class="section">
-        <div class="section-title">B. Rincian Formulir Pengajuan</div>
-        <table class="info-table">
-            <tr>
-                <td>Judul</td><td>:</td><td>{{ $consultation->subject ?? '-' }}</td>
-            </tr>
-
-            <tr class="divider">
-                <td>Tanggal Pengajuan</td><td>:</td><td>{{ optional($consultation->created_at)->format('d F Y, H:i') }} WIB</td>
-            </tr>
-            <tr class="divider">
-                <td>Status</td><td>:</td>
-                <td>
-                    <span class="status-text">{{ $statusLabel }}</span>
-                </td>
-            </tr>
-        </table>
-
-        <div class="field-label">Deskripsi Lengkap:</div>
-        <div class="description-box">{{ $consultation->description ?? '-' }}</div>
-
-        @if(($consultation->documents ?? collect())->count() > 0)
-            <div class="field-label">Dokumen Pendukung:</div>
-            <div class="document-info">
-                <ul>
-                    @foreach($consultation->documents as $doc)
-                        <li>{{ $doc->original_name ?? basename($doc->file_path ?? '-') }}</li>
-                    @endforeach
-                </ul>
-                <em>Dokumen dapat diakses melalui sistem atau cetak terpisah</em>
-            </div>
-        @endif
+    <div class="info-row">
+        <div class="info-label">Nomor Telepon</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $user->phone ?? '-' }}</div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        <p><strong>DINAS PERINDUSTRIAN DAN PERDAGANGANG PROVINSI JAWA TENGAH</strong></p>
-        <p>Dokumen ini dicetak secara otomatis oleh sistem SIAPKANGMAS</p>
-        <p>Tanggal Cetak: {{ now()->format('d F Y, H:i') }} WIB</p>
+    <div class="info-row">
+        <div class="info-label">Alamat</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $alamatLengkap ?? '-' }}</div>
     </div>
+</div>
+
+<!-- RINCIAN KONSULTASI -->
+<div class="content-section">
+    <h3>II. RINCIAN KONSULTASI</h3>
+
+    <div class="info-row">
+        <div class="info-label">Judul Konsultasi</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $consultation->subject ?? '-' }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Tanggal Pengajuan</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">
+            {{ $consultation->created_at->format('d F Y, H:i') }} WIB
+        </div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Status</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">
+            <span class="status-badge">
+                {{ ucfirst(str_replace('_',' ',$consultation->status)) }}
+            </span>
+        </div>
+    </div>
+
+    <p style="margin-top:10px;font-weight:bold;">Deskripsi:</p>
+    <div class="box">{{ $consultation->description ?? '-' }}</div>
+</div>
+
+<!-- TTD -->
+<div class="signature">
+    <p>Semarang, {{ $consultation->created_at->format('d F Y') }}</p>
+    <p>Pemohon,</p>
+    <div class="signature-space"></div>
+    <p><strong>{{ $user->name ?? '-' }}</strong></p>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+    <p>Dokumen ini dicetak secara elektronik dan sah tanpa tanda tangan basah.</p>
+    <p>Dicetak pada {{ now()->format('d F Y, H:i') }} WIB</p>
+</div>
+
 </body>
 </html>
