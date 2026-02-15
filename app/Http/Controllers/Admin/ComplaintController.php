@@ -24,7 +24,7 @@ class ComplaintController extends Controller
             'belum'   => Complaint::where('status', 'pending')->count(),
         ];
 
-        $query = Complaint::with(['user', 'category']);
+        $query = Complaint::with(['user']);
 
         $hasStart = $request->filled('start_date');
         $hasEnd   = $request->filled('end_date');
@@ -46,25 +46,19 @@ class ComplaintController extends Controller
             });
         }
 
-        if ($request->filled('category') && $request->category !== 'Semua') {
-            $query->where('category_id', $request->category);
-        }
-
         if ($request->filled('status') && $request->status !== 'Semua') {
             $query->where('status', $request->status);
         }
 
         $complaints = $query->latest()->paginate(10)->withQueryString();
-        $categories = Category::where('type', 'pengaduan')->get();
 
-        return view('admin.complaints.pengaduan', compact('complaints', 'categories', 'stats'));
+        return view('admin.complaints.pengaduan', compact('complaints', 'stats'));
     }
 
     public function show($id)
     {
         $complaint = Complaint::with([
             'user',
-            'category',
             'documents',
             'statusHistories.changedBy',
         ])->findOrFail($id);
@@ -97,9 +91,12 @@ class ComplaintController extends Controller
         $request->validate([
             'status'      => 'required|in:pending,diproses,selesai,ditolak',
             'admin_notes' => 'nullable|string',
+            'diproses_bidang'   => 'nullable|string',
+            'diproses_kelompok' => 'nullable|string',
+            'diproses_oleh'     => 'nullable|string',
         ]);
 
-        $complaint = Complaint::with(['user', 'category', 'handler'])->findOrFail($id);
+        $complaint = Complaint::with(['user', 'handler'])->findOrFail($id);
 
         $oldStatus = $complaint->status;
         $oldNotes  = $complaint->admin_response ?? $complaint->admin_notes;
@@ -115,6 +112,9 @@ class ComplaintController extends Controller
             'admin_response' => $newNotes,
             'handled_by'     => Auth::id(),
             'completed_at'   => $newStatus === 'selesai' ? now() : null,
+            'diproses_bidang'   => $request->diproses_bidang,
+            'diproses_kelompok' => $request->diproses_kelompok,
+            'diproses_oleh'     => $request->diproses_oleh,
         ]);
 
         if ($statusChanged || $notesChanged) {
@@ -132,12 +132,11 @@ class ComplaintController extends Controller
 
         if (($statusChanged || $notesChanged) && !empty($complaint->user->email)) {
             try {
-                $complaint->load(['user', 'category', 'handler']);
+                $complaint->load(['user', 'handler']);
 
                 $html = view('emails.complaint_status_updated', [
                     'complaint'  => $complaint,
                     'user'       => $complaint->user,
-                    'category'   => $complaint->category,
                     'handler'    => $complaint->handler,
                     'notes'      => $newNotes,
                     'oldStatus'  => $oldStatus,    
@@ -222,7 +221,6 @@ class ComplaintController extends Controller
     {
         $complaint = Complaint::with([
             'user',
-            'category',
             'documents',
             'statusHistories.changedBy',
         ])->findOrFail($id);

@@ -1,7 +1,7 @@
 {{-- resources/views/admin/consultations/show.blade.php --}}
 @extends('layouts.admin')
 
-@section('header_title', 'Detail Pengajuan')
+@section('header_title', 'Detail Konsultasi')
 @section('title', 'Detail Konsultasi ' . ($consultation->ticket_id ?? $consultation->ticket_number ?? '-'))
 
 @section('content')
@@ -177,9 +177,6 @@
 
     $activeIndex = max(0, $timelineItems->count() - 1);
 
-    // Kategori dari controller
-    $categoryName = $categoryName ?? '-';
-
     // isi
     $judul = $consultation->subject ?? $consultation->title ?? '-';
     $deskripsi = $consultation->description ?? '-';
@@ -202,7 +199,7 @@
             <div>
                 <div class="flex items-center gap-3 flex-wrap">
                     <h1 class="font-montserrat text-2xl font-bold text-gray-900">
-                        Detail Pengajuan {{ $ticketId }}
+                        Detail Konsultasi {{ $ticketId }}
                     </h1>
 
                     <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $badgeColor }}">
@@ -212,10 +209,8 @@
 
                 <div class="flex items-center gap-4 mt-1 text-sm text-gray-500 font-lato flex-wrap">
                     <span>Diajukan pada {{ optional($consultation->created_at)->format('d F Y') }}</span>
-                    <span>•</span>
+                    <span>|</span>
                     <span>Layanan : Konsultasi</span>
-                    <span>•</span>
-                    <span>Kategori : {{ $categoryName }}</span>
                 </div>
             </div>
         </div>
@@ -319,7 +314,7 @@
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
             </svg>
             <h3 class="font-montserrat font-bold text-gray-900">Data Pemohon</h3>
         </div>
@@ -338,9 +333,10 @@
                     $nik = $pemohon->nik ?? null;
                     $alamatDetail = $pemohon->alamat_detail ?? $pemohon->address ?? null;
 
-                    $kabName  = $pemohon->kabupaten_nama ?? null;
-                    $kecName  = $pemohon->kecamatan_nama ?? null;
-                    $desaName = $pemohon->desa_nama ?? null;
+                    $provName = $pemohon->provinsi ?? $pemohon->provinsi_nama ?? null;
+                    $kabName  = $pemohon->kabupaten ?? $pemohon->kabupaten_nama ?? null;
+                    $kecName  = $pemohon->kecamatan ?? $pemohon->kecamatan_nama ?? null;
+                    $desaName = $pemohon->desa ?? $pemohon->desa_nama ?? null;
 
                     $pemohonPekerjaan = $pemohon->pekerjaan ?? null;
                 @endphp
@@ -389,12 +385,18 @@
                             @if($ktpPublicUrl)
                                 <a href="{{ $ktpPublicUrl }}" target="_blank" rel="noopener" class="inline-block">
                                     <img src="{{ $ktpPublicUrl }}" alt="Foto KTP"
-                                         class="w-32 h-20 object-cover rounded-lg border border-gray-200">
+                                        class="w-32 h-20 object-cover rounded-lg border border-gray-200">
                                 </a>
 
-                                <div class="mt-3">
+                                <div class="mt-3 flex items-center gap-2">
+                                    <a href="{{ $ktpPublicUrl }}"
+                                    target="_blank" rel="noopener"
+                                    class="inline-flex items-center px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                        Lihat KTP
+                                    </a>
+
                                     <a href="{{ route('admin.consultations.ktp.download', $consultation->id) }}"
-                                       class="inline-flex items-center px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                    class="inline-flex items-center px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
                                         Unduh KTP
                                     </a>
                                 </div>
@@ -402,42 +404,32 @@
                                 <div class="w-32 h-20 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400">
                                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M3 5h18v14H3V5zm4 10l3-3 4 4 3-3 3 3"/>
+                                            d="M3 5h18v14H3V5zm4 10l3-3 4 4 3-3 3 3"/>
                                     </svg>
                                 </div>
                             @endif
                         </div>
 
-                        {{-- tambahan kalau pemohon applicant --}}
-                        @if($userType === 'pegawai')
-                            <div class="md:col-span-2">
-                                <div class="mt-2 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Info Tambahan Pemohon</p>
-                                    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <p class="text-xs text-gray-500 mb-1">Pekerjaan</p>
-                                            <p class="text-sm font-bold text-gray-900">{{ $pemohonPekerjaan ?? '-' }}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500 mb-1">Wilayah</p>
-                                            <p class="text-sm font-bold text-gray-900">
-                                                {{ $kabName ?? '-' }} / {{ $kecName ?? '-' }} / {{ $desaName ?? '-' }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+                        {{-- INFO TAMBAHAN (HANYA 1x, tampil untuk semua pemohon) --}}
+                        <div class="md:col-span-2">
+                            <div class="mt-2 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Info Tambahan Pemohon</p>
 
-                                <div class="mt-4 p-4 rounded-2xl bg-white border border-gray-100">
-                                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Data Co-Admin (Akun Pembuat)</p>
-                                    <div class="mt-3 text-sm text-gray-800 leading-relaxed">
-                                        Nama Akun: <b>{{ $creator->name ?? '-' }}</b><br>
-                                        NIP: <b>{{ $creator->nip ?? '-' }}</b><br>
-                                        Bidang/Balai: <b>{{ $creator->bidang ?? '-' }}</b><br>
-                                        Jabatan: <b>{{ $creator->jabatan ?? '-' }}</b>
+                                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-xs text-gray-500 mb-1">Pekerjaan</p>
+                                        <p class="text-sm font-bold text-gray-900">{{ $pemohonPekerjaan ?? '-' }}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs text-gray-500 mb-1">Wilayah</p>
+                                        <p class="text-sm font-bold text-gray-900">
+                                            {{ $provName ?? '-' }} / {{ $kabName ?? '-' }} / {{ $kecName ?? '-' }} / {{ $desaName ?? '-' }}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-                        @endif
+                        </div>
                     </div>
                 </div>
             @endif

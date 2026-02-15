@@ -89,6 +89,71 @@
 
         <form action="{{ route('admin.complaints.pengaduan') }}" method="GET" class="w-full">
             <div class="p-4 border-b border-gray-200/70">
+                @php
+                    // List bidang (sama dengan halaman detail)
+                    $bidangKelompok = [
+                        'Sekretariat' => [
+                            'Sekretaris',
+                            'Sub Bagian Program',
+                            'Sub Bagian Keuangan',
+                            'Sub Bagian Umum dan Kepegawaian',
+                        ],
+                        'Bidang Pembangunan Sumber Daya Industri Dan Perwilayahan Industri' => [
+                            'Kelompok Kerja Pengembangan Perwilayahan Industri',
+                            'Kelompok Kerja pengembangan Teknologi Industri',
+                            'Kelompok Kerja Pengembangan SDM Industri',
+                        ],
+                        'Bidang Pemberdayaan Industri' => [
+                            'Kelompok Kerja Pengembangan Industri',
+                            'Kelompok Kerja Promosi dan Kerja Sama Industri',
+                            'Kelompok Kerja Promosi dan Kerja Sama Industri',
+                        ],
+                        'Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri' => [
+                            'Kelompok Kerja Pengembangan Sarana Prasarana Industri',
+                            'Kelompok Kerja Pengawasan dan Pengendalian Industri',
+                            'Kelompok Kerja Data dan Informasi Industri',
+                        ],
+                        'Bidang Perdagangan Dalam Negeri' => [
+                            'Kelompok Kerja Pengendalian Bapokting, Pengembangan Informasi dan Sarana Perdagangan',
+                            'Kelompok Kerja Promosi dan Kerjasama',
+                            'Kelompok Kerja Perlindungan Konsumen dan Tertib Niaga',
+                        ],
+                        'Bidang Perdagangan Luar Negeri' => [
+                            'Kelompok Kerja Ekspor dan Impor',
+                            'Kelompok Kerja Promosi dan Kerjasama Perdagangan Luar Negeri',
+                            'Kelompok Kerja Informasi Dan Analisis Pasar',
+                        ],
+                        'Balai Industri Logam dan Kayu (BILK) Kelas A' => [
+                            'Kelompok Kerja Pelayanan Jasa Keteknikan,',
+                            'Kelompok Kerja Penerapan dan Rekayasa',
+                            'Kelompok Jabatan Fungsional',
+                        ],
+                        'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Surakarta Kelas A' => [
+                            'Kelompok Kerja Pelayanan Teknis Pengujian dan Kalibrasi',
+                            'Kelompok Kerja Pengembangan Jasa Pengujian dan Kalibrasi',
+                            'Kelompok Jabatan Fungsional',
+                        ],
+                        'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Semarang' => [
+                            'Kelompok Kerja Pengembangan Produk Alas Kaki',
+                            'Kelompok Kerja Pengembangan Jasa Pengujian dan Kalibrasi',
+                            'Kelompok Jabatan Fungsional',
+                        ],
+                        'Balai Industri Produk Tekstil dan Alas Kaki (BIPTAK)' => [
+                            'Kelompok Kerja Pengembangan Produk Tekstil',
+                            'Kelompok Kerja Pengembangan Produk Alas Kaki',
+                            'Kelompok Jabatan Fungsional',
+                        ],
+                        'Balai Industri Kreatif Digital dan Kemasan Kelas A (BIKDK)' => [
+                            'Kelompok Kerja Industri Kreatif Digital',
+                            'Kelompok Kerja Pengembangan Kemasan',
+                            'Kelompok Jabatan Fungsional',
+                        ],
+                    ];
+
+                    $bidangOptions = array_keys($bidangKelompok);
+                    $selectedBidang = request('diproses_bidang');
+                @endphp
+
                 <div class="overflow-x-auto">
                     <div class="min-w-max flex items-end gap-4">
                         <div class="shrink-0">
@@ -128,14 +193,15 @@
                             </div>
                         </div>
 
-                        <div class="shrink-0 w-64">
-                            <label class="block text-xs font-semibold text-gray-600 mb-2">Kategori :</label>
+                        {{-- ✅ FILTER BARU: Diproses Oleh (Bidang saja) --}}
+                        <div class="shrink-0 w-[360px]">
+                            <label class="block text-xs font-semibold text-gray-600 mb-2">Diproses Oleh (Bidang) :</label>
                             <div class="relative">
-                                <select name="category" class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300/80 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500/60 bg-white/70 text-gray-600 truncate shadow-sm">
-                                    <option value="Semua">Semua</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat->id }}" {{ request('category') == $cat->id ? 'selected' : '' }}>
-                                            {{ $cat->name }}
+                                <select name="diproses_bidang" class="w-full appearance-none px-3 py-2 pr-8 border border-gray-300/80 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500/60 bg-white/70 text-gray-600 shadow-sm">
+                                    <option value="">Semua</option>
+                                    @foreach($bidangOptions as $b)
+                                        <option value="{{ $b }}" {{ $selectedBidang === $b ? 'selected' : '' }}>
+                                            {{ $b }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -191,7 +257,6 @@
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[190px]">Nama Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[240px]">Email Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[140px]">Jenis Pelapor</th>
-                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[190px]">Kategori</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[320px]">Subjek</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[150px]">Status</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[90px]">Aksi</th>
@@ -233,10 +298,6 @@
                                     'pegawai'         => 'Pegawai',
                                     default           => '-',
                                 } }}
-                            </td>
-
-                            <td class="px-4 py-4 text-sm text-gray-600">
-                                <div class="max-w-[240px] truncate">{{ $item->category->name ?? '-' }}</div>
                             </td>
 
                             <td class="px-4 py-4 text-sm text-gray-900 font-medium">

@@ -19,6 +19,9 @@ class Complaint extends Model
         'admin_response',
         'handled_by',
         'completed_at',
+        'diproses_bidang',
+        'diproses_kelompok',
+        'diproses_oleh',
     ];
 
     protected $casts = [

@@ -1,24 +1,27 @@
 {{-- resources/views/admin/submissions/show.blade.php --}}
 @extends('layouts.admin')
 
-@section('header_title', 'Detail Pengajuan')
-@section('title', 'Detail Permohonan Informasi ' . $submission->ticket_id)
+@section('header_title', 'Detail Permohonan Informasi')
+@section('title', 'Detail Permohonan Informasi ' . ($submission->ticket_id ?? '-'))
 
 @section('content')
 @php
-    /**
-     * =========================
-     * Tentukan pemohon (buat tampilan admin)
-     * - Kalau pembuat submission = pegawai (CO ADMIN) => pemohon = $submission->applicant
-     * - Kalau pembuat submission = masyarakat_umum => pemohon = $submission->user
-     * =========================
-     */
+    // =========================
+    // Tentukan pemohon (admin)
+    // - pembuat submission = pegawai (CO ADMIN) => pemohon = applicant
+    // - pembuat submission = masyarakat_umum => pemohon = user
+    // =========================
     $creator  = $submission->user;
     $userType = $creator->user_type ?? null;
 
     $pemohon = ($userType === 'pegawai')
         ? ($submission->applicant ?? null)
         : $creator;
+
+    // =========================
+    // Ticket id
+    // =========================
+    $ticketId = $submission->ticket_id ?? '-';
 
     // =========================
     // WhatsApp link generator (pakai data PEMOHON)
@@ -39,54 +42,43 @@
     $waPhone = (strlen($waPhone) >= 10) ? $waPhone : null;
 
     $pemohonNameForWa = $pemohon->nama_lengkap ?? $pemohon->name ?? 'Bapak/Ibu';
-    $waText = rawurlencode("Halo {$pemohonNameForWa}, kami dari Admin SIAPKANGMAS terkait Pengajuan {$submission->ticket_id}.");
+    $waText = rawurlencode("Halo {$pemohonNameForWa}, kami dari Admin SIAPKANGMAS terkait Pengajuan {$ticketId}.");
     $waLink = $waPhone ? "https://wa.me/{$waPhone}?text={$waText}" : null;
 
     // KTP public URL sudah dikirim dari controller show()
     $ktpPublicUrl = $ktpPublicUrl ?? null;
 
     // =========================
-    // Helper tampilan alamat
+    // Status badge (SAMAKAN dengan consultations)
     // =========================
-    $isKelurahan = (bool) ($pemohon->is_kelurahan ?? false);
+    $statusRaw = strtolower((string)($submission->status ?? 'pending'));
 
-    $labelDesa = $isKelurahan ? 'Kelurahan' : 'Desa';
-    $namaDesa = $pemohon->desa_nama ?? $pemohon->desa ?? null;
-    $namaKecamatan = $pemohon->kecamatan_nama ?? $pemohon->kecamatan ?? null;
-    $namaKabupaten = $pemohon->kabupaten_nama ?? $pemohon->kabupaten ?? null;
-    $provinsi = $pemohon->provinsi ?? 'Jawa Tengah';
-
-    $alamatDetail = $pemohon->alamat_detail ?? $pemohon->address ?? null;
-    $nik = $pemohon->nik ?? null;
-
-    // =========================
-    // Badge status
-    // =========================
-    $badgeColor = match($submission->status) {
-        'pending' => 'bg-gray-100 text-gray-700',
-        'in_progress' => 'bg-yellow-100 text-yellow-800',
-        'completed', 'selesai', 'approved' => 'bg-green-100 text-green-800',
-        'rejected', 'ditolak' => 'bg-red-100 text-red-800',
-        default => 'bg-gray-100 text-gray-800'
+    $badgeColor = match(true) {
+        in_array($statusRaw, ['pending', 'belum diproses']) => 'bg-gray-100 text-gray-700',
+        in_array($statusRaw, ['on_progress','in_progress','diproses','sedang diproses']) => 'bg-yellow-100 text-yellow-800',
+        in_array($statusRaw, ['completed','selesai','approved']) => 'bg-green-100 text-green-800',
+        in_array($statusRaw, ['rejected','ditolak']) => 'bg-red-100 text-red-800',
+        default => 'bg-gray-100 text-gray-800',
     };
-    $statusLabel = match($submission->status) {
-        'pending' => 'Belum Diproses',
-        'in_progress' => 'Sedang Diproses',
+
+    $statusLabel = match(true) {
+        in_array($statusRaw, ['pending', 'belum diproses']) => 'Belum Diproses',
+        in_array($statusRaw, ['on_progress','in_progress','diproses','sedang diproses']) => 'Sedang Diproses',
+        in_array($statusRaw, ['completed','selesai','approved']) => 'Selesai',
+        in_array($statusRaw, ['rejected','ditolak']) => 'Ditolak',
+        default => ucfirst($statusRaw ?: '-'),
+    };
+
+    $statusText = fn($st) => match((string)$st) {
+        'pending', 'belum diproses' => 'Belum Diproses',
+        'on_progress', 'in_progress', 'diproses', 'sedang diproses' => 'Sedang Diproses',
         'completed', 'selesai', 'approved' => 'Selesai',
         'rejected', 'ditolak' => 'Ditolak',
-        default => ucfirst($submission->status)
-    };
-
-    $statusText = fn($st) => match($st) {
-        'pending' => 'Pending',
-        'in_progress' => 'Sedang Diproses',
-        'completed', 'selesai', 'approved' => 'Selesai',
-        'rejected', 'ditolak' => 'Ditolak',
-        default => ucfirst($st)
+        default => ucfirst((string)$st),
     };
 
     // =========================
-    // Data dropdown 2 tingkat (Bidang -> Kelompok)
+    // Dropdown 2 tingkat (Bidang -> Kelompok)
     // =========================
     $bidangKelompok = [
         'Sekretariat' => [
@@ -147,59 +139,72 @@
         ],
     ];
 
-    // preselect (support data lama diproses_oleh = "Bidang - Kelompok")
-    $oldBidang = old('diproses_bidang', $submission->diproses_bidang ?? null);
+    $oldBidang   = old('diproses_bidang', $submission->diproses_bidang ?? null);
     $oldKelompok = old('diproses_kelompok', $submission->diproses_kelompok ?? null);
 
     if ((!$oldBidang || !$oldKelompok) && !empty($submission->diproses_oleh) && str_contains($submission->diproses_oleh, ' - ')) {
         [$bTmp, $kTmp] = array_pad(explode(' - ', $submission->diproses_oleh, 2), 2, null);
-        $oldBidang = $oldBidang ?: $bTmp;
+        $oldBidang   = $oldBidang ?: $bTmp;
         $oldKelompok = $oldKelompok ?: $kTmp;
     }
 
     $diprosesOlehCombined = old('diproses_oleh', $submission->diproses_oleh ?? null);
 
     // =========================
-    // Timeline items (persis foto)
+    // Timeline items (SAMAKAN dengan consultations)
     // =========================
     $histories = collect($submission->statusHistories ?? [])->sortBy('created_at')->values();
 
     $timelineItems = collect();
 
-    // 1) Tiket dibuat oleh pemohon
     $timelineItems->push([
         'title' => 'Tiket Dibuat oleh Pemohon',
         'time'  => $submission->created_at,
         'note'  => null,
-        'dot'   => 'gray', // default
     ]);
 
-    // 2) Tiket diterima sistem (pakai created_at juga agar muncul step ke-2)
     $timelineItems->push([
         'title' => 'Tiket Diterima Sistem',
         'time'  => $submission->created_at,
         'note'  => null,
-        'dot'   => 'gray',
     ]);
 
-    // 3+) Status history
     foreach ($histories as $h) {
         $timelineItems->push([
             'title' => "Status diubah menjadi '" . $statusText($h->new_status) . "'",
             'time'  => $h->created_at,
             'note'  => $h->notes ?? null,
-            'dot'   => 'blue',
         ]);
     }
 
     $activeIndex = max(0, $timelineItems->count() - 1);
+
+    // =========================
+    // Data pemohon helper
+    // =========================
+    $jenisPelapor = $userType ? ucwords(str_replace('_',' ', $userType)) : '-';
+    if ($userType === 'masyarakat_umum') $jenisPelapor = 'Masyarakat Umum';
+    if ($userType === 'pegawai') $jenisPelapor = 'Pegawai';
+
+    $nik = $pemohon->nik ?? null;
+    $alamatDetail = $pemohon->alamat_detail ?? $pemohon->address ?? null;
+
+    $provName = $pemohon->provinsi ?? $pemohon->provinsi_nama ?? null;
+    $kabName  = $pemohon->kabupaten ?? $pemohon->kabupaten_nama ?? null;
+    $kecName  = $pemohon->kecamatan ?? $pemohon->kecamatan_nama ?? null;
+    $desaName = $pemohon->desa ?? $pemohon->desa_nama ?? null;
+
+    $pemohonPekerjaan = $pemohon->pekerjaan ?? null;
+
+    // docs
+    $docs = $submission->documents ?? collect();
 @endphp
 
 <div class="space-y-6">
     {{-- HEADER --}}
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div class="flex items-center gap-4">
-            <a href="{{ route('admin.submissions.permohonan') }}"
+            <a href="{{ url()->previous() }}"
                class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
                 <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -209,7 +214,7 @@
             <div>
                 <div class="flex items-center gap-3 flex-wrap">
                     <h1 class="font-montserrat text-2xl font-bold text-gray-900">
-                        Detail Pengajuan {{ $submission->ticket_id }}
+                        Detail Permohonan Informasi {{ $ticketId }}
                     </h1>
 
                     <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $badgeColor }}">
@@ -218,11 +223,9 @@
                 </div>
 
                 <div class="flex items-center gap-4 mt-1 text-sm text-gray-500 font-lato flex-wrap">
-                    <span>Diajukan pada {{ $submission->created_at->format('d F Y') }}</span>
-                    <span>•</span>
+                    <span>Diajukan pada {{ optional($submission->created_at)->format('d F Y') }}</span>
+                    <span>|</span>
                     <span>Layanan : Permohonan Informasi</span>
-                    <span>•</span>
-                    <span>Kategori : {{ $submission->category->name ?? '-' }}</span>
                 </div>
             </div>
         </div>
@@ -254,9 +257,7 @@
         </div>
     @endif
 
-    {{-- =========================
-         RIWAYAT AKTIVITAS (PERSIS FOTO - HORIZONTAL TIMELINE)
-    ========================= --}}
+    {{-- RIWAYAT AKTIVITAS (HORIZONTAL TIMELINE) --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,21 +267,18 @@
         </div>
 
         <div class="p-6">
-            {{-- container bisa scroll kalau layar sempit --}}
             <div class="overflow-x-auto">
                 <div class="min-w-[820px]">
-                    {{-- Titles row --}}
+                    {{-- Titles --}}
                     <div class="grid" style="grid-template-columns: repeat({{ $timelineItems->count() }}, minmax(0, 1fr));">
                         @foreach($timelineItems as $i => $it)
                             <div class="text-center px-2">
-                                <p class="text-sm font-bold text-gray-900">
-                                    {{ $it['title'] }}
-                                </p>
+                                <p class="text-sm font-bold text-gray-900">{{ $it['title'] }}</p>
                             </div>
                         @endforeach
                     </div>
 
-                    {{-- Dots + line row --}}
+                    {{-- Dots + line --}}
                     <div class="relative mt-4">
                         <div class="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[2px] bg-gray-200"></div>
 
@@ -290,7 +288,6 @@
                                     $isActive = $i === $activeIndex;
                                     $dotClass = $isActive ? 'bg-blue-600' : 'bg-gray-300';
                                 @endphp
-
                                 <div class="flex justify-center relative">
                                     <span class="w-3 h-3 rounded-full {{ $dotClass }}"></span>
                                 </div>
@@ -298,7 +295,7 @@
                         </div>
                     </div>
 
-                    {{-- Times row --}}
+                    {{-- Times --}}
                     <div class="grid mt-4" style="grid-template-columns: repeat({{ $timelineItems->count() }}, minmax(0, 1fr));">
                         @foreach($timelineItems as $i => $it)
                             <div class="text-center px-2">
@@ -309,7 +306,7 @@
                         @endforeach
                     </div>
 
-                    {{-- Notes row (hanya item aktif) --}}
+                    {{-- Notes (active only) --}}
                     <div class="grid mt-4" style="grid-template-columns: repeat({{ $timelineItems->count() }}, minmax(0, 1fr));">
                         @foreach($timelineItems as $i => $it)
                             <div class="px-2">
@@ -321,20 +318,18 @@
                             </div>
                         @endforeach
                     </div>
+
                 </div>
             </div>
-
         </div>
     </div>
 
-    {{-- =========================
-         DATA PEMOHON (FULL WIDTH - TIDAK DISEJAJARKAN)
-    ========================= --}}
+    {{-- DATA PEMOHON --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
             </svg>
             <h3 class="font-montserrat font-bold text-gray-900">Data Pemohon</h3>
         </div>
@@ -348,9 +343,7 @@
                 <div class="font-lato">
                     <p class="text-sm text-gray-600 mb-5">
                         Jenis Pelapor :
-                        <span class="font-semibold text-gray-900">
-                            {{ $userType ? ucwords(str_replace('_', ' ', $userType)) : '-' }}
-                        </span>
+                        <span class="font-semibold text-gray-900">{{ $jenisPelapor }}</span>
                     </p>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -361,7 +354,7 @@
 
                         <div>
                             <p class="text-xs text-gray-500 mb-1">Email</p>
-                            <p class="font-bold text-gray-900">{{ $pemohon->email ?? '-' }}</p>
+                            <p class="font-bold text-gray-900 break-words">{{ $pemohon->email ?? '-' }}</p>
                         </div>
 
                         <div>
@@ -382,7 +375,7 @@
 
                         <div class="md:col-span-1">
                             <p class="text-xs text-gray-500 mb-1">Alamat Lengkap</p>
-                            <p class="font-bold text-gray-900">{{ $alamatDetail ?: '-' }}</p>
+                            <p class="font-bold text-gray-900 break-words">{{ $alamatDetail ?: '-' }}</p>
                         </div>
 
                         <div class="md:col-span-1">
@@ -391,16 +384,50 @@
                             @if($ktpPublicUrl)
                                 <a href="{{ $ktpPublicUrl }}" target="_blank" rel="noopener" class="inline-block">
                                     <img src="{{ $ktpPublicUrl }}" alt="Foto KTP"
-                                         class="w-32 h-20 object-cover rounded-lg border border-gray-200">
+                                        class="w-32 h-20 object-cover rounded-lg border border-gray-200">
                                 </a>
+
+                                <div class="mt-3 flex items-center gap-2">
+                                    <a href="{{ $ktpPublicUrl }}"
+                                    target="_blank" rel="noopener"
+                                    class="inline-flex items-center px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                        Lihat KTP
+                                    </a>
+
+                                    <a href="{{ route('admin.submissions.ktp.download', $submission->id) }}"
+                                    class="inline-flex items-center px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                        Unduh KTP
+                                    </a>
+                                </div>
                             @else
                                 <div class="w-32 h-20 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400">
                                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M3 5h18v14H3V5zm4 10l3-3 4 4 3-3 3 3"/>
+                                            d="M3 5h18v14H3V5zm4 10l3-3 4 4 3-3 3 3"/>
                                     </svg>
                                 </div>
                             @endif
+                        </div>
+
+                        {{-- INFO TAMBAHAN (HANYA 1x, tampil untuk semua pemohon) --}}
+                        <div class="md:col-span-2">
+                            <div class="mt-2 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Info Tambahan Pemohon</p>
+
+                                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-xs text-gray-500 mb-1">Pekerjaan</p>
+                                        <p class="text-sm font-bold text-gray-900">{{ $pemohonPekerjaan ?? '-' }}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs text-gray-500 mb-1">Wilayah</p>
+                                        <p class="text-sm font-bold text-gray-900">
+                                            {{ $provName ?? '-' }} / {{ $kabName ?? '-' }} / {{ $kecName ?? '-' }} / {{ $desaName ?? '-' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -408,9 +435,7 @@
         </div>
     </div>
 
-    {{-- =========================
-         ISI PENGAJUAN
-    ========================= --}}
+    {{-- ISI PENGAJUAN --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -422,7 +447,7 @@
         <div class="p-6 space-y-6">
             <div>
                 <h4 class="font-bold text-gray-900 text-sm mb-2">Judul</h4>
-                <p class="text-gray-700 font-lato">{{ $submission->title }}</p>
+                <p class="text-gray-700 font-lato">{{ $submission->title ?? '-' }}</p>
             </div>
 
             <div>
@@ -437,9 +462,9 @@
             <div>
                 <h4 class="font-bold text-gray-900 text-sm mb-3">Dokumen Pendukung</h4>
 
-                @if($submission->documents && $submission->documents->count() > 0)
+                @if($docs && $docs->count() > 0)
                     <div class="space-y-2">
-                        @foreach($submission->documents as $doc)
+                        @foreach($docs as $doc)
                             <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-white">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <div class="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 shrink-0">
@@ -450,7 +475,7 @@
                                     </div>
 
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-gray-900 truncate">{{ $doc->original_name }}</p>
+                                        <p class="text-sm font-semibold text-gray-900 truncate">{{ $doc->original_name ?? 'Dokumen' }}</p>
                                         <p class="text-xs text-gray-500">
                                             {{ number_format(($doc->file_size ?? 0) / 1024, 2) }} KB
                                         </p>
@@ -480,9 +505,7 @@
         </div>
     </div>
 
-    {{-- =========================
-         TINDAK LANJUT (STATUS + DIPROSES OLEH 2 KOLOM SEPERTI FOTO)
-    ========================= --}}
+    {{-- TINDAK LANJUT --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -502,10 +525,10 @@
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Update Status Tiket</label>
                         <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
-                            <option value="pending" {{ $submission->status == 'pending' ? 'selected' : '' }}>Belum Diproses</option>
-                            <option value="in_progress" {{ $submission->status == 'in_progress' ? 'selected' : '' }}>Sedang Diproses</option>
-                            <option value="completed" {{ $submission->status == 'completed' ? 'selected' : '' }}>Selesai</option>
-                            <option value="rejected" {{ $submission->status == 'rejected' ? 'selected' : '' }}>Ditolak</option>
+                            <option value="pending" {{ in_array($statusRaw, ['pending','belum diproses']) ? 'selected' : '' }}>Belum Diproses</option>
+                            <option value="in_progress" {{ in_array($statusRaw, ['on_progress','in_progress','diproses','sedang diproses']) ? 'selected' : '' }}>Sedang Diproses</option>
+                            <option value="completed" {{ in_array($statusRaw, ['completed','selesai','approved']) ? 'selected' : '' }}>Selesai</option>
+                            <option value="rejected" {{ in_array($statusRaw, ['rejected','ditolak']) ? 'selected' : '' }}>Ditolak</option>
                         </select>
                     </div>
 
@@ -530,7 +553,6 @@
                                 <option value="">-- Pilih Kelompok Kerja --</option>
                             </select>
 
-                            {{-- simpan gabungan buat kompatibilitas --}}
                             <input type="hidden" id="diproses_oleh" name="diproses_oleh" value="{{ $diprosesOlehCombined ?? '' }}">
                         </div>
                     </div>
@@ -541,7 +563,7 @@
                     <textarea name="admin_notes"
                               rows="8"
                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white placeholder-gray-400 min-h-[220px] resize-y"
-                              placeholder="Tuliskan catatan kepada pemohon di sini...">{{ $submission->admin_notes }}</textarea>
+                              placeholder="Tuliskan catatan kepada pemohon di sini...">{{ $submission->admin_response ?? $submission->admin_notes }}</textarea>
                 </div>
 
                 <div class="mt-4 flex items-center">
@@ -562,9 +584,7 @@
     </div>
 </div>
 
-{{-- =========================
-     Modal Konfirmasi Simpan
-========================= --}}
+{{-- Modal Konfirmasi Simpan --}}
 <div id="saveModalSubmission" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-center">
         <div class="mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-full bg-blue-100">
@@ -601,16 +621,16 @@
 
 @push('scripts')
 <script>
-    // =========================
     // Modal save
-    // =========================
     function openSaveModalSubmission() {
         const modal = document.getElementById('saveModalSubmission');
+        if (!modal) return;
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
     function closeSaveModalSubmission() {
         const modal = document.getElementById('saveModalSubmission');
+        if (!modal) return;
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
@@ -618,16 +638,18 @@
         const form = document.getElementById('submission-followup-form');
         if (form) form.submit();
     }
-    document.getElementById('saveModalSubmission').addEventListener('click', function (e) {
-        if (e.target === this) closeSaveModalSubmission();
-    });
+
+    const saveModal = document.getElementById('saveModalSubmission');
+    if (saveModal) {
+        saveModal.addEventListener('click', function (e) {
+            if (e.target === this) closeSaveModalSubmission();
+        });
+    }
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') closeSaveModalSubmission();
     });
 
-    // =========================
     // Dependent dropdown Bidang -> Kelompok
-    // =========================
     const BIDANG_KELOMPOK = @json($bidangKelompok);
 
     const bidangSelect = document.getElementById('diproses_bidang');
@@ -637,13 +659,21 @@
     const preBidang = @json($oldBidang);
     const preKelompok = @json($oldKelompok);
 
+    function syncHidden() {
+        const b = bidangSelect?.value || '';
+        const k = kelompokSelect?.value || '';
+        if (diprosesOlehHidden) diprosesOlehHidden.value = (b && k) ? `${b} - ${k}` : '';
+    }
+
     function setKelompokOptions(bidang, selectedKelompok = null) {
+        if (!kelompokSelect) return;
+
         kelompokSelect.innerHTML = '<option value="">-- Pilih Kelompok Kerja --</option>';
 
-        const items = BIDANG_KELOMPOK[bidang] || [];
+        const items = BIDANG_KELOMPOK?.[bidang] || [];
         if (!bidang || items.length === 0) {
             kelompokSelect.disabled = true;
-            diprosesOlehHidden.value = '';
+            if (diprosesOlehHidden) diprosesOlehHidden.value = '';
             return;
         }
 
@@ -659,19 +689,15 @@
         syncHidden();
     }
 
-    function syncHidden() {
-        const b = bidangSelect.value || '';
-        const k = kelompokSelect.value || '';
-        diprosesOlehHidden.value = (b && k) ? `${b} - ${k}` : '';
+    if (bidangSelect) {
+        bidangSelect.addEventListener('change', () => setKelompokOptions(bidangSelect.value, null));
+    }
+    if (kelompokSelect) {
+        kelompokSelect.addEventListener('change', syncHidden);
     }
 
-    bidangSelect.addEventListener('change', () => {
-        setKelompokOptions(bidangSelect.value, null);
-    });
-    kelompokSelect.addEventListener('change', syncHidden);
-
-    // init (prefill)
-    if (preBidang) {
+    // init
+    if (preBidang && bidangSelect) {
         bidangSelect.value = preBidang;
         setKelompokOptions(preBidang, preKelompok || null);
     } else {
