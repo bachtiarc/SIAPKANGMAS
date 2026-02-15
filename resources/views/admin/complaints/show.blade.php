@@ -223,123 +223,161 @@
     $desaName = $pemohon->desa ?? $pemohon->desa_nama ?? null;
 
     $pemohonPekerjaan = $pemohon->pekerjaan ?? null;
+
+    $progressPct = $timelineItems->count() > 1
+        ? round(($activeIndex / ($timelineItems->count() - 1)) * 100)
+        : 0;
 @endphp
 
+{{-- Scrollbar helper (tetap palette abu-abu) --}}
+<style>
+    .with-scrollbar::-webkit-scrollbar { width: 10px; }
+    .with-scrollbar::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 999px; }
+    .with-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; border: 2px solid #f3f4f6; }
+    .with-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    .with-scrollbar { scrollbar-color: #d1d5db #f3f4f6; scrollbar-width: thin; }
+</style>
+
 <div class="space-y-6">
-    {{-- HEADER --}}
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <a href="{{ url()->previous() }}"
-               class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-            </a>
+    {{-- TOP BAR --}}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="p-5 md:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="flex items-start gap-4">
+                    <a href="{{ url()->previous() }}"
+                       class="shrink-0 p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition"
+                       title="Kembali">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        <span class="sr-only">Kembali</span>
+                    </a>
 
-            <div>
-                <div class="flex items-center gap-3 flex-wrap">
-                    <h1 class="font-montserrat text-2xl font-bold text-gray-900">
-                        Detail Pengaduan {{ $ticketNo }}
-                    </h1>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <h1 class="font-montserrat text-2xl font-bold text-gray-900 truncate">
+                                Detail Pengaduan {{ $ticketNo }}
+                            </h1>
 
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $badgeColor }}">
-                        {{ $statusLabel }}
-                    </span>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $badgeColor }}">
+                                {{ $statusLabel }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-3 mt-1.5 text-sm text-gray-500 font-lato flex-wrap">
+                            <div class="inline-flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-13 9h16a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v11a2 2 0 002 2z"/>
+                                </svg>
+                                <span>Diajukan pada {{ optional($complaint->created_at)->format('d F Y') }}</span>
+                            </div>
+
+                            <span class="text-gray-300">|</span>
+
+                            <div class="inline-flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+                                </svg>
+                                <span>Layanan : Pengaduan</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flex items-center gap-4 mt-1 text-sm text-gray-500 font-lato flex-wrap">
-                    <span>Diajukan pada {{ optional($complaint->created_at)->format('d F Y') }}</span>
-                    <span>|</span>
-                    <span>Layanan : Pengaduan</span>
+                <div class="flex items-center gap-2 justify-start lg:justify-end">
+                    @if($waLink)
+                        <a href="{{ $waLink }}"
+                           target="_blank"
+                           rel="noopener"
+                           class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-green-600 text-white hover:bg-green-700 transition shadow-sm"
+                           title="Chat WhatsApp">
+                            <svg class="w-5 h-5" viewBox="0 0 32 32" fill="currentColor">
+                                <path d="M19.11 17.22c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.61.14-.18.27-.7.88-.86 1.06-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.17-1.34-.8-.71-1.34-1.59-1.5-1.86-.16-.27-.02-.42.12-.56.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.52-.45-.45-.61-.46h-.52c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.99 2.66 1.12 2.84.14.18 1.95 2.98 4.73 4.18.66.29 1.18.46 1.58.59.66.21 1.26.18 1.74.11.53-.08 1.6-.65 1.83-1.28.23-.63.23-1.17.16-1.28-.07-.11-.25-.18-.52-.32z"/>
+                                <path d="M16.02 3C8.86 3 3.05 8.81 3.05 15.97c0 2.28.6 4.51 1.75 6.48L3 29l6.73-1.76a12.9 12.9 0 0 0 6.29 1.61h.01c7.16 0 12.97-5.81 12.97-12.97C28.99 8.81 23.18 3 16.02 3zm0 23.33h-.01c-2.02 0-4-.54-5.74-1.55l-.41-.24-3.99 1.04 1.07-3.89-.26-.4a10.77 10.77 0 0 1-1.67-5.75c0-5.96 4.85-10.81 10.81-10.81 5.96 0 10.81 4.85 10.81 10.81 0 5.96-4.85 10.81-10.81 10.81z"/>
+                            </svg>
+                            <span class="sr-only">Chat WA</span>
+                        </a>
+                    @endif
+
+                    <a href="{{ route('admin.complaints.pdf', $complaint->id) }}"
+                       class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition shadow-sm"
+                       title="Unduh PDF">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0 0l-4-4m4 4l4-4"/>
+                        </svg>
+                        <span class="sr-only">Unduh PDF</span>
+                    </a>
                 </div>
             </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-            @if($waLink)
-                <a href="{{ $waLink }}"
-                   target="_blank"
-                   rel="noopener"
-                   class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition flex items-center gap-2">
-                    <svg class="w-5 h-5" viewBox="0 0 32 32" fill="currentColor">
-                        <path d="M19.11 17.22c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.61.14-.18.27-.7.88-.86 1.06-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.17-1.34-.8-.71-1.34-1.59-1.5-1.86-.16-.27-.02-.42.12-.56.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.52-.45-.45-.61-.46h-.52c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.99 2.66 1.12 2.84.14.18 1.95 2.98 4.73 4.18.66.29 1.18.46 1.58.59.66.21 1.26.18 1.74.11.53-.08 1.6-.65 1.83-1.28.23-.63.23-1.17.16-1.28-.07-.11-.25-.18-.52-.32z"/>
-                        <path d="M16.02 3C8.86 3 3.05 8.81 3.05 15.97c0 2.28.6 4.51 1.75 6.48L3 29l6.73-1.76a12.9 12.9 0 0 0 6.29 1.61h.01c7.16 0 12.97-5.81 12.97-12.97C28.99 8.81 23.18 3 16.02 3zm0 23.33h-.01c-2.02 0-4-.54-5.74-1.55l-.41-.24-3.99 1.04 1.07-3.89-.26-.4a10.77 10.77 0 0 1-1.67-5.75c0-5.96 4.85-10.81 10.81-10.81 5.96 0 10.81 4.85 10.81 10.81 0 5.96-4.85 10.81-10.81 10.81z"/>
-                    </svg>
-                    Chat WA
-                </a>
-            @endif
-
-            <a href="{{ route('admin.complaints.pdf', $complaint->id) }}"
-               class="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition flex items-center gap-2">
-                Unduh PDF
-            </a>
         </div>
     </div>
 
     @if(session('success'))
-        <div class="bg-green-50 border-l-4 border-green-500 p-4" role="alert">
-            <p class="text-green-700 font-medium">{{ session('success') }}</p>
+        <div class="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-start gap-3">
+            <div class="mt-0.5 w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-green-700 font-medium">{{ session('success') }}</p>
+            </div>
         </div>
     @endif
 
-    {{-- RIWAYAT AKTIVITAS (HORIZONTAL TIMELINE) --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <h3 class="font-montserrat font-bold text-gray-900">Riwayat Aktivitas</h3>
+    {{-- RIWAYAT AKTIVITAS --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="font-montserrat font-bold text-gray-900">Riwayat Aktivitas</h3>
+            </div>
+
+            <div class="text-xs text-gray-500 font-lato">
+                Step {{ $activeIndex + 1 }} / {{ $timelineItems->count() }}
+            </div>
         </div>
 
         <div class="p-6">
             <div class="overflow-x-auto">
-                <div class="min-w-[820px]">
-                    {{-- Titles --}}
-                    <div class="grid" style="grid-template-columns: repeat({{ $timelineItems->count() }}, minmax(0, 1fr));">
-                        @foreach($timelineItems as $i => $it)
-                            <div class="text-center px-2">
-                                <p class="text-sm font-bold text-gray-900">{{ $it['title'] }}</p>
-                            </div>
-                        @endforeach
+                <div class="min-w-[860px]">
+                    {{-- Progress bar --}}
+                    <div class="h-2 bg-gray-100 rounded-full overflow-hidden mb-5">
+                        <div class="h-2 bg-blue-600 rounded-full" style="width: {{ $progressPct }}%"></div>
                     </div>
 
-                    {{-- Dots + line --}}
-                    <div class="relative mt-4">
-                        <div class="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[2px] bg-gray-200"></div>
-
-                        <div class="grid items-center" style="grid-template-columns: repeat({{ $timelineItems->count() }}, minmax(0, 1fr));">
-                            @foreach($timelineItems as $i => $it)
-                                @php
-                                    $isActive = $i === $activeIndex;
-                                    $dotClass = $isActive ? 'bg-blue-600' : 'bg-gray-300';
-                                @endphp
-                                <div class="flex justify-center relative">
-                                    <span class="w-3 h-3 rounded-full {{ $dotClass }}"></span>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    {{-- Times --}}
-                    <div class="grid mt-4" style="grid-template-columns: repeat({{ $timelineItems->count() }}, minmax(0, 1fr));">
+                    {{-- Items --}}
+                    <div class="grid gap-3" style="grid-template-columns: repeat({{ $timelineItems->count() }}, minmax(0, 1fr));">
                         @foreach($timelineItems as $i => $it)
-                            <div class="text-center px-2">
-                                <p class="text-[11px] text-gray-500">
-                                    {{ optional($it['time'])->format('d M Y, H:i') }} WIB
-                                </p>
-                            </div>
-                        @endforeach
-                    </div>
+                            @php
+                                $isActive = $i === $activeIndex;
+                                $isDone   = $i < $activeIndex;
+                                $dotClass = $isActive ? 'bg-blue-600 ring-4 ring-blue-100'
+                                          : ($isDone ? 'bg-blue-600' : 'bg-gray-300');
+                                $cardClass = $isActive ? 'border-blue-200 bg-blue-50/40'
+                                           : 'border-gray-200 bg-white';
+                            @endphp
 
-                    {{-- Notes (active only) --}}
-                    <div class="grid mt-4" style="grid-template-columns: repeat({{ $timelineItems->count() }}, minmax(0, 1fr));">
-                        @foreach($timelineItems as $i => $it)
-                            <div class="px-2">
-                                @if($i === $activeIndex && !empty($it['note']))
-                                    <div class="mx-auto max-w-[240px] bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-[11px] text-gray-600 text-center">
-                                        “{{ $it['note'] }}”
+                            <div class="px-1">
+                                <div class="rounded-2xl border {{ $cardClass }} p-3 text-center">
+                                    <div class="flex justify-center mb-2">
+                                        <span class="w-3.5 h-3.5 rounded-full {{ $dotClass }}"></span>
                                     </div>
-                                @endif
+
+                                    <p class="text-sm font-bold text-gray-900">{{ $it['title'] }}</p>
+                                    <p class="mt-1 text-[11px] text-gray-500">
+                                        {{ optional($it['time'])->format('d M Y, H:i') }} WIB
+                                    </p>
+
+                                    @if($i === $activeIndex && !empty($it['note']))
+                                        <div class="mt-3 mx-auto max-w-[240px] bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-[11px] text-gray-600">
+                                            “{{ $it['note'] }}”
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -350,130 +388,157 @@
     </div>
 
     {{-- DATA PEMOHON --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
             </svg>
             <h3 class="font-montserrat font-bold text-gray-900">Data Pemohon</h3>
         </div>
 
         <div class="p-6">
             @if(!$pemohon)
-                <div class="p-4 bg-red-50 border border-red-100 rounded-lg text-sm text-red-700">
+                <div class="p-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
                     Data pemohon tidak ditemukan.
                 </div>
             @else
                 <div class="font-lato">
-                    <p class="text-sm text-gray-600 mb-5">
-                        Jenis Pelapor :
-                        <span class="font-semibold text-gray-900">{{ $jenisPelapor }}</span>
-                    </p>
+                    <div class="flex flex-wrap items-center gap-2 mb-5">
+                        <span class="text-sm text-gray-600">Jenis Pelapor :</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                            {{ $jenisPelapor }}
+                        </span>
+                    </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">Nama Lengkap</p>
-                            <p class="font-bold text-gray-900">{{ $pemohon->nama_lengkap ?? $pemohon->name ?? '-' }}</p>
-                        </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {{-- left: fields --}}
+                        <div class="lg:col-span-8">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                                    <p class="text-xs text-gray-500 mb-1">Nama Lengkap</p>
+                                    <p class="font-bold text-gray-900">{{ $pemohon->nama_lengkap ?? $pemohon->name ?? '-' }}</p>
+                                </div>
 
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">Email</p>
-                            <p class="font-bold text-gray-900 break-words">{{ $pemohon->email ?? '-' }}</p>
-                        </div>
+                                <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                                    <p class="text-xs text-gray-500 mb-1">Email</p>
+                                    <p class="font-bold text-gray-900 break-words">{{ $pemohon->email ?? '-' }}</p>
+                                </div>
 
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">NIK</p>
-                            <p class="font-bold text-gray-900">{{ $nik ?? '-' }}</p>
-                        </div>
+                                <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                                    <p class="text-xs text-gray-500 mb-1">NIK</p>
+                                    <p class="font-bold text-gray-900">{{ $nik ?? '-' }}</p>
+                                </div>
 
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">Nomor Telepon</p>
-                            @if($waLink)
-                                <a href="{{ $waLink }}" target="_blank" rel="noopener" class="font-bold text-blue-600 hover:underline">
-                                    wa.me/{{ $waPhone ?? '-' }}
-                                </a>
-                            @else
-                                <p class="font-bold text-gray-900">{{ $pemohon->phone ?? '-' }}</p>
-                            @endif
-                        </div>
-
-                        <div class="md:col-span-1">
-                            <p class="text-xs text-gray-500 mb-1">Alamat Lengkap</p>
-                            <p class="font-bold text-gray-900 break-words">{{ $alamatDetail ?: '-' }}</p>
-                        </div>
-
-                        <div class="md:col-span-1">
-                            <p class="text-xs text-gray-500 mb-1">Foto KTP</p>
-
-                            @if($ktpPublicUrl)
-                                <a href="{{ $ktpPublicUrl }}" target="_blank" rel="noopener" class="inline-block">
-                                    <img src="{{ $ktpPublicUrl }}" alt="Foto KTP"
-                                        class="w-32 h-20 object-cover rounded-lg border border-gray-200">
-                                </a>
-
-                                <div class="mt-3 flex items-center gap-2">
-                                    <a href="{{ $ktpPublicUrl }}"
-                                    target="_blank" rel="noopener"
-                                    class="inline-flex items-center px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-                                        Lihat KTP
-                                    </a>
-
-                                    {{-- Download KTP:
-                                        - masyarakat_umum: pakai route
-                                        - pegawai/applicant: fallback ke public url
-                                    --}}
-                                    @if($userType === 'masyarakat_umum')
-                                        <a href="{{ route('admin.complaints.ktp.download', $complaint->id) }}"
-                                        class="inline-flex items-center px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-                                            Unduh KTP
+                                <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                                    <p class="text-xs text-gray-500 mb-1">Nomor Telepon</p>
+                                    @if($waLink)
+                                        <a href="{{ $waLink }}" target="_blank" rel="noopener"
+                                           class="inline-flex items-center gap-2 font-bold text-blue-600 hover:underline">
+                                            <svg class="w-4 h-4" viewBox="0 0 32 32" fill="currentColor">
+                                                <path d="M19.11 17.22c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.61.14-.18.27-.7.88-.86 1.06-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.17-1.34-.8-.71-1.34-1.59-1.5-1.86-.16-.27-.02-.42.12-.56.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.52-.45-.45-.61-.46h-.52c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.99 2.66 1.12 2.84.14.18 1.95 2.98 4.73 4.18.66.29 1.18.46 1.58.59.66.21 1.26.18 1.74.11.53-.08 1.6-.65 1.83-1.28.23-.63.23-1.17.16-1.28-.07-.11-.25-.18-.52-.32z"/>
+                                                <path d="M16.02 3C8.86 3 3.05 8.81 3.05 15.97c0 2.28.6 4.51 1.75 6.48L3 29l6.73-1.76a12.9 12.9 0 0 0 6.29 1.61h.01c7.16 0 12.97-5.81 12.97-12.97C28.99 8.81 23.18 3 16.02 3zm0 23.33h-.01c-2.02 0-4-.54-5.74-1.55l-.41-.24-3.99 1.04 1.07-3.89-.26-.4a10.77 10.77 0 0 1-1.67-5.75c0-5.96 4.85-10.81 10.81-10.81 5.96 0 10.81 4.85 10.81 10.81 0 5.96-4.85 10.81-10.81 10.81z"/>
+                                            </svg>
+                                            <span>wa.me/{{ $waPhone ?? '-' }}</span>
                                         </a>
                                     @else
-                                        <a href="{{ $ktpPublicUrl }}"
-                                        target="_blank" rel="noopener"
-                                        class="inline-flex items-center px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-                                            Unduh KTP
-                                        </a>
+                                        <p class="font-bold text-gray-900">{{ $pemohon->phone ?? '-' }}</p>
                                     @endif
                                 </div>
-                            @else
-                                <div class="w-32 h-20 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400">
-                                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M3 5h18v14H3V5zm4 10l3-3 4 4 3-3 3 3"/>
-                                    </svg>
+
+                                <div class="md:col-span-2 rounded-2xl border border-gray-100 bg-white p-4">
+                                    <p class="text-xs text-gray-500 mb-1">Alamat Lengkap</p>
+                                    <p class="font-bold text-gray-900 break-words">{{ $alamatDetail ?: '-' }}</p>
                                 </div>
-                            @endif
-                        </div>
 
-                        {{-- INFO TAMBAHAN (HANYA 1x, tampil untuk semua pemohon) --}}
-                        <div class="md:col-span-2">
-                            <div class="mt-2 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Info Tambahan Pemohon</p>
-
-                                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <p class="text-xs text-gray-500 mb-1">Pekerjaan</p>
-                                        <p class="text-sm font-bold text-gray-900">{{ $pemohonPekerjaan ?? '-' }}</p>
-                                    </div>
-
-                                    <div>
-                                        <p class="text-xs text-gray-500 mb-1">Wilayah</p>
-                                        <p class="text-sm font-bold text-gray-900">
-                                            {{ $provName ?? '-' }} / {{ $kabName ?? '-' }} / {{ $kecName ?? '-' }} / {{ $desaName ?? '-' }}
-                                        </p>
+                                {{-- INFO TAMBAHAN --}}
+                                <div class="md:col-span-2 rounded-2xl bg-gray-50 border border-gray-100 p-4">
+                                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Info Tambahan Pemohon</p>
+                                    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="rounded-xl bg-white border border-gray-100 p-3">
+                                            <p class="text-xs text-gray-500 mb-1">Pekerjaan</p>
+                                            <p class="text-sm font-bold text-gray-900">{{ $pemohonPekerjaan ?? '-' }}</p>
+                                        </div>
+                                        <div class="rounded-xl bg-white border border-gray-100 p-3">
+                                            <p class="text-xs text-gray-500 mb-1">Wilayah</p>
+                                            <p class="text-sm font-bold text-gray-900">
+                                                {{ $provName ?? '-' }} / {{ $kabName ?? '-' }} / {{ $kecName ?? '-' }} / {{ $desaName ?? '-' }}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        {{-- right: KTP --}}
+                        <div class="lg:col-span-4">
+                            <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <p class="text-sm font-semibold text-gray-700">Foto KTP</p>
+                                    @if($ktpPublicUrl)
+                                        <a href="{{ $ktpPublicUrl }}" target="_blank" rel="noopener"
+                                           class="text-xs font-semibold text-blue-600 hover:underline">
+                                            Lihat
+                                        </a>
+                                    @endif
+                                </div>
+
+                                @if($ktpPublicUrl)
+                                    <a href="{{ $ktpPublicUrl }}" target="_blank" rel="noopener" class="block">
+                                        <img src="{{ $ktpPublicUrl }}" alt="Foto KTP"
+                                             class="w-full h-44 object-cover rounded-xl border border-gray-200">
+                                    </a>
+
+                                    <div class="mt-3 grid grid-cols-2 gap-2">
+                                        <a href="{{ $ktpPublicUrl }}" target="_blank" rel="noopener"
+                                           class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                            Lihat
+                                        </a>
+
+                                        @if($userType === 'masyarakat_umum')
+                                            <a href="{{ route('admin.complaints.ktp.download', $complaint->id) }}"
+                                               class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0 0l-4-4m4 4l4-4"/>
+                                                </svg>
+                                                Unduh
+                                            </a>
+                                        @else
+                                            <a href="{{ $ktpPublicUrl }}" target="_blank" rel="noopener"
+                                               class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0 0l-4-4m4 4l4-4"/>
+                                                </svg>
+                                                Unduh
+                                            </a>
+                                        @endif
+                                    </div>
+                                @else
+                                    <div class="w-full h-44 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 bg-gray-50">
+                                        <div class="text-center">
+                                            <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M3 5h18v14H3V5zm4 10l3-3 4 4 3-3 3 3"/>
+                                            </svg>
+                                            <p class="text-xs">Tidak ada foto</p>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             @endif
         </div>
     </div>
 
     {{-- ISI PENGADUAN --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -482,68 +547,87 @@
         </div>
 
         <div class="p-6 space-y-6">
-            <div>
-                <h4 class="font-bold text-gray-900 text-sm mb-2">Judul</h4>
-                <p class="text-gray-700 font-lato">{{ $judul }}</p>
-            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-8 space-y-4">
+                    <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                        <h4 class="font-bold text-gray-900 text-sm mb-2">Judul</h4>
+                        <p class="text-gray-700 font-lato">{{ $judul }}</p>
+                    </div>
 
-            <div>
-                <h4 class="font-bold text-gray-900 text-sm mb-2">Deskripsi Lengkap</h4>
-                <div class="p-4 bg-white rounded-lg border border-gray-200 min-h-[240px]">
-                    <p class="text-gray-700 font-lato text-sm leading-relaxed whitespace-pre-line">
-                        {{ $deskripsi ?: '-' }}
-                    </p>
+                    <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                        <h4 class="font-bold text-gray-900 text-sm mb-2">Deskripsi Lengkap</h4>
+                        <div class="p-4 bg-white rounded-xl border border-gray-200 min-h-[240px]">
+                            <p class="text-gray-700 font-lato text-sm leading-relaxed whitespace-pre-line">
+                                {{ $deskripsi ?: '-' }}
+                            </p>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div>
-                <h4 class="font-bold text-gray-900 text-sm mb-3">Dokumen Pendukung</h4>
+                <div class="lg:col-span-4">
+                    <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                        <h4 class="font-bold text-gray-900 text-sm mb-3">Dokumen Pendukung</h4>
 
-                @if($docs && $docs->count() > 0)
-                    <div class="space-y-2">
-                        @foreach($docs as $doc)
-                            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-white">
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <div class="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 shrink-0">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                        </svg>
+                        @if($docs && $docs->count() > 0)
+                            <div class="space-y-2">
+                                @foreach($docs as $doc)
+                                    <div class="flex items-center justify-between p-3 border border-gray-200 rounded-xl bg-white">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                            </div>
+
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-semibold text-gray-900 truncate">{{ $doc->original_name ?? 'Dokumen' }}</p>
+                                                <p class="text-xs text-gray-500">
+                                                    {{ number_format(($doc->file_size ?? 0) / 1024, 2) }} KB
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            <a href="{{ route('admin.complaints.document', $doc->id) }}?mode=view"
+                                               target="_blank" rel="noopener"
+                                               class="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 hover:bg-gray-50"
+                                               title="Lihat">
+                                                <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                                <span class="sr-only">Lihat</span>
+                                            </a>
+
+                                            <a href="{{ route('admin.complaints.document', $doc->id) }}?mode=download"
+                                               class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                                               title="Unduh">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0 0l-4-4m4 4l4-4"/>
+                                                </svg>
+                                                <span class="sr-only">Unduh</span>
+                                            </a>
+                                        </div>
                                     </div>
-
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-gray-900 truncate">{{ $doc->original_name ?? 'Dokumen' }}</p>
-                                        <p class="text-xs text-gray-500">
-                                            {{ number_format(($doc->file_size ?? 0) / 1024, 2) }} KB
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center gap-2 shrink-0">
-                                    <a href="{{ route('admin.complaints.document', $doc->id) }}?mode=view"
-                                       target="_blank" rel="noopener"
-                                       class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 hover:bg-gray-50">
-                                        Lihat
-                                    </a>
-                                    <a href="{{ route('admin.complaints.document', $doc->id) }}?mode=download"
-                                       class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700">
-                                        Unduh
-                                    </a>
-                                </div>
+                                @endforeach
                             </div>
-                        @endforeach
+                        @else
+                            <div class="p-4 bg-gray-50 border border-gray-100 rounded-xl text-center text-gray-500 text-sm">
+                                Tidak ada dokumen lampiran.
+                            </div>
+                        @endif
                     </div>
-                @else
-                    <div class="p-4 bg-gray-50 border border-gray-100 rounded-lg text-center text-gray-500 text-sm">
-                        Tidak ada dokumen lampiran.
-                    </div>
-                @endif
+                </div>
             </div>
         </div>
     </div>
 
     {{-- TINDAK LANJUT --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -557,65 +641,81 @@
                 @csrf
                 @method('PUT')
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- STATUS --}}
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Update Status Tiket</label>
-                        <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
-                            <option value="pending" {{ in_array($statusRaw, ['pending','belum diproses']) ? 'selected' : '' }}>Belum Diproses</option>
-                            <option value="diproses" {{ in_array($statusRaw, ['on_progress','in_progress','diproses','sedang diproses']) ? 'selected' : '' }}>Sedang Diproses</option>
-                            <option value="selesai" {{ in_array($statusRaw, ['completed','selesai']) ? 'selected' : '' }}>Selesai</option>
-                            <option value="ditolak" {{ in_array($statusRaw, ['rejected','ditolak']) ? 'selected' : '' }}>Ditolak</option>
-                        </select>
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-7 space-y-5">
+                        {{-- STATUS --}}
+                        <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Update Status Tiket</label>
+                            <select name="status"
+                                    class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                <option value="pending" {{ in_array($statusRaw, ['pending','belum diproses']) ? 'selected' : '' }}>Belum Diproses</option>
+                                <option value="diproses" {{ in_array($statusRaw, ['on_progress','in_progress','diproses','sedang diproses']) ? 'selected' : '' }}>Sedang Diproses</option>
+                                <option value="selesai" {{ in_array($statusRaw, ['completed','selesai']) ? 'selected' : '' }}>Selesai</option>
+                                <option value="ditolak" {{ in_array($statusRaw, ['rejected','ditolak']) ? 'selected' : '' }}>Ditolak</option>
+                            </select>
+                        </div>
+
+                        {{-- DIPROSES OLEH --}}
+                        <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Diproses Oleh</label>
+
+                            <div class="grid grid-cols-1 gap-3">
+                                <select id="diproses_bidang" name="diproses_bidang"
+                                        class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    <option value="">-- Pilih Bidang/Unit --</option>
+                                    @foreach(array_keys($bidangKelompok) as $bidang)
+                                        <option value="{{ $bidang }}" {{ ($oldBidang === $bidang) ? 'selected' : '' }}>
+                                            {{ $bidang }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                <select id="diproses_kelompok" name="diproses_kelompok"
+                                        class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                        disabled>
+                                    <option value="">-- Pilih Kelompok Kerja --</option>
+                                </select>
+
+                                <input type="hidden" id="diproses_oleh" name="diproses_oleh" value="{{ $diprosesOlehCombined ?? '' }}">
+                            </div>
+                        </div>
                     </div>
 
-                    {{-- DIPROSES OLEH (2 tingkat) --}}
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Diproses Oleh</label>
+                    {{-- CATATAN --}}
+                    <div class="lg:col-span-5">
+                        <div class="rounded-2xl border border-gray-100 bg-white p-4 h-full">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-semibold text-gray-700">Catatan</label>
+                                <span class="text-[11px] text-gray-500">Scroll di kanan</span>
+                            </div>
 
-                        <div class="grid grid-cols-1 gap-3">
-                            <select id="diproses_bidang" name="diproses_bidang"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
-                                <option value="">-- Pilih Bidang/Unit --</option>
-                                @foreach(array_keys($bidangKelompok) as $bidang)
-                                    <option value="{{ $bidang }}" {{ ($oldBidang === $bidang) ? 'selected' : '' }}>
-                                        {{ $bidang }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            {{-- textarea scroll with visible scrollbar --}}
+                            <textarea name="admin_notes"
+                                      class="with-scrollbar w-full px-3 py-3 border border-gray-300 rounded-xl text-sm focus:ring-blue-500 focus:border-blue-500 bg-white placeholder-gray-400 resize-none overflow-y-auto"
+                                      style="height: 260px;"
+                                      placeholder="Tuliskan catatan kepada pemohon di sini...">{{ $complaint->admin_response ?? $complaint->admin_notes }}</textarea>
 
-                            <select id="diproses_kelompok" name="diproses_kelompok"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
-                                    disabled>
-                                <option value="">-- Pilih Kelompok Kerja --</option>
-                            </select>
+                            <div class="mt-4 flex items-center">
+                                <input type="checkbox" id="notify_user" name="notify_user" value="1" checked
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <label for="notify_user" class="ml-2 text-xs text-gray-500">Kirim notifikasi email kepada pemohon</label>
+                            </div>
 
-                            <input type="hidden" id="diproses_oleh" name="diproses_oleh" value="{{ $diprosesOlehCombined ?? '' }}">
+                            <div class="mt-4">
+                                <button type="button"
+                                        onclick="openSaveModalComplaint()"
+                                        class="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl transition shadow-sm text-sm inline-flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    Simpan Perubahan
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Catatan</label>
-                    <textarea name="admin_notes"
-                              rows="8"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white placeholder-gray-400 min-h-[220px] resize-y"
-                              placeholder="Tuliskan catatan kepada pemohon di sini...">{{ $complaint->admin_response ?? $complaint->admin_notes }}</textarea>
-                </div>
-
-                <div class="mt-4 flex items-center">
-                    <input type="checkbox" id="notify_user" name="notify_user" value="1" checked
-                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                    <label for="notify_user" class="ml-2 text-xs text-gray-500">Kirim notifikasi email kepada pemohon</label>
-                </div>
-
-                <div class="mt-4">
-                    <button type="button"
-                            onclick="openSaveModalComplaint()"
-                            class="w-full md:w-72 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-lg transition shadow-sm text-sm">
-                        Simpan Perubahan
-                    </button>
-                </div>
             </form>
         </div>
     </div>
@@ -623,7 +723,7 @@
 
 {{-- Modal Konfirmasi Simpan --}}
 <div id="saveModalComplaint" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-center">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-center border border-gray-100">
         <div class="mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-full bg-blue-100">
             <svg class="w-9 h-9 text-blue-600"
                  fill="none"
@@ -648,7 +748,10 @@
 
             <button type="button"
                     onclick="submitComplaintFollowup()"
-                    class="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">
+                    class="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
                 Ya, Simpan
             </button>
         </div>
