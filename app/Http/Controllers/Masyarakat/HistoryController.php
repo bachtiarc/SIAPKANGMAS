@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Masyarakat;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Submission;
 use App\Models\Consultation;
 use App\Models\Complaint;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class HistoryController extends Controller
 {
@@ -15,79 +17,128 @@ class HistoryController extends Controller
         $user = auth()->user();
 
         $q = trim((string) $request->get('q', ''));
-
-        $submissions = Submission::where('user_id', $user->id)
-            ->when($q, function ($query) use ($q) {
-                $query->where(function ($qq) use ($q) {
-                    $qq->where('ticket_id', 'like', "%{$q}%")
-                       ->orWhere('subject', 'like', "%{$q}%");
-                });
-            })
-            ->latest()
-            ->get()
-            ->map(function ($item) {
-                $item->service_type = 'Permohonan Informasi';
-                $item->ticket_show  = $item->ticket_id ?? $item->ticket_number ?? '-';
-                return $item;
-            });
-
-        $consultations = Consultation::where('user_id', $user->id)
-            ->when($q, function ($query) use ($q) {
-                $query->where(function ($qq) use ($q) {
-                    $qq->where('ticket_number', 'like', "%{$q}%")
-                       ->orWhere('subject', 'like', "%{$q}%");
-                });
-            })
-            ->latest()
-            ->get()
-            ->map(function ($item) {
-                $item->service_type = 'Konsultasi';
-                $item->ticket_show  = $item->ticket_number ?? $item->ticket_id ?? '-';
-                return $item;
-            });
-
-        $complaints = Complaint::where('user_id', $user->id)
-            ->when($q, function ($query) use ($q) {
-                $query->where(function ($qq) use ($q) {
-                    $qq->where('ticket_number', 'like', "%{$q}%")
-                       ->orWhere('subject', 'like', "%{$q}%");
-                });
-            })
-            ->latest()
-            ->get()
-            ->map(function ($item) {
-                $item->service_type = 'Pengaduan';
-                $item->ticket_show  = $item->ticket_number ?? $item->ticket_id ?? '-';
-                return $item;
-            });
+        $jenis = trim((string) $request->get('jenis', '')); 
+        $status = trim((string) $request->get('status', '')); 
+        $submissions = Submission::where('user_id', $user->id)->get();
+        $consultations = Consultation::where('user_id', $user->id)->get();
+        $complaints = Complaint::where('user_id', $user->id)->get();
 
         $totalPending =
-            $submissions->whereIn('status', ['pending'])->count() +
-            $consultations->whereIn('status', ['pending'])->count() +
+            $submissions->whereIn('status', ['pending', 'belum diproses'])->count() +
+            $consultations->whereIn('status', ['pending', 'belum diproses'])->count() +
             $complaints->whereIn('status', ['pending', 'belum diproses'])->count();
 
         $totalProcessing =
-            $submissions->whereIn('status', ['in_progress', 'on_progress'])->count() +
-            $consultations->whereIn('status', ['in_progress', 'on_progress'])->count() +
-            $complaints->whereIn('status', ['diproses', 'in_progress', 'on_progress', 'sedang diproses'])->count();
+            $submissions->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])->count() +
+            $consultations->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])->count() +
+            $complaints->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])->count();
 
-        $totalFinished =
-            $submissions->whereIn('status', ['completed', 'selesai', 'rejected', 'ditolak'])->count() +
-            $consultations->whereIn('status', ['completed', 'selesai', 'rejected', 'ditolak'])->count() +
-            $complaints->whereIn('status', ['completed', 'selesai', 'rejected', 'ditolak'])->count();
+        $totalCompleted =
+            $submissions->whereIn('status', ['completed', 'selesai'])->count() +
+            $consultations->whereIn('status', ['completed', 'selesai'])->count() +
+            $complaints->whereIn('status', ['completed', 'selesai'])->count();
 
-        $histories = $submissions
-            ->merge($consultations)
-            ->merge($complaints)
-            ->sortByDesc('created_at')
-            ->values();
+        $totalRejected =
+            $submissions->whereIn('status', ['rejected', 'ditolak'])->count() +
+            $consultations->whereIn('status', ['rejected', 'ditolak'])->count() +
+            $complaints->whereIn('status', ['rejected', 'ditolak'])->count();
 
-        return view('masyarakat.history.index', compact(
-            'histories',
-            'q',
-            'totalPending',
-            'totalProcessing',
-            'totalFinished'
-        ));
+        $totalAll =
+            $submissions->count() +
+            $consultations->count() +
+            $complaints->count();
+        $merged = collect();
+
+        foreach ($submissions as $item) {
+            $date = $item->submitted_at ?? $item->created_at;
+
+            $merged->push([
+                'id'          => $item->id,
+                'ticket_id'   => (string) ($item->ticket_id ?? '-'),
+                'type'        => 'submission',
+                'type_label'  => 'Permohonan Informasi',
+                'title'       => (string) ($item->title ?? $item->subject ?? '-'),
+                'date'        => Carbon::parse($date),
+                'status'      => (string) ($item->status ?? ''),
+                'route'       => route('masyarakat.submissions.show', $item->id),
+            ]);
+        }
+
+        foreach ($consultations as $item) {
+            $merged->push([
+                'id'          => $item->id,
+                'ticket_id'   => (string) ($item->ticket_number ?? $item->ticket_id ?? '-'),
+                'type'        => 'consultation',
+                'type_label'  => 'Konsultasi',
+                'title'       => (string) ($item->subject ?? $item->title ?? '-'),
+                'date'        => Carbon::parse($item->created_at),
+                'status'      => (string) ($item->status ?? ''),
+                'route'       => route('masyarakat.consultations.show', $item->id),
+            ]);
+        }
+
+        foreach ($complaints as $item) {
+            $merged->push([
+                'id'          => $item->id,
+                'ticket_id'   => (string) ($item->ticket_number ?? $item->ticket_id ?? '-'),
+                'type'        => 'complaint',
+                'type_label'  => 'Pengaduan',
+                'title'       => (string) ($item->subject ?? $item->title ?? '-'),
+                'date'        => Carbon::parse($item->created_at),
+                'status'      => (string) ($item->status ?? ''),
+                'route'       => route('masyarakat.complaints.show', $item->id),
+            ]);
+        }
+
+        if ($q !== '') {
+            $qLower = strtolower($q);
+
+            $merged = $merged->filter(function ($row) use ($qLower) {
+                return str_contains(strtolower((string) $row['ticket_id']), $qLower)
+                    || str_contains(strtolower((string) $row['title']), $qLower);
+            })->values();
+        }
+
+        if ($jenis !== '') {
+            $merged = $merged->where('type', $jenis)->values();
+        }
+
+        if ($status !== '') {
+            $merged = $merged->filter(function ($row) use ($status) {
+                $st = strtolower((string) ($row['status'] ?? ''));
+
+                return match ($status) {
+                    'pending'  => in_array($st, ['pending', 'belum diproses']),
+                    'diproses' => in_array($st, ['in_progress', 'on_progress', 'diproses', 'sedang diproses']),
+                    'selesai'  => in_array($st, ['completed', 'selesai']),
+                    'ditolak'  => in_array($st, ['rejected', 'ditolak']),
+                    default    => true,
+                };
+            })->values();
+        }
+
+        $merged = $merged->sortByDesc('date')->values();
+
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 10;
+
+        $paginated = new LengthAwarePaginator(
+            $merged->slice(($page - 1) * $perPage, $perPage)->values(),
+            $merged->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return view('masyarakat.history.index', [
+            'histories'       => $paginated,
+            'q'               => $q,
+
+            'totalAll'        => $totalAll,
+            'totalPending'    => $totalPending,
+            'totalProcessing' => $totalProcessing,
+            'totalCompleted'  => $totalCompleted,
+            'totalRejected'   => $totalRejected,
+        ]);
     }
 }

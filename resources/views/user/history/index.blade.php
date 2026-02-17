@@ -102,22 +102,21 @@
         <form method="GET" action="{{ route('user.history.index') }}" class="space-y-4">
             <!-- Search Bar -->
             <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-4">
-                <!-- Search Input -->
                 <div class="flex-1 flex space-x-2">
-                    <input type="text" 
-                           name="search" 
-                           value="{{ request('search') }}" 
-                           placeholder="Cari ID tiket atau judul pengajuan.." 
+                    <input type="text"
+                           name="search"
+                           value="{{ request('search') }}"
+                           placeholder="Cari ID tiket atau judul pengajuan.."
                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    
+
                     <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                     </button>
-                    
+
                     @if(request('search') || request('category') || request('status'))
-                        <a href="{{ route('user.history.index') }}" 
+                        <a href="{{ route('user.history.index') }}"
                            class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition flex items-center">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -127,25 +126,25 @@
                 </div>
             </div>
 
-            <!-- Filter Kategori & Status dalam 1 Baris -->
+            <!-- Filter Jenis & Status -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Filter Kategori -->
+                <!-- Filter Jenis -->
                 <div>
                     <span class="text-sm text-gray-600 font-semibold mb-2 block">Jenis Pengajuan:</span>
                     <div class="flex flex-wrap items-center gap-2">
-                        <a href="{{ route('user.history.index', array_filter(['search' => request('search'), 'status' => request('status')])) }}" 
+                        <a href="{{ route('user.history.index', array_filter(['search' => request('search'), 'status' => request('status')])) }}"
                            class="px-4 py-2 rounded-lg text-sm font-medium transition {{ !request('category') ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                             Semua
                         </a>
-                        <a href="{{ route('user.history.index', array_filter(['category' => 'submission', 'search' => request('search'), 'status' => request('status')])) }}" 
+                        <a href="{{ route('user.history.index', array_filter(['category' => 'submission', 'search' => request('search'), 'status' => request('status')])) }}"
                            class="px-4 py-2 rounded-lg text-sm font-medium transition {{ request('category') == 'submission' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                             Permohonan Informasi
                         </a>
-                        <a href="{{ route('user.history.index', array_filter(['category' => 'consultation', 'search' => request('search'), 'status' => request('status')])) }}" 
+                        <a href="{{ route('user.history.index', array_filter(['category' => 'consultation', 'search' => request('search'), 'status' => request('status')])) }}"
                            class="px-4 py-2 rounded-lg text-sm font-medium transition {{ request('category') == 'consultation' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                             Konsultasi
                         </a>
-                        <a href="{{ route('user.history.index', array_filter(['category' => 'complaint', 'search' => request('search'), 'status' => request('status')])) }}" 
+                        <a href="{{ route('user.history.index', array_filter(['category' => 'complaint', 'search' => request('search'), 'status' => request('status')])) }}"
                            class="px-4 py-2 rounded-lg text-sm font-medium transition {{ request('category') == 'complaint' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                             Pengaduan
                         </a>
@@ -156,23 +155,23 @@
                 <div>
                     <span class="text-sm text-gray-600 font-semibold mb-2 block">Status:</span>
                     <div class="flex flex-wrap items-center gap-2">
-                        <a href="{{ route('user.history.index', array_filter(['search' => request('search'), 'category' => request('category')])) }}" 
+                        <a href="{{ route('user.history.index', array_filter(['search' => request('search'), 'category' => request('category')])) }}"
                            class="px-4 py-2 rounded-lg text-sm font-medium transition {{ !request('status') ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                             Semua
                         </a>
-                        <a href="{{ route('user.history.index', array_filter(['status' => 'pending', 'search' => request('search'), 'category' => request('category')])) }}" 
+                        <a href="{{ route('user.history.index', array_filter(['status' => 'pending', 'search' => request('search'), 'category' => request('category')])) }}"
                            class="px-4 py-2 rounded-lg text-sm font-medium transition {{ request('status') == 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                             Menunggu Proses
                         </a>
-                        <a href="{{ route('user.history.index', array_filter(['status' => 'diproses', 'search' => request('search'), 'category' => request('category')])) }}" 
+                        <a href="{{ route('user.history.index', array_filter(['status' => 'diproses', 'search' => request('search'), 'category' => request('category')])) }}"
                            class="px-4 py-2 rounded-lg text-sm font-medium transition {{ request('status') == 'diproses' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                             Diproses
                         </a>
-                        <a href="{{ route('user.history.index', array_filter(['status' => 'selesai', 'search' => request('search'), 'category' => request('category')])) }}" 
+                        <a href="{{ route('user.history.index', array_filter(['status' => 'selesai', 'search' => request('search'), 'category' => request('category')])) }}"
                            class="px-4 py-2 rounded-lg text-sm font-medium transition {{ request('status') == 'selesai' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                             Selesai
                         </a>
-                        <a href="{{ route('user.history.index', array_filter(['status' => 'ditolak', 'search' => request('search'), 'category' => request('category')])) }}" 
+                        <a href="{{ route('user.history.index', array_filter(['status' => 'ditolak', 'search' => request('search'), 'category' => request('category')])) }}"
                            class="px-4 py-2 rounded-lg text-sm font-medium transition {{ request('status') == 'ditolak' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                             Ditolak
                         </a>
@@ -207,11 +206,8 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @php
                                     $typeBadge = 'bg-blue-100 text-blue-800';
-                                    if ($submission['type'] === 'consultation') {
-                                        $typeBadge = 'bg-purple-100 text-purple-800';
-                                    } elseif ($submission['type'] === 'complaint') {
-                                        $typeBadge = 'bg-orange-100 text-orange-800';
-                                    }
+                                    if ($submission['type'] === 'consultation') $typeBadge = 'bg-purple-100 text-purple-800';
+                                    elseif ($submission['type'] === 'complaint') $typeBadge = 'bg-orange-100 text-orange-800';
                                 @endphp
                                 <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $typeBadge }}">
                                     {{ $submission['type_label'] }}
@@ -221,7 +217,7 @@
                                 <div class="text-sm text-gray-900">{{ $submission['category'] }}</div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900">{{ Str::limit($submission['title'], 50) }}</div>
+                                <div class="text-sm text-gray-900">{{ \Illuminate\Support\Str::limit($submission['title'], 50) }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ $submission['date']->format('d M Y') }}</div>
@@ -230,25 +226,18 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @php
                                     $statusBadge = 'bg-gray-100 text-gray-800';
-                                    $statusLabel = ucfirst($submission['status']);
-                                    
-                                    // MENUNGGU PROSES
+                                    $statusLabel = ucfirst((string) $submission['status']);
+
                                     if (in_array($submission['status'], ['pending', 'belum diproses'])) {
                                         $statusBadge = 'bg-yellow-100 text-yellow-800';
                                         $statusLabel = 'Menunggu Proses';
-                                    }
-                                    // DIPROSES
-                                    elseif (in_array($submission['status'], ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])) {
+                                    } elseif (in_array($submission['status'], ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])) {
                                         $statusBadge = 'bg-blue-100 text-blue-800';
                                         $statusLabel = 'Diproses';
-                                    }
-                                    // SELESAI
-                                    elseif (in_array($submission['status'], ['completed', 'selesai'])) {
+                                    } elseif (in_array($submission['status'], ['completed', 'selesai'])) {
                                         $statusBadge = 'bg-green-100 text-green-800';
                                         $statusLabel = 'Selesai';
-                                    }
-                                    // DITOLAK
-                                    elseif (in_array($submission['status'], ['rejected', 'ditolak'])) {
+                                    } elseif (in_array($submission['status'], ['rejected', 'ditolak'])) {
                                         $statusBadge = 'bg-red-100 text-red-800';
                                         $statusLabel = 'Ditolak';
                                     }

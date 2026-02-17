@@ -9,7 +9,6 @@ use App\Models\Complaint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 
 class HistoryController extends Controller
 {
@@ -17,44 +16,32 @@ class HistoryController extends Controller
     {
         $user = auth()->user();
 
-        /* =============================
-         * AMBIL DATA DARI 3 TABEL
-         * ============================= */
-        $submissions = Submission::where('user_id', $user->id)->with('category')->get();
-        $consultations = Consultation::where('user_id', $user->id)->with('category')->get();
-        $complaints = Complaint::where('user_id', $user->id)->with('category')->get();
+        $submissions   = Submission::where('user_id', $user->id)->get();
+        $consultations = Consultation::where('user_id', $user->id)->get();
+        $complaints    = Complaint::where('user_id', $user->id)->get();
 
-        /* =============================
-         * HITUNG STATISTIK)
-         * ============================= */
         $totalPending =
-            $submissions->whereIn('status', ['pending'])->count() +
-            $consultations->whereIn('status', ['pending'])->count() +
-            $complaints->whereIn('status', ['pending'])->count();
+            $submissions->whereIn('status', ['pending', 'belum diproses'])->count() +
+            $consultations->whereIn('status', ['pending', 'belum diproses'])->count() +
+            $complaints->whereIn('status', ['pending', 'belum diproses'])->count();
 
         $totalProcessing =
-            $submissions->whereIn('status', ['in_progress'])->count() +
-            $consultations->whereIn('status', ['on_progress'])->count() +
-            $complaints->whereIn('status', ['diproses'])->count();
+            $submissions->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])->count() +
+            $consultations->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])->count() +
+            $complaints->whereIn('status', ['in_progress', 'on_progress', 'diproses', 'sedang diproses'])->count();
 
         $totalCompleted =
-            $submissions->whereIn('status', ['completed'])->count() +
-            $consultations->whereIn('status', ['completed'])->count() +
-            $complaints->whereIn('status', ['selesai'])->count();
+            $submissions->whereIn('status', ['completed', 'selesai'])->count() +
+            $consultations->whereIn('status', ['completed', 'selesai'])->count() +
+            $complaints->whereIn('status', ['completed', 'selesai'])->count();
 
         $totalRejected =
-            $submissions->whereIn('status', ['rejected'])->count() +
-            $consultations->whereIn('status', ['rejected'])->count() +
-            $complaints->whereIn('status', ['ditolak'])->count();
+            $submissions->whereIn('status', ['rejected', 'ditolak'])->count() +
+            $consultations->whereIn('status', ['rejected', 'ditolak'])->count() +
+            $complaints->whereIn('status', ['rejected', 'ditolak'])->count();
 
-        $totalSubmissions =
-            $submissions->count() +
-            $consultations->count() +
-            $complaints->count();
+        $totalSubmissions = $submissions->count() + $consultations->count() + $complaints->count();
 
-        /* =============================
-         * GABUNG DATA KE SATU LIST
-         * ============================= */
         $merged = collect();
 
         foreach ($submissions as $item) {
@@ -62,9 +49,9 @@ class HistoryController extends Controller
                 'ticket_id'   => $item->ticket_id,
                 'type'        => 'submission',
                 'type_label'  => 'Permohonan Informasi',
-                'category'    => $item->category->name ?? '-',
-                'title'       => $item->title,
-                'date'        => Carbon::parse($item->submitted_at),
+                'category'    => '-', 
+                'title'       => $item->title ?? $item->subject ?? '-',
+                'date'        => Carbon::parse($item->submitted_at ?? $item->created_at),
                 'status'      => $item->status,
                 'route'       => route('user.submissions.show', ['submission' => $item->id, 'from' => 'history']),
             ]);
@@ -72,11 +59,11 @@ class HistoryController extends Controller
 
         foreach ($consultations as $item) {
             $merged->push([
-                'ticket_id'   => $item->ticket_number,
+                'ticket_id'   => $item->ticket_number ?? $item->ticket_id ?? '-',
                 'type'        => 'consultation',
                 'type_label'  => 'Konsultasi',
-                'category'    => $item->category->name ?? '-',
-                'title'       => $item->subject,
+                'category'    => '-', 
+                'title'       => $item->subject ?? $item->title ?? '-',
                 'date'        => Carbon::parse($item->created_at),
                 'status'      => $item->status,
                 'route'       => route('user.consultations.show', ['consultation' => $item->id, 'from' => 'history']),
@@ -85,11 +72,11 @@ class HistoryController extends Controller
 
         foreach ($complaints as $item) {
             $merged->push([
-                'ticket_id'   => $item->ticket_number,
+                'ticket_id'   => $item->ticket_number ?? $item->ticket_id ?? '-',
                 'type'        => 'complaint',
                 'type_label'  => 'Pengaduan',
-                'category'    => $item->category->name ?? '-',
-                'title'       => $item->subject,
+                'category'    => '-',
+                'title'       => $item->subject ?? $item->title ?? '-',
                 'date'        => Carbon::parse($item->created_at),
                 'status'      => $item->status,
                 'route'       => route('user.complaints.show', ['complaint' => $item->id, 'from' => 'history']),
@@ -100,33 +87,30 @@ class HistoryController extends Controller
          * FILTER SEARCH
          * ============================= */
         if ($request->filled('search')) {
-            $search = strtolower($request->search);
+            $search = strtolower((string) $request->search);
             $merged = $merged->filter(fn ($item) =>
-                str_contains(strtolower($item['ticket_id']), $search) ||
-                str_contains(strtolower($item['title']), $search)
+                str_contains(strtolower((string) $item['ticket_id']), $search) ||
+                str_contains(strtolower((string) $item['title']), $search)
             );
         }
 
-        /* =============================
-         * FILTER CATEGORY
-         * ============================= */
         if ($request->filled('category')) {
-            $merged = $merged->where('type', $request->category);
+            $merged = $merged->where('type', (string) $request->category);
         }
 
         /* =============================
          * FILTER STATUS
          * ============================= */
         if ($request->filled('status')) {
-            $status = $request->status;
+            $status = (string) $request->status;
 
             $merged = $merged->filter(function ($item) use ($status) {
                 return match ($status) {
-                    'pending'   => in_array($item['status'], ['pending']),
-                    'diproses'  => in_array($item['status'], ['in_progress', 'on_progress', 'diproses']),
-                    'selesai'   => in_array($item['status'], ['completed', 'selesai']),
-                    'ditolak'   => in_array($item['status'], ['rejected', 'ditolak']),
-                    default     => true,
+                    'pending'  => in_array($item['status'], ['pending', 'belum diproses']),
+                    'diproses' => in_array($item['status'], ['in_progress', 'on_progress', 'diproses', 'sedang diproses']),
+                    'selesai'  => in_array($item['status'], ['completed', 'selesai']),
+                    'ditolak'  => in_array($item['status'], ['rejected', 'ditolak']),
+                    default    => true,
                 };
             });
         }
@@ -148,7 +132,7 @@ class HistoryController extends Controller
             'submissions'      => $paginated,
             'totalSubmissions' => $totalSubmissions,
             'totalPending'     => $totalPending,
-            'totalProcessing'  => $totalProcessing, 
+            'totalProcessing'  => $totalProcessing,
             'totalCompleted'   => $totalCompleted,
             'totalRejected'    => $totalRejected,
         ]);
