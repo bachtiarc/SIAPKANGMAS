@@ -56,11 +56,10 @@ class SubmissionStatusUpdated extends Mailable
             ->view('emails.submission_status_updated')
             ->with([
                 'submission' => $this->submission,
-                'user'       => $recipient, // ✅ user di email = pemohon sebenarnya
+                'user'       => $recipient, 
                 'category'   => (Schema::hasTable('categories') ? ($this->submission->category ?? null) : null),
                 'handler'    => $this->submission->handler,
                 'note'       => $this->note,
             ]);
     }
 }
-\
