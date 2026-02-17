@@ -6,12 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Submission;
 use App\Models\Category;
 use App\Models\SubmissionDocument;
-use App\Support\SupabasePath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -30,13 +28,11 @@ class SubmissionController extends Controller
 
         $hasCategories = Schema::hasTable('categories');
 
-        // Aman walau categories gak ada
         $query = Submission::with(['user']);
         if ($hasCategories) {
             $query->with('category');
         }
 
-        // ================= FILTER TANGGAL =================
         $hasStart = $request->filled('start_date');
         $hasEnd   = $request->filled('end_date');
 
@@ -50,7 +46,6 @@ class SubmissionController extends Controller
         } elseif ($hasEnd) {
             $query->whereDate('created_at', $request->end_date);
         }
-        // ==================================================
 
         if ($request->filled('type') && $request->type != 'Semua') {
             $query->whereHas('user', function ($q) use ($request) {
@@ -58,7 +53,6 @@ class SubmissionController extends Controller
             });
         }
 
-        // category filter cuma jalan kalau tabel categories ada
         if ($hasCategories && $request->filled('category') && $request->category != 'Semua') {
             $query->where('category_id', $request->category);
         }
@@ -73,7 +67,6 @@ class SubmissionController extends Controller
 
         $submissions = $query->latest()->paginate(10)->withQueryString();
 
-        // dropdown categories aman walau tabel gak ada
         $categories = $hasCategories
             ? Category::where('type', 'permohonan')->get()
             : collect();
@@ -89,7 +82,7 @@ class SubmissionController extends Controller
             'user',
             'documents',
             'statusHistories.changedBy',
-            'applicant', // ✅ penting
+            'applicant',
         ];
         if ($hasCategories) {
             $with[] = 'category';
@@ -100,9 +93,6 @@ class SubmissionController extends Controller
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
 
-        // =========================
-        // Tentukan pemohon
-        // =========================
         $creator  = $submission->user;
         $userType = $creator->user_type ?? null;
 
@@ -110,9 +100,6 @@ class SubmissionController extends Controller
             ? ($submission->applicant ?? null)
             : $creator;
 
-        // =========================
-        // Build KTP public URL
-        // =========================
         $ktpPublicUrl = null;
         $ktpRaw = $pemohon->foto_ktp ?? null;
 
@@ -122,7 +109,6 @@ class SubmissionController extends Controller
             if (Str::startsWith($ktpRaw, ['http://', 'https://'])) {
                 $ktpPublicUrl = $ktpRaw;
             } else {
-                // kalau ada prefix bucket, buang
                 if (Str::startsWith($ktpRaw, $ktpBucket . '/')) {
                     $ktpRaw = Str::after($ktpRaw, $ktpBucket . '/');
                 }
@@ -131,7 +117,6 @@ class SubmissionController extends Controller
             }
         }
 
-        // categoryName aman walau categories table gak ada
         $categoryName = $hasCategories ? ($submission->category->name ?? '-') : '-';
 
         return view('admin.submissions.show', compact('submission', 'ktpPublicUrl', 'categoryName'));
@@ -140,88 +125,195 @@ class SubmissionController extends Controller
     public function update(Request $request, $id, \App\Services\BrevoMailer $brevo)
     {
         $request->validate([
-            'status'            => 'required|in:pending,in_progress,completed,rejected',
+            // ✅ terima "on_progress" juga (karena di blade value-nya itu)
+            'status'            => 'required|in:pending,in_progress,on_progress,completed,rejected',
             'diproses_bidang'   => 'nullable|string|max:255',
             'diproses_kelompok' => 'nullable|string|max:255',
             'diproses_oleh'     => 'nullable|string|max:255',
             'admin_notes'       => 'nullable|string',
             'notify_user'       => 'nullable',
+            'notify_whatsapp'   => 'nullable', // ✅ NEW
         ]);
 
-        $submission = Submission::findOrFail($id);
+        $submission = Submission::with(['user', 'applicant'])->findOrFail($id);
         $oldStatus  = $submission->status;
 
+        // ✅ Normalisasi supaya DB konsisten pake "in_progress"
+        $newStatus = $request->status === 'on_progress'
+            ? 'in_progress'
+            : $request->status;
+
         $submission->update([
-            'status'            => $request->status,
+            'status'            => $newStatus,
             'diproses_bidang'   => $request->diproses_bidang,
             'diproses_kelompok' => $request->diproses_kelompok,
-            'diproses_oleh'     => $request->diproses_oleh, // "Bidang - Kelompok"
+            'diproses_oleh'     => $request->diproses_oleh,
             'admin_notes'       => $request->admin_notes,
             'handled_by'        => Auth::id(),
-            'completed_at'      => $request->status == 'completed' ? now() : null,
+            'completed_at'      => $newStatus === 'completed' ? now() : null,
         ]);
 
-        if ($oldStatus !== $request->status) {
+        if ($oldStatus !== $newStatus) {
             $submission->statusHistories()->create([
                 'changed_by' => Auth::id(),
-                'new_status' => $request->status,
+                'new_status' => $newStatus,
                 'old_status' => $oldStatus,
                 'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin',
             ]);
         }
 
-        if ($request->has('notify_user') && $oldStatus !== $request->status) {
+        // ============================
+        // Tentukan penerima (pemohon asli)
+        // - pegawai => applicant
+        // - masyarakat => user
+        // ============================
+        $submission->load(['user', 'handler', 'applicant']);
+        $creator  = $submission->user;
+        $userType = $creator->user_type ?? null;
+
+        $recipient = ($userType === 'pegawai' && $submission->applicant)
+            ? $submission->applicant
+            : $creator;
+
+        $toEmail = $recipient->email ?? null;
+
+        // ✅ Kirim email hanya kalau status berubah & checkbox dicentang
+        if ($request->has('notify_user') && $oldStatus !== $newStatus) {
             try {
                 $hasCategories = Schema::hasTable('categories');
+                if ($hasCategories) {
+                    $submission->load('category');
+                }
 
-                // Jangan load category kalau tabelnya gak ada
-                $relations = ['user', 'handler'];
-                if ($hasCategories) $relations[] = 'category';
+                if ($toEmail) {
+                    $html = view('emails.submission_status_updated', [
+                        'submission' => $submission,
+                        'user'       => $recipient,
+                        'category'   => $hasCategories ? $submission->category : null,
+                        'handler'    => $submission->handler,
+                        'note'       => $request->admin_notes,
+                        'oldStatus'  => $oldStatus,
+                        'newStatus'  => $newStatus,
+                    ])->render();
 
-                $submission->load($relations);
+                    Log::info('BREVO DEBUG (admin) - about to send status update', [
+                        'to'          => $toEmail,
+                        'from'        => config('mail.from.address'),
+                        'from_name'   => config('mail.from.name'),
+                        'has_api_key' => (bool) config('brevo.api_key'),
+                        'ticket_id'   => $submission->ticket_id,
+                        'old_status'  => $oldStatus,
+                        'new_status'  => $newStatus,
+                        'app_env'     => config('app.env'),
+                    ]);
 
-                $html = view('emails.submission_status_updated', [
-                    'submission' => $submission,
-                    'user'       => $submission->user,
-                    'category'   => $hasCategories ? $submission->category : null,
-                    'handler'    => $submission->handler,
-                    'note'       => $request->admin_notes,
-                    'oldStatus'  => $oldStatus,
-                    'newStatus'  => $request->status,
-                ])->render();
+                    $brevo->sendTransactional(
+                        toEmail: $toEmail,
+                        toName: $recipient->name ?? $recipient->nama_lengkap ?? null,
+                        subject: "Update Status Permohonan Informasi ({$submission->ticket_id})",
+                        htmlContent: $html
+                    );
 
-                Log::info('BREVO DEBUG (admin) - about to send status update', [
-                    'to'          => $submission->user->email,
-                    'from'        => config('mail.from.address'),
-                    'from_name'   => config('mail.from.name'),
-                    'has_api_key' => (bool) config('brevo.api_key'),
-                    'ticket_id'   => $submission->ticket_id,
-                    'old_status'  => $oldStatus,
-                    'new_status'  => $request->status,
-                    'app_env'     => config('app.env'),
-                ]);
-
-                $brevo->sendTransactional(
-                    toEmail: $submission->user->email,
-                    toName: $submission->user->name ?? null,
-                    subject: "Update Status Permohonan Informasi ({$submission->ticket_id})",
-                    htmlContent: $html
-                );
-
-                Log::info('BREVO DEBUG (admin) - sent OK', [
-                    'to'        => $submission->user->email,
-                    'ticket_id' => $submission->ticket_id,
-                ]);
+                    Log::info('BREVO DEBUG (admin) - sent OK', [
+                        'to'        => $toEmail,
+                        'ticket_id' => $submission->ticket_id,
+                    ]);
+                } else {
+                    Log::warning('BREVO DEBUG (admin) - skipped, recipient email missing', [
+                        'ticket_id'      => $submission->ticket_id,
+                        'recipient_id'   => $recipient->id ?? null,
+                        'recipient_type' => $userType,
+                    ]);
+                }
             } catch (\Throwable $e) {
                 Log::error('BREVO DEBUG (admin) - failed', [
-                    'to'        => $submission->user->email ?? null,
                     'ticket_id' => $submission->ticket_id ?? null,
                     'error'     => $e->getMessage(),
                 ]);
             }
         }
 
+        // ✅ WhatsApp (manual link)
+        // - jika admin centang notify_whatsapp ATAU
+        // - notify_user dicentang tapi email kosong
+        $wantEmail = $request->has('notify_user') && $oldStatus !== $newStatus;
+        $wantWa    = $request->has('notify_whatsapp') && $oldStatus !== $newStatus;
+
+        $shouldPrepareWa = $wantWa || ($wantEmail && empty($toEmail));
+
+        if ($shouldPrepareWa) {
+            $waPhone = $this->normalizeWaNumber(
+                $recipient->phone ?? $recipient->phone_number ?? null
+            );
+
+            if (!$waPhone) {
+                Log::warning('WA DEBUG (admin) - skipped, phone missing', [
+                    'ticket_id'      => $submission->ticket_id,
+                    'recipient_id'   => $recipient->id ?? null,
+                    'recipient_type' => $userType,
+                ]);
+            } else {
+                $recipientName = $recipient->nama_lengkap ?? $recipient->name ?? 'Bapak/Ibu';
+
+                $msgLines = [
+                    "Halo {$recipientName},",
+                    "",
+                    "Update status Permohonan Informasi: {$submission->ticket_id}",
+                    "Dari: " . $this->statusTextId($oldStatus),
+                    "Menjadi: " . $this->statusTextId($newStatus),
+                ];
+
+                if (!empty($request->admin_notes)) {
+                    $msgLines[] = "";
+                    $msgLines[] = "Catatan Admin:";
+                    $msgLines[] = trim((string) $request->admin_notes);
+                }
+
+                $msgLines[] = "";
+                $msgLines[] = "Terima kasih.";
+
+                $waText = implode("\n", $msgLines);
+                $waLink = 'https://wa.me/' . $waPhone . '?text=' . rawurlencode($waText);
+
+                // flash session -> nanti di show.blade muncul tombol "Kirim via WhatsApp"
+                $request->session()->flash('wa_link', $waLink);
+
+                Log::info('WA DEBUG (admin) - prepared wa link', [
+                    'ticket_id'      => $submission->ticket_id,
+                    'to_phone'       => $waPhone,
+                    'recipient_type' => $userType,
+                ]);
+            }
+        }
+
         return redirect()->back()->with('success', 'Status permohonan informasi berhasil diperbarui.');
+    }
+
+    // ============================
+    // Helpers
+    // ============================
+    private function normalizeWaNumber(?string $rawPhone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $rawPhone);
+        if (!$digits) return null;
+
+        if (str_starts_with($digits, '0')) return '62' . substr($digits, 1);
+        if (str_starts_with($digits, '8')) return '62' . $digits;
+        if (str_starts_with($digits, '62')) return $digits;
+
+        return $digits;
+    }
+
+    private function statusTextId(?string $st): string
+    {
+        $st = strtolower((string) $st);
+        return match (true) {
+            in_array($st, ['pending','belum diproses']) => 'Belum Diproses',
+            in_array($st, ['on_progress','in_progress','diproses','sedang diproses']) => 'Sedang Diproses',
+            in_array($st, ['completed','selesai','approved']) => 'Selesai',
+            in_array($st, ['rejected','ditolak']) => 'Ditolak',
+            default => ucfirst($st ?: '-'),
+        };
     }
 
     public function downloadDocument(Request $request, $id)
@@ -254,7 +346,7 @@ class SubmissionController extends Controller
             }
         }
 
-        $mode = $request->get('mode', 'download'); // view | download
+        $mode = $request->get('mode', 'download');
         $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
 
         $filename = str_replace(['"', "\r", "\n"], '', $doc->original_name ?? 'document');

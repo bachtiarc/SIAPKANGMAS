@@ -61,6 +61,7 @@ class ComplaintController extends Controller
             'user',
             'documents',
             'statusHistories.changedBy',
+            'applicant',
         ])->findOrFail($id);
 
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
@@ -89,14 +90,16 @@ class ComplaintController extends Controller
     public function update(Request $request, $id, \App\Services\BrevoMailer $brevo)
     {
         $request->validate([
-            'status'      => 'required|in:pending,diproses,selesai,ditolak',
-            'admin_notes' => 'nullable|string',
+            'status'            => 'required|in:pending,diproses,selesai,ditolak',
+            'admin_notes'       => 'nullable|string',
+            'notify_user'       => 'nullable',      // ✅ NEW: supaya ada checkbox email kayak submission/consultation (kalau di blade belum ada, tetap aman)
+            'notify_whatsapp'   => 'nullable',      // ✅ NEW
             'diproses_bidang'   => 'nullable|string',
             'diproses_kelompok' => 'nullable|string',
             'diproses_oleh'     => 'nullable|string',
         ]);
 
-        $complaint = Complaint::with(['user', 'handler'])->findOrFail($id);
+        $complaint = Complaint::with(['user', 'handler', 'applicant'])->findOrFail($id);
 
         $oldStatus = $complaint->status;
         $oldNotes  = $complaint->admin_response ?? $complaint->admin_notes;
@@ -108,10 +111,10 @@ class ComplaintController extends Controller
         $notesChanged  = ((string)($oldNotes ?? '') !== (string)($newNotes ?? ''));
 
         $complaint->update([
-            'status'         => $newStatus,
-            'admin_response' => $newNotes,
-            'handled_by'     => Auth::id(),
-            'completed_at'   => $newStatus === 'selesai' ? now() : null,
+            'status'            => $newStatus,
+            'admin_response'    => $newNotes,
+            'handled_by'        => Auth::id(),
+            'completed_at'      => $newStatus === 'selesai' ? now() : null,
             'diproses_bidang'   => $request->diproses_bidang,
             'diproses_kelompok' => $request->diproses_kelompok,
             'diproses_oleh'     => $request->diproses_oleh,
@@ -130,46 +133,131 @@ class ComplaintController extends Controller
             }
         }
 
-        if (($statusChanged || $notesChanged) && !empty($complaint->user->email)) {
-            try {
-                $complaint->load(['user', 'handler']);
+        // ==========================
+        // Pemohon sebenarnya:
+        // - masyarakat_umum => user
+        // - pegawai => applicant
+        // ==========================
+        $creator  = $complaint->user;
+        $userType = $creator->user_type ?? null;
 
-                $html = view('emails.complaint_status_updated', [
-                    'complaint'  => $complaint,
-                    'user'       => $complaint->user,
-                    'handler'    => $complaint->handler,
-                    'notes'      => $newNotes,
-                    'oldStatus'  => $oldStatus,    
-                    'newStatus'  => $newStatus,    
-                ])->render();
+        $pemohon = ($userType === 'pegawai')
+            ? ($complaint->applicant ?? null)
+            : $creator;
 
-                Log::info('BREVO DEBUG (admin) - about to send complaint status update', [
-                    'to'          => $complaint->user->email,
-                    'from'        => config('mail.from.address'),
-                    'from_name'   => config('mail.from.name'),
-                    'has_api_key' => (bool) config('brevo.api_key'),
-                    'ticket_no'   => $complaint->ticket_number ?? $complaint->id,
-                    'old_status'  => $oldStatus,
-                    'new_status'  => $newStatus,
-                    'app_env'     => config('app.env'),
+        $toEmail = $pemohon->email ?? null;
+        $toName  = $pemohon->nama_lengkap ?? $pemohon->name ?? null;
+
+        // ==========================
+        // EMAIL (opsional checkbox)
+        // Kalau blade belum punya notify_user: ini tetap aman, karena has('notify_user') false.
+        // ==========================
+        if ($request->has('notify_user') && ($statusChanged || $notesChanged)) {
+            if (!empty($toEmail)) {
+                try {
+                    $complaint->load(['user', 'handler', 'applicant']);
+
+                    $html = view('emails.complaint_status_updated', [
+                        'complaint'  => $complaint,
+                        'user'       => $pemohon,
+                        'handler'    => $complaint->handler,
+                        'notes'      => $newNotes,
+                        'oldStatus'  => $oldStatus,
+                        'newStatus'  => $newStatus,
+                    ])->render();
+
+                    Log::info('BREVO DEBUG (admin) - about to send complaint status update', [
+                        'to'            => $toEmail,
+                        'to_name'       => $toName,
+                        'creator_type'  => $userType,
+                        'from'          => config('mail.from.address'),
+                        'from_name'     => config('mail.from.name'),
+                        'has_api_key'   => (bool) config('brevo.api_key'),
+                        'ticket_no'     => $complaint->ticket_number ?? $complaint->id,
+                        'old_status'    => $oldStatus,
+                        'new_status'    => $newStatus,
+                        'app_env'       => config('app.env'),
+                    ]);
+
+                    $brevo->sendTransactional(
+                        toEmail: $toEmail,
+                        toName: $toName,
+                        subject: 'Update Status Pengaduan (' . ($complaint->ticket_number ?? $complaint->id) . ')',
+                        htmlContent: $html
+                    );
+
+                    Log::info('BREVO DEBUG (admin) - complaint sent OK', [
+                        'to'        => $toEmail,
+                        'ticket_no' => $complaint->ticket_number ?? $complaint->id,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::error('BREVO DEBUG (admin) - complaint failed', [
+                        'to'        => $toEmail,
+                        'ticket_no' => $complaint->ticket_number ?? $complaint->id ?? null,
+                        'error'     => $e->getMessage(),
+                    ]);
+                }
+            } else {
+                Log::warning('Complaint email skipped: pemohon email empty', [
+                    'complaint_id'  => $complaint->id,
+                    'ticket_no'     => $complaint->ticket_number ?? null,
+                    'creator_type'  => $userType,
+                    'pemohon_id'    => $pemohon->id ?? null,
                 ]);
+            }
+        }
 
-                $brevo->sendTransactional(
-                    toEmail: $complaint->user->email,
-                    toName: $complaint->user->name ?? null,
-                    subject: 'Update Status Pengaduan (' . ($complaint->ticket_number ?? $complaint->id) . ')',
-                    htmlContent: $html
-                );
+        // ==========================
+        // WhatsApp (manual link)
+        // - jika admin centang notify_whatsapp
+        // - ATAU notify_user dicentang tapi email kosong
+        // ==========================
+        $wantEmail = $request->has('notify_user') && ($statusChanged || $notesChanged);
+        $wantWa    = $request->has('notify_whatsapp') && ($statusChanged || $notesChanged);
 
-                Log::info('BREVO DEBUG (admin) - complaint sent OK', [
-                    'to'        => $complaint->user->email,
-                    'ticket_no' => $complaint->ticket_number ?? $complaint->id,
+        $shouldPrepareWa = $wantWa || ($wantEmail && empty($toEmail));
+
+        if ($shouldPrepareWa) {
+            $waPhone = $this->normalizeWaNumber(
+                $pemohon->phone ?? $pemohon->phone_number ?? null
+            );
+
+            if (!$waPhone) {
+                Log::warning('WA DEBUG (admin) - complaint skipped, phone missing', [
+                    'complaint_id'  => $complaint->id,
+                    'ticket_no'     => $complaint->ticket_number ?? null,
+                    'creator_type'  => $userType,
+                    'pemohon_id'    => $pemohon->id ?? null,
                 ]);
-            } catch (\Throwable $e) {
-                Log::error('BREVO DEBUG (admin) - complaint failed', [
-                    'to'        => $complaint->user->email ?? null,
-                    'ticket_no' => $complaint->ticket_number ?? $complaint->id ?? null,
-                    'error'     => $e->getMessage(),
+            } else {
+                $ticketNo = $complaint->ticket_number ?? $complaint->id ?? '-';
+                $pemohonName = $pemohon->nama_lengkap ?? $pemohon->name ?? 'Bapak/Ibu';
+
+                $msgLines = [
+                    "Halo {$pemohonName},",
+                    "",
+                    "Update status Pengaduan: {$ticketNo}",
+                    "Dari: " . $this->statusTextId($oldStatus),
+                    "Menjadi: " . $this->statusTextId($newStatus),
+                ];
+
+                if (!empty($newNotes)) {
+                    $msgLines[] = "";
+                    $msgLines[] = "Catatan Admin:";
+                    $msgLines[] = trim((string) $newNotes);
+                }
+
+                $msgLines[] = "";
+                $msgLines[] = "Terima kasih.";
+
+                $waText = implode("\n", $msgLines);
+                $waLink = 'https://wa.me/' . $waPhone . '?text=' . rawurlencode($waText);
+
+                $request->session()->flash('wa_link', $waLink);
+
+                Log::info('WA DEBUG (admin) - complaint prepared wa link', [
+                    'ticket_no' => $ticketNo,
+                    'to_phone'  => $waPhone,
                 ]);
             }
         }
@@ -201,7 +289,7 @@ class ComplaintController extends Controller
             }
         }
 
-        $mode = $request->get('mode', 'download'); 
+        $mode = $request->get('mode', 'download');
 
         $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
 
@@ -223,6 +311,7 @@ class ComplaintController extends Controller
             'user',
             'documents',
             'statusHistories.changedBy',
+            'applicant',
         ])->findOrFail($id);
 
         $pdf = Pdf::loadView('admin.complaints.pdf', compact('complaint'))
@@ -269,7 +358,7 @@ class ComplaintController extends Controller
 
         $ext = match (true) {
             str_contains($contentType, 'png') => 'png',
-            str_contains($contentType, 'jpeg'), str_contains($contentType, 'jpg') => 'jpg',
+            str_contains($contentType, 'jpeg') || str_contains($contentType, 'jpg') => 'jpg',
             default => pathinfo(parse_url($fileUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION) ?: 'jpg',
         };
 
@@ -279,5 +368,32 @@ class ComplaintController extends Controller
             'Content-Type' => $contentType,
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    // ============================
+    // Helpers WhatsApp
+    // ============================
+    private function normalizeWaNumber(?string $rawPhone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $rawPhone);
+        if (!$digits) return null;
+
+        if (str_starts_with($digits, '0')) return '62' . substr($digits, 1);
+        if (str_starts_with($digits, '8')) return '62' . $digits;
+        if (str_starts_with($digits, '62')) return $digits;
+
+        return $digits;
+    }
+
+    private function statusTextId(?string $st): string
+    {
+        $st = strtolower((string) $st);
+        return match (true) {
+            in_array($st, ['pending','belum diproses']) => 'Belum Diproses',
+            in_array($st, ['on_progress','in_progress','diproses','sedang diproses']) => 'Sedang Diproses',
+            in_array($st, ['completed','selesai','approved']) => 'Selesai',
+            in_array($st, ['rejected','ditolak']) => 'Ditolak',
+            default => ucfirst($st ?: '-'),
+        };
     }
 }

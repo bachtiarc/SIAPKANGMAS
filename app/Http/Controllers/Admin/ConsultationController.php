@@ -25,7 +25,6 @@ class ConsultationController extends Controller
             'belum'   => Consultation::where('status', 'pending')->count(),
         ];
 
-        // ✅ aman: jangan paksa with('category') kalau relasi ga ada
         $query = Consultation::with(['user', 'handler']);
 
         $hasStart = $request->filled('start_date');
@@ -48,14 +47,10 @@ class ConsultationController extends Controller
             });
         }
 
-        // ✅ filter bidang (opsional): hanya efektif kalau kamu punya kolom bidang di consultations
-        // misal kolom: diproses_oleh dengan format "Bidang - Kelompok"
         if ($request->filled('diproses_bidang')) {
             $bidang = $request->diproses_bidang;
 
-            // kalau suatu saat kolomnya ada, ini langsung jalan:
             if (\Illuminate\Support\Facades\Schema::hasColumn('consultations', 'diproses_oleh')) {
-                // Postgres friendly: ILIKE
                 $query->where('diproses_oleh', 'ILIKE', $bidang . ' -%');
             }
         }
@@ -70,7 +65,6 @@ class ConsultationController extends Controller
 
         $consultations = $query->latest()->paginate(10)->withQueryString();
 
-        // kategori sudah tidak dipakai di view baru, jadi ini aman dikosongkan
         $categories = collect();
 
         return view('admin.consultations.konsultasi', compact('consultations', 'categories', 'stats'));
@@ -88,7 +82,6 @@ class ConsultationController extends Controller
 
         $consultation = Consultation::with($with)->findOrFail($id);
 
-        // Tentukan pemohon
         $creator  = $consultation->user;
         $userType = $creator->user_type ?? null;
 
@@ -96,7 +89,6 @@ class ConsultationController extends Controller
             ? ($consultation->applicant ?? null)
             : $creator;
 
-        // Build KTP public URL (support data baru + legacy)
         $ktpRaw       = $pemohon->foto_ktp ?? null;
         $pemohonNik   = $pemohon->nik ?? null;
         $ktpPublicUrl = $this->buildKtpPublicUrl($ktpRaw, $pemohonNik);
@@ -114,28 +106,28 @@ class ConsultationController extends Controller
             'status'            => 'required|in:pending,on_progress,completed,rejected',
             'admin_notes'       => 'nullable|string',
             'notify_user'       => 'nullable',
+            'notify_whatsapp'   => 'nullable', // ✅ NEW
             'diproses_bidang'   => 'nullable|string',
             'diproses_kelompok' => 'nullable|string',
             'diproses_oleh'     => 'nullable|string',
         ]);
 
-        $consultation = Consultation::findOrFail($id);
+        $consultation = Consultation::with(['user', 'handler', 'applicant'])->findOrFail($id);
         $oldStatus    = $consultation->status;
+        $newStatus    = $request->status;
 
         $updateData = [
-            'status'       => $request->status,
+            'status'       => $newStatus,
             'handled_by'   => Auth::id(),
-            'completed_at' => $request->status == 'completed' ? now() : null,
+            'completed_at' => $newStatus == 'completed' ? now() : null,
         ];
 
-        // admin notes
         if (Schema::hasColumn('consultations', 'admin_response')) {
             $updateData['admin_response'] = $request->admin_notes;
         } elseif (Schema::hasColumn('consultations', 'admin_notes')) {
             $updateData['admin_notes'] = $request->admin_notes;
         }
 
-        // diproses_* (kalau kolom ada)
         if (Schema::hasColumn('consultations', 'diproses_bidang')) {
             $updateData['diproses_bidang'] = $request->diproses_bidang;
         }
@@ -148,69 +140,155 @@ class ConsultationController extends Controller
 
         $consultation->update($updateData);
 
-        if ($oldStatus !== $request->status) {
+        if ($oldStatus !== $newStatus) {
             $consultation->statusHistories()->create([
                 'changed_by' => Auth::id(),
-                'new_status' => $request->status,
+                'new_status' => $newStatus,
                 'old_status' => $oldStatus,
                 'notes'      => $request->admin_notes ?? 'Status diperbarui oleh Admin',
             ]);
         }
 
-        // notify user (email)
-        if ($request->has('notify_user') && $oldStatus !== $request->status) {
-            try {
-                $hasCategoriesTable  = Schema::hasTable('categories');
-                $hasCategoryRelation = method_exists(Consultation::class, 'category');
+        // ============================
+        // Tentukan pemohon (penting untuk pegawai/co-admin)
+        // ============================
+        $creator  = $consultation->user;
+        $userType = $creator->user_type ?? null;
 
-                $relations = ['user', 'handler'];
-                if ($hasCategoriesTable && $hasCategoryRelation) {
-                    $relations[] = 'category';
-                }
+        $pemohon = ($userType === 'pegawai')
+            ? ($consultation->applicant ?? null)
+            : $creator;
 
-                $consultation->load($relations);
+        $toEmail = $pemohon->email ?? null;
+        $toName  = $pemohon->nama_lengkap ?? $pemohon->name ?? null;
 
-                $html = view('emails.consultation_status_updated', [
-                    'consultation' => $consultation,
-                    'user'         => $consultation->user,
-                    'category'     => ($hasCategoriesTable && $hasCategoryRelation) ? $consultation->category : null,
-                    'handler'      => $consultation->handler,
-                    'note'         => $request->admin_notes,
-                    'oldStatus'    => $oldStatus,
-                    'newStatus'    => $request->status,
-                ])->render();
-
-                $ticketId = $consultation->ticket_id ?? $consultation->ticket_number ?? '-';
-
-                Log::info('BREVO DEBUG (admin) - about to send consultation status update', [
-                    'to'          => $consultation->user->email,
-                    'from'        => config('mail.from.address'),
-                    'from_name'   => config('mail.from.name'),
-                    'has_api_key' => (bool) config('brevo.api_key'),
-                    'ticket_id'   => $ticketId,
-                    'old_status'  => $oldStatus,
-                    'new_status'  => $request->status,
-                    'app_env'     => config('app.env'),
-                ]);
-
-                $brevo->sendTransactional(
-                    toEmail: $consultation->user->email,
-                    toName: $consultation->user->name ?? null,
-                    subject: "Update Status Konsultasi ({$ticketId})",
-                    htmlContent: $html
-                );
-
-                Log::info('BREVO DEBUG (admin) - consultation sent OK', [
-                    'to'        => $consultation->user->email,
-                    'ticket_id' => $ticketId,
-                ]);
-            } catch (\Throwable $e) {
+        // ============================
+        // EMAIL via Brevo
+        // ============================
+        if ($request->has('notify_user') && $oldStatus !== $newStatus) {
+            if (empty($toEmail)) {
                 $ticketId = $consultation->ticket_id ?? $consultation->ticket_number ?? null;
 
-                Log::error('BREVO DEBUG (admin) - consultation failed', [
-                    'to'        => $consultation->user->email ?? null,
+                Log::warning('BREVO DEBUG (admin) - consultation email skipped: pemohon email empty', [
+                    'ticket_id'     => $ticketId,
+                    'consultation'  => $consultation->id,
+                    'creator_type'  => $userType,
+                    'pemohon_id'    => $pemohon->id ?? null,
+                ]);
+                // jangan return, biar bisa lanjut prepare WhatsApp bila perlu
+            } else {
+                try {
+                    $hasCategoriesTable  = Schema::hasTable('categories');
+                    $hasCategoryRelation = method_exists(Consultation::class, 'category');
+
+                    $relations = ['user', 'handler', 'applicant'];
+                    if ($hasCategoriesTable && $hasCategoryRelation) {
+                        $relations[] = 'category';
+                    }
+
+                    $consultation->load($relations);
+
+                    $html = view('emails.consultation_status_updated', [
+                        'consultation' => $consultation,
+                        'user'         => $pemohon,
+                        'category'     => ($hasCategoriesTable && $hasCategoryRelation) ? $consultation->category : null,
+                        'handler'      => $consultation->handler,
+                        'note'         => $request->admin_notes,
+                        'oldStatus'    => $oldStatus,
+                        'newStatus'    => $newStatus,
+                    ])->render();
+
+                    $ticketId = $consultation->ticket_id ?? $consultation->ticket_number ?? '-';
+
+                    Log::info('BREVO DEBUG (admin) - about to send consultation status update', [
+                        'to'           => $toEmail,
+                        'to_name'      => $toName,
+                        'creator_type' => $userType,
+                        'from'         => config('mail.from.address'),
+                        'from_name'    => config('mail.from.name'),
+                        'has_api_key'  => (bool) config('brevo.api_key'),
+                        'ticket_id'    => $ticketId,
+                        'old_status'   => $oldStatus,
+                        'new_status'   => $newStatus,
+                        'app_env'      => config('app.env'),
+                    ]);
+
+                    $brevo->sendTransactional(
+                        toEmail: $toEmail,
+                        toName: $toName,
+                        subject: "Update Status Konsultasi ({$ticketId})",
+                        htmlContent: $html
+                    );
+
+                    Log::info('BREVO DEBUG (admin) - consultation sent OK', [
+                        'to'        => $toEmail,
+                        'ticket_id' => $ticketId,
+                    ]);
+                } catch (\Throwable $e) {
+                    $ticketId = $consultation->ticket_id ?? $consultation->ticket_number ?? null;
+
+                    Log::error('BREVO DEBUG (admin) - consultation failed', [
+                        'to'        => $toEmail,
+                        'ticket_id' => $ticketId,
+                        'error'     => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        // ============================
+        // WhatsApp (manual link)
+        // - jika admin centang notify_whatsapp ATAU
+        // - notify_user dicentang tapi email kosong
+        // ============================
+        $wantEmail = $request->has('notify_user') && $oldStatus !== $newStatus;
+        $wantWa    = $request->has('notify_whatsapp') && $oldStatus !== $newStatus;
+
+        $shouldPrepareWa = $wantWa || ($wantEmail && empty($toEmail));
+
+        if ($shouldPrepareWa) {
+            $waPhone = $this->normalizeWaNumber(
+                $pemohon->phone ?? $pemohon->phone_number ?? null
+            );
+
+            if (!$waPhone) {
+                $ticketId = $consultation->ticket_id ?? $consultation->ticket_number ?? null;
+
+                Log::warning('WA DEBUG (admin) - consultation skipped, phone missing', [
+                    'ticket_id'     => $ticketId,
+                    'consultation'  => $consultation->id,
+                    'creator_type'  => $userType,
+                    'pemohon_id'    => $pemohon->id ?? null,
+                ]);
+            } else {
+                $ticketId = $consultation->ticket_id ?? $consultation->ticket_number ?? '-';
+                $pemohonName = $pemohon->nama_lengkap ?? $pemohon->name ?? 'Bapak/Ibu';
+
+                $msgLines = [
+                    "Halo {$pemohonName},",
+                    "",
+                    "Update status Konsultasi: {$ticketId}",
+                    "Dari: " . $this->statusTextId($oldStatus),
+                    "Menjadi: " . $this->statusTextId($newStatus),
+                ];
+
+                if (!empty($request->admin_notes)) {
+                    $msgLines[] = "";
+                    $msgLines[] = "Catatan Admin:";
+                    $msgLines[] = trim((string) $request->admin_notes);
+                }
+
+                $msgLines[] = "";
+                $msgLines[] = "Terima kasih.";
+
+                $waText = implode("\n", $msgLines);
+                $waLink = 'https://wa.me/' . $waPhone . '?text=' . rawurlencode($waText);
+
+                $request->session()->flash('wa_link', $waLink);
+
+                Log::info('WA DEBUG (admin) - consultation prepared wa link', [
                     'ticket_id' => $ticketId,
-                    'error'     => $e->getMessage(),
+                    'to_phone'  => $waPhone,
                 ]);
             }
         }
@@ -227,7 +305,6 @@ class ConsultationController extends Controller
 
         $path = ltrim($doc->file_path, '/');
 
-        // normalisasi path legacy
         if (Str::startsWith($path, 'consultations/')) {
             $path = Str::after($path, 'consultations/');
         }
@@ -249,7 +326,7 @@ class ConsultationController extends Controller
             }
         }
 
-        $mode        = $request->get('mode', 'download'); // view | download
+        $mode        = $request->get('mode', 'download');
         $contentType = $res->header('Content-Type') ?? 'application/octet-stream';
         $filename    = str_replace(['"', "\r", "\n"], '', $doc->original_name ?? 'document');
 
@@ -322,12 +399,7 @@ class ConsultationController extends Controller
     }
 
     /**
-     * ✅ Helper normalize KTP URL (support:
-     * - full url
-     * - "ktp/<file>"
-     * - "<file>"
-     * - "<nik>/<file>"
-     * - "ktp-photos/<...>"
+     * ✅ Helper normalize KTP URL
      */
     private function buildKtpPublicUrl(?string $ktpRaw, ?string $nik): ?string
     {
@@ -350,11 +422,37 @@ class ConsultationController extends Controller
             $ktpRaw = Str::after($ktpRaw, 'ktp/');
         }
 
-        // kalau cuma filename, prefix NIK
         if (!str_contains($ktpRaw, '/') && !empty($nik)) {
             $ktpRaw = $nik . '/' . $ktpRaw;
         }
 
         return "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
+    }
+
+    // ============================
+    // Helpers WhatsApp
+    // ============================
+    private function normalizeWaNumber(?string $rawPhone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $rawPhone);
+        if (!$digits) return null;
+
+        if (str_starts_with($digits, '0')) return '62' . substr($digits, 1);
+        if (str_starts_with($digits, '8')) return '62' . $digits;
+        if (str_starts_with($digits, '62')) return $digits;
+
+        return $digits;
+    }
+
+    private function statusTextId(?string $st): string
+    {
+        $st = strtolower((string) $st);
+        return match (true) {
+            in_array($st, ['pending','belum diproses']) => 'Belum Diproses',
+            in_array($st, ['on_progress','in_progress','diproses','sedang diproses']) => 'Sedang Diproses',
+            in_array($st, ['completed','selesai','approved']) => 'Selesai',
+            in_array($st, ['rejected','ditolak']) => 'Ditolak',
+            default => ucfirst($st ?: '-'),
+        };
     }
 }

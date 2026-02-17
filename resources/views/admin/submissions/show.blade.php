@@ -190,11 +190,47 @@
 
     $pemohonPekerjaan = $pemohon->pekerjaan ?? null;
 
+    // =========================
     // isi
+    // =========================
     $judul = $submission->title ?? '-';
     $deskripsi = $submission->description ?? '-';
+    $tujuanPermohonan = $submission->tujuan_permohonan ?? null;
 
+    // =========================
+    // Cara penyampaian + opsi datang langsung
+    // =========================
+    $caraPenyampaian = $submission->cara_penyampaian ?? null; // online | datang_langsung
+    $opsiDatangRaw   = $submission->datang_langsung_opsi ?? [];
+
+    if (is_string($opsiDatangRaw)) {
+        $decoded = json_decode($opsiDatangRaw, true);
+        $opsiDatang = is_array($decoded) ? $decoded : [];
+    } elseif (is_array($opsiDatangRaw)) {
+        $opsiDatang = $opsiDatangRaw;
+    } elseif ($opsiDatangRaw instanceof \Illuminate\Support\Collection) {
+        $opsiDatang = $opsiDatangRaw->toArray();
+    } else {
+        $opsiDatang = [];
+    }
+
+    $caraPenyampaianLabel = match($caraPenyampaian) {
+        'datang_langsung' => 'Datang Langsung',
+        'online' => 'Online',
+        default => '-',
+    };
+
+    $opsiDatangLabel = collect($opsiDatang)->map(function ($v) {
+        return match($v) {
+            'flashdisk' => 'Flashdisk',
+            'cetak' => 'Cetak',
+            default => ucfirst((string)$v),
+        };
+    })->filter()->values()->all();
+
+    // =========================
     // docs
+    // =========================
     $docs = $submission->documents ?? collect();
 @endphp
 
@@ -280,6 +316,24 @@
             </div>
         </div>
     </div>
+
+    @if(session('wa_link'))
+        <div class="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-start gap-3">
+            <div class="mt-0.5 w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10m-13 9h16a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v11a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="text-green-700 font-medium">Notifikasi WhatsApp siap dikirim.</p>
+                <a href="{{ session('wa_link') }}" target="_blank" rel="noopener"
+                class="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700">
+                    Kirim via WhatsApp
+                </a>
+            </div>
+        </div>
+    @endif
 
     @if(session('success'))
         <div class="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-start gap-3">
@@ -524,6 +578,44 @@
                         <p class="text-gray-700 font-lato">{{ $judul }}</p>
                     </div>
 
+                    {{-- ✅ NEW: Cara Penyampaian --}}
+                    <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                        <h4 class="font-bold text-gray-900 text-sm mb-3">Cara Penyampaian</h4>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                                <p class="text-xs text-gray-500 mb-1">Metode</p>
+                                <p class="text-sm font-bold text-gray-900">{{ $caraPenyampaianLabel }}</p>
+                            </div>
+
+                            <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                                <p class="text-xs text-gray-500 mb-1">Opsi (Jika Datang Langsung)</p>
+
+                                @if($caraPenyampaian === 'datang_langsung')
+                                    @if(!empty($opsiDatangLabel))
+                                        <p class="text-sm font-bold text-gray-900">
+                                            {{ implode(', ', $opsiDatangLabel) }}
+                                        </p>
+                                    @else
+                                        <p class="text-sm font-bold text-gray-900">-</p>
+                                    @endif
+                                @else
+                                    <p class="text-sm font-bold text-gray-900">-</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ✅ NEW: Tujuan Permohonan --}}
+                    <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                        <h4 class="font-bold text-gray-900 text-sm mb-2">Tujuan Permohonan</h4>
+                        <div class="p-4 bg-white rounded-xl border border-gray-200">
+                            <p class="text-gray-700 font-lato text-sm leading-relaxed whitespace-pre-line">
+                                {{ $tujuanPermohonan ?: '-' }}
+                            </p>
+                        </div>
+                    </div>
+
                     <div class="rounded-2xl border border-gray-100 bg-white p-4">
                         <h4 class="font-bold text-gray-900 text-sm mb-2">Deskripsi Lengkap</h4>
                         <div class="p-4 bg-white rounded-xl border border-gray-200 min-h-[240px]">
@@ -651,6 +743,14 @@
                                 <input type="checkbox" id="notify_user" name="notify_user" value="1" checked
                                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 <label for="notify_user" class="ml-2 text-xs text-gray-500">Kirim notifikasi email kepada pemohon</label>
+                            </div>
+
+                            <div class="mt-2 flex items-center">
+                                <input type="checkbox" id="notify_whatsapp" name="notify_whatsapp" value="1"
+                                    class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                                <label for="notify_whatsapp" class="ml-2 text-xs text-gray-500">
+                                    Kirim notifikasi via WhatsApp
+                                </label>
                             </div>
 
                             <div class="mt-4">

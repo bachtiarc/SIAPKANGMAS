@@ -313,6 +313,24 @@
         </div>
     </div>
 
+    @if(session('wa_link'))
+        <div class="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-start gap-3">
+            <div class="mt-0.5 w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10m-13 9h16a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v11a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="text-green-700 font-medium">Notifikasi WhatsApp siap dikirim.</p>
+                <a href="{{ session('wa_link') }}" target="_blank" rel="noopener"
+                class="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700">
+                    Kirim via WhatsApp
+                </a>
+            </div>
+        </div>
+    @endif
+
     @if(session('success'))
         <div class="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-start gap-3">
             <div class="mt-0.5 w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
@@ -726,6 +744,14 @@
                                 <input type="checkbox" id="notify_user" name="notify_user" value="1" checked
                                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 <label for="notify_user" class="ml-2 text-xs text-gray-500">Kirim notifikasi email kepada pemohon</label>
+                            </div>
+
+                            <div class="mt-2 flex items-center">
+                                <input type="checkbox" id="notify_whatsapp" name="notify_whatsapp" value="1"
+                                    class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                                <label for="notify_whatsapp" class="ml-2 text-xs text-gray-500">
+                                    Kirim notifikasi via WhatsApp
+                                </label>
                             </div>
 
                             <div class="mt-4">
