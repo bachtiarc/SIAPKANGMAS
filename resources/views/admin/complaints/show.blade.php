@@ -435,10 +435,6 @@
                                     @if($waLink)
                                         <a href="{{ $waLink }}" target="_blank" rel="noopener"
                                            class="inline-flex items-center gap-2 font-bold text-blue-600 hover:underline">
-                                            <svg class="w-4 h-4" viewBox="0 0 32 32" fill="currentColor">
-                                                <path d="M19.11 17.22c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.61.14-.18.27-.7.88-.86 1.06-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.17-1.34-.8-.71-1.34-1.59-1.5-1.86-.16-.27-.02-.42.12-.56.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.52-.45-.45-.61-.46h-.52c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.29 0 1.35.99 2.66 1.12 2.84.14.18 1.95 2.98 4.73 4.18.66.29 1.18.46 1.58.59.66.21 1.26.18 1.74.11.53-.08 1.6-.65 1.83-1.28.23-.63.23-1.17.16-1.28-.07-.11-.25-.18-.52-.32z"/>
-                                                <path d="M16.02 3C8.86 3 3.05 8.81 3.05 15.97c0 2.28.6 4.51 1.75 6.48L3 29l6.73-1.76a12.9 12.9 0 0 0 6.29 1.61h.01c7.16 0 12.97-5.81 12.97-12.97C28.99 8.81 23.18 3 16.02 3zm0 23.33h-.01c-2.02 0-4-.54-5.74-1.55l-.41-.24-3.99 1.04 1.07-3.89-.26-.4a10.77 10.77 0 0 1-1.67-5.75c0-5.96 4.85-10.81 10.81-10.81 5.96 0 10.81 4.85 10.81 10.81 0 5.96-4.85 10.81-10.81 10.81z"/>
-                                            </svg>
                                             <span>wa.me/{{ $waPhone ?? '-' }}</span>
                                         </a>
                                     @else
@@ -446,24 +442,56 @@
                                     @endif
                                 </div>
 
-                                <div class="md:col-span-2 rounded-2xl border border-gray-100 bg-white p-4">
-                                    <p class="text-xs text-gray-500 mb-1">Alamat Lengkap</p>
-                                    <p class="font-bold text-gray-900 break-words">{{ $alamatDetail ?: '-' }}</p>
-                                </div>
+                                {{-- ALAMAT (dipisah seperti contoh gambar kanan) --}}
+                                <div class="md:col-span-2">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                                {{-- INFO TAMBAHAN --}}
-                                <div class="md:col-span-2 rounded-2xl bg-gray-50 border border-gray-100 p-4">
-                                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Info Tambahan Pemohon</p>
-                                    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div class="rounded-xl bg-white border border-gray-100 p-3">
+                                        {{-- Pekerjaan --}}
+                                        <div class="rounded-2xl border border-gray-100 bg-white p-4">
                                             <p class="text-xs text-gray-500 mb-1">Pekerjaan</p>
-                                            <p class="text-sm font-bold text-gray-900">{{ $pemohonPekerjaan ?? '-' }}</p>
+                                            <div class="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold">
+                                                {{ $pemohonPekerjaan ?: '-' }}
+                                            </div>
                                         </div>
-                                        <div class="rounded-xl bg-white border border-gray-100 p-3">
-                                            <p class="text-xs text-gray-500 mb-1">Wilayah</p>
-                                            <p class="text-sm font-bold text-gray-900">
-                                                {{ $provName ?? '-' }} / {{ $kabName ?? '-' }} / {{ $kecName ?? '-' }} / {{ $desaName ?? '-' }}
-                                            </p>
+
+                                        {{-- Provinsi --}}
+                                        <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                                            <p class="text-xs text-gray-500 mb-1">Provinsi</p>
+                                            <div class="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold">
+                                                {{ $provName ?: '-' }}
+                                            </div>
+                                        </div>
+
+                                        {{-- Kabupaten / Kota --}}
+                                        <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                                            <p class="text-xs text-gray-500 mb-1">Kabupaten / Kota</p>
+                                            <div class="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold">
+                                                {{ $kabName ?: '-' }}
+                                            </div>
+                                        </div>
+
+                                        {{-- Kecamatan --}}
+                                        <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                                            <p class="text-xs text-gray-500 mb-1">Kecamatan</p>
+                                            <div class="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold">
+                                                {{ $kecName ?: '-' }}
+                                            </div>
+                                        </div>
+
+                                        {{-- Desa / Kelurahan (full width) --}}
+                                        <div class="md:col-span-2 rounded-2xl border border-gray-100 bg-white p-4">
+                                            <p class="text-xs text-gray-500 mb-1">Desa / Kelurahan</p>
+                                            <div class="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold">
+                                                {{ $desaName ?: '-' }}
+                                            </div>
+                                        </div>
+
+                                        {{-- Alamat Lengkap (full width, lebih tinggi) --}}
+                                        <div class="md:col-span-2 rounded-2xl border border-gray-100 bg-white p-4">
+                                            <p class="text-xs text-gray-500 mb-1">Alamat Lengkap</p>
+                                            <div class="mt-2 w-full px-4 py-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold min-h-[110px] whitespace-pre-line">
+                                                {{ $alamatDetail ?: '-' }}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -686,7 +714,6 @@
                         <div class="rounded-2xl border border-gray-100 bg-white p-4 h-full">
                             <div class="flex items-center justify-between mb-2">
                                 <label class="block text-sm font-semibold text-gray-700">Catatan</label>
-                                <span class="text-[11px] text-gray-500">Scroll di kanan</span>
                             </div>
 
                             {{-- textarea scroll with visible scrollbar --}}
