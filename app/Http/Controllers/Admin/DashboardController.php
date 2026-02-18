@@ -22,6 +22,7 @@ class DashboardController extends Controller
         $inProgressTickets = $this->getInProgressTickets();
         $completedTickets = $this->getCompletedTickets();
         $pendingTickets = $this->getPendingTickets();
+        $rejectedTickets = $this->getRejectedTickets();
         
         // Get recent tickets (last 5)
         $recentTickets = $this->getRecentTickets();
@@ -33,6 +34,7 @@ class DashboardController extends Controller
             'totalTickets',
             'inProgressTickets',
             'completedTickets',
+            'rejectedTickets',
             'pendingTickets',
             'recentTickets',
             'chartData'
@@ -90,7 +92,7 @@ class DashboardController extends Controller
     private function getCompletedTickets()
     {
         $total = 0;
-        $statuses = ['completed', 'selesai', 'approved', 'rejected', 'ditolak'];
+        $statuses = ['completed', 'selesai', 'approved'];
         
         if (class_exists('App\Models\Submission')) {
             $total += Submission::whereIn('status', $statuses)->count();
@@ -104,6 +106,25 @@ class DashboardController extends Controller
             $total += Complaint::whereIn('status', $statuses)->count();
         }
         
+        return $total;
+    }
+
+    private function getRejectedTickets()
+    {
+        $total = 0;
+
+        if (class_exists('App\Models\Submission')) {
+            $total += Submission::where('status', 'rejected')->count();
+        }
+
+        if (class_exists('App\Models\Consultation')) {
+            $total += Consultation::where('status', 'rejected')->count();
+        }
+
+        if (class_exists('App\Models\Complaint')) {
+            $total += Complaint::where('status', 'ditolak')->count();
+        }
+
         return $total;
     }
 
@@ -201,6 +222,7 @@ class DashboardController extends Controller
             'completed' => array_fill(0, 12, 0),
             'processing' => array_fill(0, 12, 0),
             'pending' => array_fill(0, 12, 0),
+            'rejected'   => array_fill(0, 12, 0),
         ];
 
         // Daftar Model yang akan dicek
@@ -227,10 +249,12 @@ class DashboardController extends Controller
                 // Masukkan ke kategori yang sesuai
                 if (in_array($row->status, ['completed', 'selesai', 'approved'])) {
                     $data['completed'][$monthIndex] += $row->total;
-                } elseif (in_array($row->status, ['in_progress', 'diproses'])) {
+                } elseif (in_array($row->status, ['in_progress', 'diproses', 'on_progress'])) {
                     $data['processing'][$monthIndex] += $row->total;
                 } elseif ($row->status == 'pending') {
                     $data['pending'][$monthIndex] += $row->total;
+                } elseif (in_array($row->status, ['rejected', 'ditolak'])) {
+                    $data['rejected'][$monthIndex] += $row->total;
                 }
             }
         }

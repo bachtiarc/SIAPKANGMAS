@@ -188,6 +188,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('/tickets/search', [App\Http\Controllers\Admin\TicketSearchController::class, 'search'])
         ->name('tickets.search');
 
+     Route::get('/management/arsip', [\App\Http\Controllers\Admin\ArchiveController::class, 'index'])
+        ->name('management.arsip');
+
     // Route Manajemen Pengajuan
     Route::get('/manajemen-pengajuan/permohonan', [AdminSubmissionController::class, 'index'])
         ->name('submissions.permohonan');
@@ -246,30 +249,18 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('/manajemen-pengajuan/pengaduan/{id}/ktp/download', [AdminComplaintController::class, 'downloadKtp'])
         ->name('complaints.ktp.download');
 
-    // Manajemen Kategori
-    Route::get('/manajemen-kategori', [AdminCategoryController::class, 'index'])
-        ->name('categories.kategori');
+    // Manajemen Arsip
+    Route::post('/consultations/{id}/archive', [\App\Http\Controllers\Admin\ArchiveController::class, 'archiveConsultation'])
+        ->name('consultations.archive');
+    Route::post('/complaints/{id}/archive', [\App\Http\Controllers\Admin\ArchiveController::class, 'archiveComplaint'])
+        ->name('complaints.archive');
+    Route::post('/submissions/{id}/archive', [\App\Http\Controllers\Admin\ArchiveController::class, 'archiveSubmission'])
+        ->name('submissions.archive');
 
-    Route::post('/manajemen-kategori', [AdminCategoryController::class, 'store'])
-        ->name('categories.store');
-
-    Route::get('/manajemen-kategori/{category}/edit', [AdminCategoryController::class, 'edit'])
-        ->name('categories.edit');
-
-    Route::put('/manajemen-kategori/{category}', [AdminCategoryController::class, 'update'])
-        ->name('categories.update');
-
-    Route::delete('/manajemen-kategori/{category}', [AdminCategoryController::class, 'destroy'])
-        ->name('categories.destroy');
-});
-
-Route::get('/test-brevo', function (BrevoMailer $brevo) {
-    $out = $brevo->sendTransactional(
-        toEmail: 'unsanasyta@gmail.com',
-        toName: 'Evia',
-        subject: 'Test Brevo API dari Localhost',
-        htmlContent: '<h3>Halo</h3><p>Ini test Brevo API berhasil.</p>'
-    );
-
-    return response()->json($out);
+    Route::post('/consultations/{id}/unarchive', [\App\Http\Controllers\Admin\ArchiveController::class, 'unarchiveConsultation'])
+        ->name('consultations.unarchive');
+    Route::post('/complaints/{id}/unarchive', [\App\Http\Controllers\Admin\ArchiveController::class, 'unarchiveComplaint'])
+        ->name('complaints.unarchive');
+    Route::post('/submissions/{id}/unarchive', [\App\Http\Controllers\Admin\ArchiveController::class, 'unarchiveSubmission'])
+        ->name('submissions.unarchive');
 });

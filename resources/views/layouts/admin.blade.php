@@ -1,6 +1,20 @@
 @php
     $user = auth()->user();
     $initial = $user?->name ? strtoupper(substr($user->name, 0, 1)) : 'A';
+
+    // ===== ACTIVE MENU STATE (FIX) =====
+    $isArsip = request()->routeIs('admin.management.arsip');
+
+    // Manajemen Pengajuan aktif untuk route consultations/submissions/complaints/management.*
+    // tapi DIKECUALIKAN ketika sedang di halaman arsip
+    $isManajemenPengajuan =
+        (
+            request()->routeIs('admin.consultations.*')
+            || request()->routeIs('admin.submissions.*')
+            || request()->routeIs('admin.complaints.*')
+            || request()->routeIs('admin.management.*')
+        )
+        && !$isArsip;
 @endphp
 
 <!DOCTYPE html>
@@ -111,16 +125,9 @@
                         <span class="ml-2 whitespace-nowrap sidebar-text">Dashboard</span>
                     </a>
 
-                    <!-- Manajemen Pengajuan -->
+                    <!-- Manajemen Pengajuan (FIX: tidak aktif saat Arsip) -->
                     <a href="{{ route('admin.management.semua') }}"
-                       class="{{ $navBase }}
-                       {{
-                            request()->routeIs('admin.consultations.*')
-                            || request()->routeIs('admin.submissions.*')
-                            || request()->routeIs('admin.complaints.*')
-                            || request()->routeIs('admin.management.*')
-                            ? $navOn : $navOff
-                       }}"
+                       class="{{ $navBase }} {{ $isManajemenPengajuan ? $navOn : $navOff }}"
                        data-tooltip="Manajemen Pengajuan">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -129,21 +136,16 @@
                         <span class="ml-2 whitespace-nowrap sidebar-text">Manajemen Pengajuan</span>
                     </a>
 
-                    <!-- Manajemen Kategori
-                    <a href="{{ route('admin.categories.kategori') }}"
-                       class="{{ $navBase }}
-                       {{
-                            request()->routeIs('admin.categories.*')
-                            || request()->routeIs('admin.categories.kategori')
-                            ? $navOn : $navOff
-                       }}"
-                       data-tooltip="Manajemen Kategori">
+                    <!-- Arsip Pengajuan -->
+                    <a href="{{ route('admin.management.arsip') }}"
+                       class="{{ $navBase }} {{ $isArsip ? $navOn : $navOff }}"
+                       data-tooltip="Arsip Pengajuan">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                  d="M20 7l-8-4-8 4m16 0v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7m16 0l-8 4-8-4"/>
                         </svg>
-                        <span class="ml-2 whitespace-nowrap sidebar-text">Manajemen Kategori</span>
-                    </a> -->
+                        <span class="ml-2 whitespace-nowrap sidebar-text">Arsip Pengajuan</span>
+                    </a>
 
                 </div>
             </nav>
@@ -442,11 +444,7 @@
 
         const apply = (collapsed) => {
             sidebar.classList.toggle('sidebar-collapsed', collapsed);
-            if (collapsed) {
-                chevron.style.transform = 'rotate(180deg)';
-            } else {
-                chevron.style.transform = 'rotate(0deg)';
-            }
+            chevron.style.transform = collapsed ? 'rotate(180deg)' : 'rotate(0deg)';
         };
 
         const saved = localStorage.getItem(KEY);
@@ -458,6 +456,113 @@
             apply(nowCollapsed);
         });
     })();
+</script>
+
+<!-- ========================= -->
+<!-- GLOBAL ARCHIVE MODAL (SAMA UKURAN KAYA LOGOUT) -->
+<!-- ========================= -->
+<div id="archiveModal" class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center z-50">
+    <div class="bg-white/90 backdrop-blur-xl w-full max-w-md rounded-3xl shadow-2xl p-6 text-center border border-gray-200/70">
+        <div class="mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-2xl bg-orange-100 ring-1 ring-white/40">
+            <svg class="w-9 h-9 text-orange-600"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24"
+                 stroke-width="2.5"
+                 stroke-linecap="round"
+                 stroke-linejoin="round">
+                <path d="M20 7l-1 12a2 2 0 01-2 2H7a2 2 0 01-2-2L4 7m16 0H4m16 0l-1-3H5L4 7m6 4h4"/>
+            </svg>
+        </div>
+
+        <h2 class="text-lg font-montserrat font-bold text-gray-900">
+            Konfirmasi Arsip
+        </h2>
+
+        <p class="text-sm text-gray-600 mt-2">
+            Apakah anda yakin ingin mengarsipkan pengajuan ini?
+        </p>
+
+        <div class="mt-6 flex justify-center gap-3">
+            <button type="button"
+                    id="cancelArchive"
+                    class="px-5 py-2.5 rounded-2xl border border-gray-300 text-gray-700 font-semibold
+                           hover:bg-gray-100 transition active:scale-[.99]">
+                Batal
+            </button>
+
+            <button type="button"
+                    id="confirmArchive"
+                    class="px-5 py-2.5 rounded-2xl bg-orange-600 text-white font-semibold
+                           hover:bg-orange-700 transition shadow-sm active:scale-[.99]">
+                Ya, Arsipkan
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('archiveModal');
+    const confirmBtn = document.getElementById('confirmArchive');
+    const cancelBtn = document.getElementById('cancelArchive');
+
+    if (!modal || !confirmBtn || !cancelBtn) return;
+
+    let currentAction = null;
+
+    const openModal = () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    };
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        currentAction = null;
+    };
+
+    // klik tombol arsip (wajib pakai .archive-btn + data-action)
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.archive-btn');
+        if (!btn) return;
+
+        e.preventDefault();
+        currentAction = btn.dataset.action;
+        if (!currentAction) return;
+
+        openModal();
+    });
+
+    cancelBtn.addEventListener('click', closeModal);
+
+    // klik backdrop => tutup (sama kaya logout)
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // ESC => tutup
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    confirmBtn.addEventListener('click', function () {
+        if (!currentAction) return;
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = currentAction;
+
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = '_token';
+        csrf.value = "{{ csrf_token() }}";
+
+        form.appendChild(csrf);
+        document.body.appendChild(form);
+        form.submit();
+    });
+});
 </script>
 
 @stack('scripts')

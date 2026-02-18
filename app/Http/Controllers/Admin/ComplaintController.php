@@ -20,11 +20,12 @@ class ComplaintController extends Controller
         $stats = [
             'total'   => Complaint::count(),
             'proses'  => Complaint::where('status', 'diproses')->count(),
-            'selesai' => Complaint::whereIn('status', ['selesai', 'ditolak'])->count(),
+            'selesai' => Complaint::where('status', 'selesai')->count(), // ✅ sukses
+            'ditolak' => Complaint::where('status', 'ditolak')->count(),
             'belum'   => Complaint::where('status', 'pending')->count(),
         ];
 
-        $query = Complaint::with(['user']);
+        $query = Complaint::with(['user', 'applicant'])->notArchived();
 
         $hasStart = $request->filled('start_date');
         $hasEnd   = $request->filled('end_date');
@@ -47,7 +48,17 @@ class ComplaintController extends Controller
         }
 
         if ($request->filled('status') && $request->status !== 'Semua') {
-            $query->where('status', $request->status);
+            $st = $request->status;
+
+            if ($st === 'pending') {
+                $query->where('status', 'pending');
+            } elseif ($st === 'proses') {
+                $query->where('status', 'diproses');
+            } elseif ($st === 'selesai') {
+                $query->where('status', 'selesai');
+            } elseif ($st === 'ditolak') {
+                $query->where('status', 'ditolak');
+            }
         }
 
         $complaints = $query->latest()->paginate(10)->withQueryString();
@@ -395,5 +406,24 @@ class ComplaintController extends Controller
             in_array($st, ['rejected','ditolak']) => 'Ditolak',
             default => ucfirst($st ?: '-'),
         };
+    }
+
+    public function archive($id)
+    {
+        $complaint = Complaint::findOrFail($id);
+
+        if (!in_array($complaint->status, ['selesai', 'ditolak'])) {
+            return back()->with('error', 'Hanya pengaduan selesai/ditolak yang bisa diarsipkan.');
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('complaints', 'archived_at')) {
+            $complaint->update(['archived_at' => now()]);
+        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('complaints', 'is_archived')) {
+            $complaint->update(['is_archived' => true]);
+        } else {
+            return back()->with('error', 'Kolom arsip belum ada di tabel complaints.');
+        }
+
+        return back()->with('success', 'Pengaduan berhasil diarsipkan.');
     }
 }

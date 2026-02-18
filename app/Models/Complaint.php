@@ -22,10 +22,12 @@ class Complaint extends Model
         'diproses_bidang',
         'diproses_kelompok',
         'diproses_oleh',
+        'archived_at',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
 
     // Status Badge
@@ -182,4 +184,13 @@ class Complaint extends Model
         return $this->hasOne(\App\Models\ComplaintApplicant::class);
     }
 
+    public function scopeNotArchived($q)
+    {
+        return $q->whereNull('archived_at');
+    }
+
+    public function scopeArchived($q)
+    {
+        return $q->whereNotNull('archived_at');
+    }
 }

@@ -16,23 +16,31 @@ class AllSubmissionsController extends Controller
     {
         $stats = [
             'total' => Consultation::count() + Complaint::count() + Submission::count(),
+
             'proses' =>
                 Consultation::where('status', 'on_progress')->count()
                 + Complaint::where('status', 'diproses')->count()
                 + Submission::where('status', 'in_progress')->count(),
+
             'selesai' =>
-                Consultation::whereIn('status', ['completed', 'rejected'])->count()
-                + Complaint::whereIn('status', ['selesai', 'ditolak'])->count()
-                + Submission::whereIn('status', ['completed', 'rejected'])->count(),
+                Consultation::where('status', 'completed')->count()
+                + Complaint::where('status', 'selesai')->count()
+                + Submission::where('status', 'completed')->count(),
+
+            'ditolak' =>
+                Consultation::where('status', 'rejected')->count()
+                + Complaint::where('status', 'ditolak')->count()
+                + Submission::where('status', 'rejected')->count(),
+
             'belum' =>
                 Consultation::where('status', 'pending')->count()
                 + Complaint::where('status', 'pending')->count()
                 + Submission::where('status', 'pending')->count(),
         ];
 
-        $qConsultation = Consultation::with(['user']);
-        $qComplaint    = Complaint::with(['user']);
-        $qSubmission   = Submission::with(['user']);
+        $qConsultation = Consultation::with(['user', 'applicant'])->notArchived();
+        $qComplaint    = Complaint::with(['user', 'applicant'])->notArchived();
+        $qSubmission   = Submission::with(['user', 'applicant'])->notArchived();
 
         // ================= FILTER TANGGAL =================
         $hasStart = $request->filled('start_date');
@@ -112,9 +120,9 @@ class AllSubmissionsController extends Controller
                 $qComplaint->where('status', 'diproses');
                 $qSubmission->where('status', 'in_progress');
             } elseif ($status === 'selesai') {
-                $qConsultation->whereIn('status', ['completed', 'rejected']);
-                $qSubmission->whereIn('status', ['completed', 'rejected']);
-                $qComplaint->whereIn('status', ['selesai', 'ditolak']);
+                $qConsultation->where('status', 'completed');
+                $qSubmission->where('status', 'completed');
+                $qComplaint->where('status', 'selesai');
             } elseif ($status === 'ditolak') {
                 $qConsultation->where('status', 'rejected');
                 $qSubmission->where('status', 'rejected');
@@ -124,44 +132,59 @@ class AllSubmissionsController extends Controller
         // =================================================
 
         $consultations = $qConsultation->latest()->get()->map(function ($x) {
+            $creator  = $x->user;
+            $userType = $creator->user_type ?? null;
+            $pemohon  = ($userType === 'pegawai') ? ($x->applicant ?? null) : $creator;
+
             return [
                 'service'    => 'Konsultasi',
                 'ticket'     => $x->ticket_id ?? $x->ticket_number ?? $x->id,
                 'created_at' => $x->created_at,
-                'name'       => $x->user->name ?? '-',
-                'email'      => $x->user->email ?? '-',
+                'name'       => $pemohon->nama_lengkap ?? $pemohon->name ?? '-',
+                'email'      => $pemohon->email ?? '-',
                 'user_type'  => $x->user->user_type ?? '-',
                 'subject'    => $x->title ?? $x->subject ?? '-',
                 'status'     => $x->status,
                 'show_route' => route('admin.consultations.show', $x->id),
+                'id' => $x->id,
             ];
         });
 
         $complaints = $qComplaint->latest()->get()->map(function ($x) {
+            $creator  = $x->user;
+            $userType = $creator->user_type ?? null;
+            $pemohon  = ($userType === 'pegawai') ? ($x->applicant ?? null) : $creator;
+
             return [
                 'service'    => 'Pengaduan',
                 'ticket'     => $x->ticket_number ?? $x->ticket_id ?? $x->id,
                 'created_at' => $x->created_at,
-                'name'       => $x->user->name ?? '-',
-                'email'      => $x->user->email ?? '-',
+                'name'       => $pemohon->nama_lengkap ?? $pemohon->name ?? '-',
+                'email'      => $pemohon->email ?? '-',
                 'user_type'  => $x->user->user_type ?? '-',
                 'subject'    => $x->subject ?? $x->title ?? '-',
                 'status'     => $x->status,
                 'show_route' => route('admin.complaints.show', $x->id),
+                'id' => $x->id,
             ];
         });
 
         $submissions = $qSubmission->latest()->get()->map(function ($x) {
+            $creator  = $x->user;
+            $userType = $creator->user_type ?? null;
+            $pemohon  = ($userType === 'pegawai') ? ($x->applicant ?? null) : $creator;
+
             return [
                 'service'    => 'Permohonan Informasi',
                 'ticket'     => $x->ticket_id ?? $x->ticket_number ?? $x->id,
                 'created_at' => $x->created_at,
-                'name'       => $x->user->name ?? '-',
-                'email'      => $x->user->email ?? '-',
+                'name'       => $pemohon->nama_lengkap ?? $pemohon->name ?? '-',
+                'email'      => $pemohon->email ?? '-',
                 'user_type'  => $x->user->user_type ?? '-',
                 'subject'    => $x->title ?? $x->subject ?? '-',
                 'status'     => $x->status,
                 'show_route' => route('admin.submissions.show', $x->id),
+                'id' => $x->id,
             ];
         });
 

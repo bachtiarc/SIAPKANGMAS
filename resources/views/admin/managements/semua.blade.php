@@ -28,7 +28,7 @@
         </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
         <div class="bg-white/75 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div class="w-10 h-10 bg-blue-50/80 ring-1 ring-blue-200/60 rounded-2xl flex items-center justify-center mb-4">
                 <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,6 +59,19 @@
             </div>
             <p class="font-lato text-gray-600 text-sm mb-1">Selesai</p>
             <h3 class="font-montserrat text-3xl font-extrabold tracking-tight text-gray-900">{{ number_format($stats['selesai'] ?? 0) }}</h3>
+        </div>
+
+        <div class="bg-white/75 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div class="w-10 h-10 bg-red-50/80 ring-1 ring-red-200/60 rounded-2xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </div>
+            <p class="font-lato text-gray-600 text-sm mb-1">Ditolak</p>
+            <h3 class="font-montserrat text-3xl font-extrabold tracking-tight text-gray-900">
+                {{ number_format($stats['ditolak'] ?? 0) }}
+            </h3>
         </div>
 
         <div class="bg-white/75 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
@@ -170,6 +183,7 @@
                                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Belum Diproses</option>
                                     <option value="proses" {{ request('status') == 'proses' ? 'selected' : '' }}>Sedang diproses</option>
                                     <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
+                                    <option value="ditolak" {{ request('status') == 'ditolak' ? 'selected' : '' }}>Ditolak</option>
                                 </select>
                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -277,14 +291,45 @@
                                 </td>
 
                                 <td class="px-4 py-4 text-center whitespace-nowrap">
-                                    <a href="{{ $row['show_route'] }}"
-                                       class="inline-flex p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50/70 rounded-full transition active:scale-[.99]"
-                                       title="Lihat Detail">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" class="text-blue-600" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                    </a>
+                                    <div class="flex items-center justify-center gap-2">
+
+                                        {{-- 👁 Lihat --}}
+                                        <a href="{{ $row['show_route'] }}"
+                                        class="inline-flex p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50/70 rounded-full transition active:scale-[.99]"
+                                        title="Lihat Detail">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        </a>
+
+                                        @php
+                                            $raw = strtolower($row['status'] ?? '');
+                                            $canArchive = in_array($raw, ['completed','selesai','rejected','ditolak']);
+                                        @endphp
+
+                                        @if($canArchive)
+                                            @php
+                                                $archiveAction =
+                                                    $row['service'] === 'Konsultasi'
+                                                        ? route('admin.consultations.archive', $row['id'] ?? null)
+                                                        : ($row['service'] === 'Pengaduan'
+                                                            ? route('admin.complaints.archive', $row['id'] ?? null)
+                                                            : route('admin.submissions.archive', $row['id'] ?? null));
+                                            @endphp
+
+                                            <button type="button"
+                                                    class="archive-btn inline-flex p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50/70 rounded-full transition active:scale-[.99]"
+                                                    title="Arsipkan"
+                                                    data-action="{{ $archiveAction }}">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M20 7l-1 12a2 2 0 01-2 2H7a2 2 0 01-2-2L4 7m16 0H4m16 0l-1-3H5L4 7m6 4h4"/>
+                                                </svg>
+                                            </button>
+                                        @endif
+
+                                    </div>
                                 </td>
                             </tr>
                         @empty

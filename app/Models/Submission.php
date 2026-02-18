@@ -29,12 +29,14 @@ class Submission extends Model
         'diproses_bidang',
         'diproses_kelompok',
         'diproses_oleh',
+        'archived_at',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'completed_at' => 'datetime',
         'datang_langsung_opsi' => 'array',
+        'archived_at' => 'datetime',
     ];
 
     /**
@@ -325,5 +327,15 @@ class Submission extends Model
     public function applicant()
     {
         return $this->hasOne(\App\Models\SubmissionApplicant::class);
+    }
+
+    public function scopeNotArchived($q)
+    {
+        return $q->whereNull('archived_at');
+    }
+
+    public function scopeArchived($q)
+    {
+        return $q->whereNotNull('archived_at');
     }
 }

@@ -21,11 +21,12 @@ class ConsultationController extends Controller
         $stats = [
             'total'   => Consultation::count(),
             'proses'  => Consultation::where('status', 'on_progress')->count(),
-            'selesai' => Consultation::whereIn('status', ['completed', 'rejected'])->count(),
+            'selesai' => Consultation::where('status', 'completed')->count(), // ✅ sukses
+            'ditolak' => Consultation::where('status', 'rejected')->count(),  // ✅ ditolak
             'belum'   => Consultation::where('status', 'pending')->count(),
         ];
 
-        $query = Consultation::with(['user', 'handler']);
+        $query = Consultation::with(['user', 'handler', 'applicant'])->notArchived();
 
         $hasStart = $request->filled('start_date');
         $hasEnd   = $request->filled('end_date');
@@ -56,10 +57,16 @@ class ConsultationController extends Controller
         }
 
         if ($request->filled('status') && $request->status != 'Semua') {
-            if ($request->status === 'completed') {
-                $query->whereIn('status', ['completed', 'rejected']);
-            } else {
-                $query->where('status', $request->status);
+            $st = $request->status;
+
+            if ($st === 'pending') {
+                $query->where('status', 'pending');
+            } elseif ($st === 'proses') {
+                $query->where('status', 'on_progress');
+            } elseif ($st === 'selesai') {
+                $query->where('status', 'completed');
+            } elseif ($st === 'ditolak') {
+                $query->where('status', 'rejected');
             }
         }
 

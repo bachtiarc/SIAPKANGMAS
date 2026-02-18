@@ -4,6 +4,7 @@
 @section('title', 'Manajemen Pengajuan')
 
 @section('content')
+
 <div class="space-y-6">
     <div class="flex flex-col gap-2">
         <p class="font-lato text-gray-600">
@@ -11,7 +12,7 @@
         </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
         <div class="bg-white/75 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div class="w-10 h-10 bg-blue-50/80 ring-1 ring-blue-200/60 rounded-2xl flex items-center justify-center mb-4">
                 <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,6 +41,16 @@
             </div>
             <p class="font-lato text-gray-600 text-sm mb-1">Selesai</p>
             <h3 class="font-montserrat text-3xl font-extrabold tracking-tight text-gray-900">{{ number_format($stats['selesai'] ?? 0) }}</h3>
+        </div>
+
+        <div class="bg-white/75 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div class="w-10 h-10 bg-red-50/80 ring-1 ring-red-200/60 rounded-2xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </div>
+            <p class="font-lato text-gray-600 text-sm mb-1">Ditolak</p>
+            <h3 class="font-montserrat text-3xl font-extrabold tracking-tight text-gray-900">{{ number_format($stats['ditolak']) }}</h3>
         </div>
 
         <div class="bg-white/75 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
@@ -265,6 +276,37 @@
 
                     <tbody class="divide-y divide-gray-100/70">
                         @forelse($complaints as $item)
+                        @php
+                            $namaPelapor = '-';
+                            $emailPelapor = '-';
+
+                            // kalau creator pegawai -> ambil applicant
+                            if ($item->user && $item->user->user_type === 'pegawai') {
+                                if ($item->applicant) {
+                                    if (!empty($item->applicant->nama_lengkap)) {
+                                        $namaPelapor = $item->applicant->nama_lengkap;
+                                    } elseif (!empty($item->applicant->name)) {
+                                        $namaPelapor = $item->applicant->name;
+                                    }
+
+                                    if (!empty($item->applicant->email)) {
+                                        $emailPelapor = $item->applicant->email;
+                                    }
+                                }
+                            }
+                            // kalau masyarakat -> ambil user
+                            else {
+                                if ($item->user) {
+                                    if (!empty($item->user->name)) {
+                                        $namaPelapor = $item->user->name;
+                                    }
+
+                                    if (!empty($item->user->email)) {
+                                        $emailPelapor = $item->user->email;
+                                    }
+                                }
+                            }
+                        @endphp
                         <tr class="hover:bg-gray-50/70 transition">
                             <td class="px-4 py-4 text-sm font-semibold text-gray-900 whitespace-nowrap">
                                 @if(!empty($item->ticket_number))
@@ -285,11 +327,11 @@
                             </td>
 
                             <td class="px-4 py-4 text-sm font-medium text-gray-900">
-                                <div class="max-w-[220px] truncate">{{ $item->user->name ?? '-' }}</div>
+                                <div class="max-w-[220px] truncate">{{ $namaPelapor }}</div>
                             </td>
 
                             <td class="px-4 py-4 text-sm text-gray-600">
-                                <div class="max-w-[260px] truncate">{{ $item->user->email ?? '-' }}</div>
+                                <div class="max-w-[260px] truncate">{{ $emailPelapor }}</div>
                             </td>
 
                             <td class="px-4 py-4 text-sm text-gray-600 whitespace-nowrap text-center">
@@ -323,14 +365,34 @@
                             </td>
 
                             <td class="px-4 py-4 text-center whitespace-nowrap">
-                                <a href="{{ route('admin.complaints.show', $item->id) }}"
-                                   class="inline-flex p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50/70 rounded-full transition active:scale-[.99]"
-                                   title="Lihat Detail">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                </a>
+                                <div class="flex items-center justify-center gap-2">
+                                    <a href="{{ route('admin.complaints.show', $item->id) }}"
+                                    class="inline-flex p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50/70 rounded-full transition active:scale-[.99]"
+                                    title="Lihat Detail">
+                                        {{-- icon mata --}}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                    </a>
+
+                                    @php $canArchive = in_array($item->status, ['selesai','ditolak']); @endphp
+
+                                    @if($canArchive)
+                                        <form method="POST" action="{{ route('admin.complaints.archive', $item->id) }}" class="inline">
+                                            @csrf
+                                            <button type="button"
+                                                    class="archive-btn inline-flex p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50/70 rounded-full transition active:scale-[.99]"
+                                                    title="Arsipkan"
+                                                    data-action="{{ route('admin.complaints.archive', $item->id) }}">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M20 7l-1 12a2 2 0 01-2 2H7a2 2 0 01-2-2L4 7m16 0H4m16 0l-1-3H5L4 7m6 4h4"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @empty

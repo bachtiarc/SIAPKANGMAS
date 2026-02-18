@@ -22,13 +22,14 @@ class SubmissionController extends Controller
         $stats = [
             'total'   => Submission::count(),
             'proses'  => Submission::where('status', 'in_progress')->count(),
-            'selesai' => Submission::whereIn('status', ['completed', 'rejected'])->count(),
+            'selesai' => Submission::where('status', 'completed')->count(), // ✅ sukses
+            'ditolak' => Submission::where('status', 'rejected')->count(),  // ✅ ditolak
             'belum'   => Submission::where('status', 'pending')->count()
         ];
 
         $hasCategories = Schema::hasTable('categories');
 
-        $query = Submission::with(['user']);
+        $query = Submission::with(['user', 'applicant'])->notArchived();
         if ($hasCategories) {
             $query->with('category');
         }
@@ -58,10 +59,16 @@ class SubmissionController extends Controller
         }
 
         if ($request->filled('status') && $request->status != 'Semua') {
-            if ($request->status === 'completed') {
-                $query->whereIn('status', ['completed', 'rejected']);
-            } else {
-                $query->where('status', $request->status);
+            $st = $request->status;
+
+            if ($st === 'pending') {
+                $query->where('status', 'pending');
+            } elseif ($st === 'proses') {
+                $query->where('status', 'in_progress');
+            } elseif ($st === 'selesai') {
+                $query->where('status', 'completed');
+            } elseif ($st === 'ditolak') {
+                $query->where('status', 'rejected');
             }
         }
 

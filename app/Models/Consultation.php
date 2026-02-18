@@ -24,11 +24,13 @@ class Consultation extends Model
         'diproses_bidang',
         'diproses_kelompok',
         'diproses_oleh',
+        'archived_at',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
         'submitted_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
 
     /**
@@ -138,5 +140,14 @@ class Consultation extends Model
     public function applicant()
     {
         return $this->hasOne(\App\Models\ConsultationApplicant::class, 'consultation_id');
+    }
+    public function scopeNotArchived($q)
+    {
+        return $q->whereNull('archived_at');
+    }
+
+    public function scopeArchived($q)
+    {
+        return $q->whereNotNull('archived_at');
     }
 }

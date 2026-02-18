@@ -15,7 +15,7 @@
 </div>
 
 <!-- Statistics Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
     <!-- Total Tiket Masuk -->
     <div class="bg-white/75 backdrop-blur-xl border border-gray-200/70 rounded-3xl shadow-sm p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
         <div class="flex items-start justify-between gap-4">
@@ -62,6 +62,22 @@
             <div class="w-12 h-12 bg-green-100/80 ring-1 ring-green-200/60 rounded-2xl flex items-center justify-center">
                 <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ditolak -->
+    <div class="bg-white/75 backdrop-blur-xl border border-gray-200/70 rounded-3xl shadow-sm p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+        <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+                <p class="font-lato text-sm text-gray-600 mb-2">Ditolak</p>
+                <p class="font-montserrat text-4xl font-bold tracking-tight text-gray-900">{{ $rejectedTickets }}</p>
+            </div>
+            <div class="w-12 h-12 bg-red-100/80 ring-1 ring-red-200/60 rounded-2xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" />
                 </svg>
             </div>
         </div>
@@ -164,12 +180,19 @@
                     borderWidth: 1
                 },
                 {
+                    label: 'Ditolak',
+                    data: chartData.rejected,
+                    backgroundColor: 'rgba(245, 0, 0, 0.89)',
+                    borderColor: 'rgb(239, 68, 68)',
+                    borderWidth: 1
+                }, 
+                {
                     label: 'Belum Diproses',
                     data: chartData.pending,
                     backgroundColor: 'rgba(239, 68, 68, 0.8)',
                     borderColor: 'rgb(239, 68, 68)',
                     borderWidth: 1
-                }
+                },
             ]
         },
         options: {
