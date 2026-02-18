@@ -191,10 +191,11 @@
                         <span class="sidebar-text ml-4 whitespace-nowrap font-semibold">Riwayat Pengajuan</span>
                     </a>
 
-                    {{-- Profil Pengguna (Dinamis untuk Pegawai & Masyarakat) --}}
-                    <a href="{{ route($profileRoute) }}"
+                    {{-- Profil Pengguna --}}
+                    @if($isMasyarakat)
+                    <a href="{{ route('masyarakat.profile') }}"
                     class="nav-item group flex items-center px-4 py-3.5 text-sm font-montserrat font-medium rounded-xl transition-all
-                    {{ request()->routeIs('user.profile') || request()->routeIs('masyarakat.profile')
+                    {{ request()->routeIs('masyarakat.profile')
                             ? 'bg-blue-100 text-blue-700'
                             : 'text-gray-600 hover:bg-gray-100' }}"
                     title="Profil Pengguna">
@@ -204,6 +205,7 @@
                         </svg>
                         <span class="sidebar-text ml-4 whitespace-nowrap font-semibold">Profil Pengguna</span>
                     </a>
+                    @endif
 
                 </div>
 
