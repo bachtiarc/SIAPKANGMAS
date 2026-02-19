@@ -4,7 +4,7 @@
 
 @push('styles')
 <style>
-    /* Subtle Slow Gradient Animation */
+
     @keyframes gradient-slow {
         0%, 100% {
             opacity: 1;
@@ -18,7 +18,6 @@
         animation: gradient-slow 20s ease-in-out infinite;
     }
 
-    /* Very Slow Blob Animation */
     @keyframes blob-slow {
         0%, 100% {
             transform: translate(0px, 0px) scale(1);
@@ -43,7 +42,6 @@
         animation-delay: 10s;
     }
 
-    /* Toast Animation */
     @keyframes slideIn {
         from {
             transform: translateX(400px);
@@ -77,13 +75,11 @@
 @endpush
 
 @section('content')
-<!-- Toast Notification Container -->
+
 <div id="toast-container" class="fixed top-6 right-6 z-50"></div>
 
-<!-- Background with Gradient Animation -->
 <div class="min-h-screen bg-gradient-to-br from-white via-blue-50 to-white animate-gradient-slow relative overflow-hidden flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     
-    <!-- Floating Blobs -->
     <div class="absolute top-0 -left-4 w-72 h-72 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob-slow"></div>
     <div class="absolute top-0 -right-4 w-72 h-72 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob-slow animation-delay-2000"></div>
     <div class="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob-slow animation-delay-4000"></div>
@@ -91,7 +87,6 @@
     <!-- Login Card -->
     <div class="max-w-md w-full space-y-8 relative z-10">
         
-        <!-- Title & Logo (Outside Card) -->
         <div class="text-center">
             <h1 class="font-montserrat text-5xl font-bold text-blue-700 mb-4">
                 Selamat Datang!
@@ -102,7 +97,6 @@
         <!-- Card -->
         <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8">
             
-            <!-- Tab Navigation -->
             <div class="relative mb-6">
                 <!-- Tab Buttons -->
                 <div class="flex">
@@ -116,14 +110,10 @@
                     </button>
                 </div>
                 
-                <!-- Bottom Border (Gray) -->
                 <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-200"></div>
-                
-                <!-- Sliding Blue Indicator -->
                 <div id="tab-indicator" class="absolute bottom-0 left-0 h-0.5 bg-blue-600 transition-all duration-300 ease-out" style="width: 50%;"></div>
             </div>
 
-            <!-- Error Messages -->
             @if ($errors->any())
                 <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                     @foreach ($errors->all() as $error)
@@ -154,7 +144,6 @@
             <form method="POST" action="{{ route('login') }}" class="space-y-5">
                 @csrf
 
-                <!-- Hidden User Type -->
                 <input type="hidden" name="user_type" id="user_type" value="user">
 
                 <!-- Email -->
@@ -181,17 +170,16 @@
                     </div>
                 </div>
 
-                <!-- Remember Me & Forgot Password -->
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <input id="remember" name="remember" type="checkbox" 
+                        <input id="remember" name="remember" type="checkbox"
                             class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                         <label for="remember" class="ml-2 block text-sm font-lato text-gray-700">
                             Ingat saya
                         </label>
                     </div>
 
-                    <div class="text-sm">
+                    <div class="text-sm" id="forgot-password-wrap">
                         <a href="{{ route('password.request') }}" class="font-montserrat font-medium text-blue-600 hover:text-blue-700">
                             Lupa password?
                         </a>
@@ -227,41 +215,45 @@
 
 @push('scripts')
 <script>
-// Tab switching functionality with sliding indicator
+
 function switchTab(tab) {
     const userTab = document.getElementById('tab-user');
     const adminTab = document.getElementById('tab-admin');
     const indicator = document.getElementById('tab-indicator');
     const userTypeInput = document.getElementById('user_type');
+    const forgotWrap = document.getElementById('forgot-password-wrap');
 
     if (tab === 'user') {
-        // Update tab colors
         userTab.classList.add('text-blue-600');
         userTab.classList.remove('text-gray-500');
         adminTab.classList.remove('text-blue-600');
         adminTab.classList.add('text-gray-500');
-        
-        // Move indicator to left (Pengguna tab)
+
         indicator.style.left = '0%';
         indicator.style.width = '50%';
-        
+
         userTypeInput.value = 'user';
+
+        if (forgotWrap) forgotWrap.classList.remove('hidden');
     } else {
-        // Update tab colors
         adminTab.classList.add('text-blue-600');
         adminTab.classList.remove('text-gray-500');
         userTab.classList.remove('text-blue-600');
         userTab.classList.add('text-gray-500');
-        
-        // Move indicator to right (Admin tab)
+
         indicator.style.left = '50%';
         indicator.style.width = '50%';
-        
+
         userTypeInput.value = 'admin';
+
+        if (forgotWrap) forgotWrap.classList.add('hidden');
     }
 }
 
-// Toggle password visibility
+document.addEventListener('DOMContentLoaded', function () {
+    switchTab('user');
+});
+
 function togglePassword() {
     const passwordInput = document.getElementById('password');
     const eyeIcon = document.getElementById('eye-icon');
@@ -275,11 +267,9 @@ function togglePassword() {
     }
 }
 
-// Toast Notification Function
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     
-    // Define colors based on type
     let borderColor, iconColor, icon;
     
     if (type === 'success') {
@@ -296,7 +286,6 @@ function showToast(message, type = 'success') {
         icon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
     }
     
-    // Create toast element
     const toast = document.createElement('div');
     toast.className = `toast-enter bg-white shadow-lg rounded-lg p-4 mb-3 flex items-center space-x-3 min-w-[320px] border-l-4 ${borderColor}`;
     
@@ -318,7 +307,6 @@ function showToast(message, type = 'success') {
     
     container.appendChild(toast);
     
-    // Auto remove after 5 seconds
     setTimeout(() => {
         toast.classList.remove('toast-enter');
         toast.classList.add('toast-exit');
@@ -326,28 +314,24 @@ function showToast(message, type = 'success') {
     }, 5000);
 }
 
-// Check for verification success message
 @if(session('verified'))
     document.addEventListener('DOMContentLoaded', function() {
         showToast('{{ session("verified") }}', 'success');
     });
 @endif
 
-// Check for info message
 @if(session('info'))
     document.addEventListener('DOMContentLoaded', function() {
         showToast('{{ session("info") }}', 'info');
     });
 @endif
 
-// Check for unverified message (RED TOAST)
 @if(session('unverified'))
     document.addEventListener('DOMContentLoaded', function() {
         showToast('{{ session("unverified") }}', 'error');
     });
 @endif
 
-// Check for password reset success (GREEN TOAST)
 @if(session('password_reset_success'))
     document.addEventListener('DOMContentLoaded', function() {
         showToast('{{ session("password_reset_success") }}', 'success');
