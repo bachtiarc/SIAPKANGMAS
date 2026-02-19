@@ -1,3 +1,4 @@
+{{-- resources/views/admin/submissions/pdf.blade.php --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -159,28 +160,106 @@
 <body>
 
 @php
+    // =========================
+    // STATUS LABEL (samakan show)
+    // =========================
     $statusLabel = match($submission->status) {
         'pending'     => 'Menunggu Verifikasi',
         'in_progress' => 'Sedang Diproses',
+        'on_progress' => 'Sedang Diproses',
+        'diproses'    => 'Sedang Diproses',
         'completed'   => 'Selesai',
         'approved'    => 'Selesai',
         'rejected'    => 'Ditolak',
         'ditolak'     => 'Ditolak',
-        default       => ucfirst($submission->status),
+        default       => ucfirst((string)$submission->status),
     };
 
-    $user = $submission->user;
-    $userType = $user->user_type ?? null;
+    // =========================
+    // PEMOHON LOGIC (samakan show.blade.php)
+    // - creator pegawai (CO ADMIN) => pemohon = applicant
+    // - creator masyarakat_umum => pemohon = user
+    // =========================
+    $creator  = $submission->user;
+    $userType = $creator->user_type ?? null;
+
+    $pemohon = ($userType === 'pegawai')
+        ? ($submission->applicant ?? null)
+        : $creator;
+
+    $pemohon = $pemohon ?: $creator;
+
+    // =========================
+    // IDENTITAS PEMOHON
+    // =========================
+    $jenisPelapor = $userType ? ucwords(str_replace('_', ' ', $userType)) : '-';
+    if ($userType === 'masyarakat_umum') $jenisPelapor = 'Masyarakat Umum';
+    if ($userType === 'pegawai') $jenisPelapor = 'Pegawai';
+
+    $namaPemohon  = $pemohon->nama_lengkap ?? $pemohon->name ?? '-';
+    $emailPemohon = $pemohon->email ?? '-';
+    $telpPemohon  = $pemohon->phone ?? ($pemohon->phone_number ?? '-');
 
     // masyarakat
-    $nik = $user->nik ?? null;
-    $alamat = $user->address ?? null;
+    $nik = $pemohon->nik ?? null;
 
-    // pegawai
-    $nip = $user->nip ?? null;
-    $jabatan = $user->jabatan ?? null;
-    $subbagBalai = $user->bidang ?? null;
+    // alamat detail (samakan show)
+    $alamatDetail = $pemohon->alamat_detail ?? $pemohon->address ?? null;
+    $provName = $pemohon->provinsi ?? $pemohon->provinsi_nama ?? null;
+    $kabName  = $pemohon->kabupaten ?? $pemohon->kabupaten_nama ?? null;
+    $kecName  = $pemohon->kecamatan ?? $pemohon->kecamatan_nama ?? null;
+    $desaName = $pemohon->desa ?? $pemohon->desa_nama ?? null;
 
+    $pemohonPekerjaan = $pemohon->pekerjaan ?? null;
+
+    // =========================
+    // ISI PERMOHONAN (extra yang ada di detail)
+    // =========================
+    $tujuanPermohonan = $submission->tujuan_permohonan ?? null;
+
+    $cara = strtolower($submission->cara_penyampaian ?? '');
+    $caraLabel = match($cara) {
+        'online' => 'Online',
+        'datang_langsung' => 'Datang Langsung',
+        default => $submission->cara_penyampaian
+            ? ucfirst(str_replace('_',' ', $submission->cara_penyampaian))
+            : '-',
+    };
+
+    $opsi = $submission->datang_langsung_opsi ?? [];
+    if (is_string($opsi)) {
+        $decoded = json_decode($opsi, true);
+        $opsi = is_array($decoded) ? $decoded : [];
+    }
+    if (!is_array($opsi)) $opsi = [];
+
+    $opsiLabel = collect($opsi)->map(fn($x) => match(strtolower((string)$x)) {
+        'flashdisk' => 'Flashdisk',
+        'cetak' => 'Cetak',
+        default => ucfirst((string)$x),
+    })->implode(', ');
+
+    // =========================
+    // DIPROSES OLEH (bidang/kelompok/combined)
+    // =========================
+    $diprosesBidang   = $submission->diproses_bidang ?? null;
+    $diprosesKelompok = $submission->diproses_kelompok ?? null;
+    $diprosesOleh     = $submission->diproses_oleh ?? null;
+
+    $diprosesText = $diprosesOleh
+        ?: (($diprosesBidang && $diprosesKelompok) ? "{$diprosesBidang} - {$diprosesKelompok}" : null);
+
+    // =========================
+    // CATATAN ADMIN
+    // =========================
+    $catatanAdmin = $submission->admin_response ?? $submission->admin_notes ?? null;
+
+    // =========================
+    // DOKUMEN PENDUKUNG (tidak disertakan, tapi listingnya ada)
+    // =========================
+    $docs = $submission->documents ?? collect();
+
+    // KTP public URL (opsional)
     $ktpPublicUrl = $ktpPublicUrl ?? null;
 @endphp
 
@@ -195,7 +274,7 @@
 <div class="note">
     <strong>Catatan:</strong>
     Lampiran dokumen pendukung <u>tidak disertakan dalam berkas PDF ini</u> dan
-    <strong>diunduh secara terpisah</strong> melalui sistem aplikasi SIAPKANGMAS.
+    <strong>diunduh secara terpisah</strong>.
 </div>
 
 <!-- Ticket Box -->
@@ -212,70 +291,72 @@
     <div class="section-title">A. Identitas Pemohon Permohonan</div>
 
     <table class="info-table">
-        <tr>
+        <tr class="divider">
             <td>Jenis Pelapor</td>
             <td>:</td>
-            <td>{{ $userType ? ucwords(str_replace('_', ' ', $userType)) : '-' }}</td>
+            <td>{{ $jenisPelapor }}</td>
         </tr>
 
         <tr class="divider">
             <td>Nama</td>
             <td>:</td>
-            <td>{{ $user->name ?? '-' }}</td>
+            <td>{{ $namaPemohon }}</td>
         </tr>
+
         <tr class="divider">
             <td>Email</td>
             <td>:</td>
-            <td>{{ $user->email ?? '-' }}</td>
+            <td>{{ $emailPemohon }}</td>
         </tr>
+
         <tr class="divider">
             <td>Telepon</td>
             <td>:</td>
-            <td>{{ $user->phone ?? '-' }}</td>
+            <td>{{ $telpPemohon }}</td>
         </tr>
 
-        {{-- ===== MASYARAKAT UMUM ===== --}}
-        @if($userType === 'masyarakat_umum')
-            <tr class="divider">
-                <td>NIK</td>
-                <td>:</td>
-                <td>{{ $nik ?? '-' }}</td>
-            </tr>
-            <tr class="divider">
-                <td>Alamat</td>
-                <td>:</td>
-                <td style="white-space: pre-line;">{{ $alamat ?: '-' }}</td>
-            </tr>
-        @endif
+        <tr class="divider">
+            <td>Pekerjaan</td>
+            <td>:</td>
+            <td>{{ $pemohonPekerjaan ?: '-' }}</td>
+        </tr>
 
-        {{-- ===== PEGAWAI ===== --}}
-        @if($userType === 'pegawai')
-            <tr class="divider">
-                <td>NIP</td>
-                <td>:</td>
-                <td>{{ $nip ?? '-' }}</td>
-            </tr>
-            <tr class="divider">
-                <td>Jabatan</td>
-                <td>:</td>
-                <td>{{ $jabatan ?? '-' }}</td>
-            </tr>
-            <tr class="divider">
-                <td>Subbag / Balai</td>
-                <td>:</td>
-                <td>{{ $subbagBalai ?? '-' }}</td>
-            </tr>
-        @endif
+        <tr class="divider">
+            <td>NIK</td>
+            <td>:</td>
+            <td>{{ $nik ?? '-' }}</td>
+        </tr>
+
+        <tr class="divider">
+            <td>Provinsi</td>
+            <td>:</td>
+            <td>{{ $provName ?: '-' }}</td>
+        </tr>
+
+        <tr class="divider">
+            <td>Kabupaten / Kota</td>
+            <td>:</td>
+            <td>{{ $kabName ?: '-' }}</td>
+        </tr>
+
+        <tr class="divider">
+            <td>Kecamatan</td>
+            <td>:</td>
+            <td>{{ $kecName ?: '-' }}</td>
+        </tr>
+
+        <tr class="divider">
+            <td>Desa / Kelurahan</td>
+            <td>:</td>
+            <td>{{ $desaName ?: '-' }}</td>
+        </tr>
+
+        <tr class="divider">
+            <td>Alamat Lengkap</td>
+            <td>:</td>
+            <td style="white-space: pre-line;">{{ $alamatDetail ?: '-' }}</td>
+        </tr>
     </table>
-
-    {{-- FOTO KTP hanya untuk masyarakat_umum --}}
-    @if($userType === 'masyarakat_umum')
-        <div class="ktp-wrap">
-            <div class="ktp-title">Foto KTP</div>
-            tidak disertakan dalam berkas PDF ini, dapat
-            <strong>diunduh secara terpisah</strong> melalui sistem aplikasi SIAPKANGMAS.
-        </div>
-    @endif
 </div>
 
 <!-- Section B: Rincian Permohonan -->
@@ -283,52 +364,29 @@
     <div class="section-title">B. Rincian Formulir Permohonan</div>
 
     <table class="info-table">
-        <tr>
+        <tr class="divider">
             <td>Judul</td>
             <td>:</td>
             <td>{{ $submission->title ?? '-' }}</td>
         </tr>
-        <tr class="divider">
-            <td>Kategori</td>
-            <td>:</td>
-            <td>{{ $submission->category->name ?? '-' }}</td>
-        </tr>
+
         <tr class="divider">
             <td>Tanggal Pengajuan</td>
             <td>:</td>
-            <td>{{ $submission->created_at->format('d F Y, H:i') }} WIB</td>
+            <td>{{ optional($submission->created_at)->format('d F Y, H:i') }} WIB</td>
         </tr>
+
         <tr class="divider">
             <td>Status</td>
             <td>:</td>
             <td><span class="status-text">{{ $statusLabel }}</span></td>
         </tr>
+
         <tr class="divider">
             <td>Tujuan Permohonan</td>
             <td>:</td>
-            <td>
-                {{ $submission->tujuan_permohonan ?? '-' }}
-            </td>
+            <td style="white-space: pre-line;">{{ $tujuanPermohonan ?: '-' }}</td>
         </tr>
-        @php
-            $cara = strtolower($submission->cara_penyampaian ?? '');
-            $caraLabel = match($cara) {
-                'online' => 'Online',
-                'datang_langsung' => 'Datang Langsung',
-                default => $submission->cara_penyampaian
-                    ? ucfirst(str_replace('_',' ', $submission->cara_penyampaian))
-                    : '-',
-            };
-
-            $opsi = $submission->datang_langsung_opsi ?? [];
-            if (!is_array($opsi)) $opsi = [];
-
-            $opsiLabel = collect($opsi)->map(fn($x) => match(strtolower($x)) {
-                'flashdisk' => 'Flashdisk',
-                'cetak' => 'Cetak',
-                default => ucfirst($x),
-            })->implode(', ');
-        @endphp
 
         <tr class="divider">
             <td>Penyampaian Feedback</td>
@@ -340,10 +398,37 @@
                 @endif
             </td>
         </tr>
+
+        <tr class="divider">
+            <td>Diproses Oleh</td>
+            <td>:</td>
+            <td style="white-space: pre-line;">{{ $diprosesText ?: '-' }}</td>
+        </tr>
     </table>
 
     <div class="field-label">Deskripsi:</div>
-        <div class="description-box">{{ $submission->description ?? '-' }}</div>
+    <div class="description-box">{{ $submission->description ?? '-' }}</div>
+
+    <div class="field-label">Catatan Admin:</div>
+    <div class="description-box">{{ $catatanAdmin ?: '-' }}</div>
+
+    <div class="field-label">Dokumen Pendukung:</div>
+    <div class="description-box" style="min-height: 60px;">
+        @if($docs && $docs->count() > 0)
+            @foreach($docs as $i => $doc)
+                @php
+                    $name = $doc->original_name ?? ('Dokumen ' . ($i + 1));
+                    $sizeKb = isset($doc->file_size) ? number_format(($doc->file_size ?? 0) / 1024, 2) . ' KB' : null;
+                @endphp
+                {{ ($i + 1) . '. ' . $name }}@if($sizeKb) ({{ $sizeKb }})@endif
+                @if(!$loop->last)
+                    <br>
+                @endif
+            @endforeach
+        @else
+            -
+        @endif
+    </div>
 </div>
 
 <!-- Section C: Riwayat Status -->
@@ -357,30 +442,62 @@
             <th>Catatan</th>
         </tr>
 
-        @foreach($submission->statusHistories as $history)
+        {{-- Samakan timeline awal seperti show --}}
+        <tr>
+            <td>{{ optional($submission->created_at)->format('d M Y H:i') }}</td>
+            <td>Tiket Dibuat</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>{{ optional($submission->created_at)->format('d M Y H:i') }}</td>
+            <td>Tiket Diterima Sistem</td>
+            <td>-</td>
+        </tr>
+
             @php
-                $historyLabel = match($history->new_status) {
-                    'pending'     => 'Menunggu Verifikasi',
-                    'in_progress' => 'Sedang Diproses',
-                    'completed'   => 'Selesai',
-                    'approved'    => 'Selesai',
-                    'rejected'    => 'Ditolak',
-                    'ditolak'     => 'Ditolak',
-                    default       => ucfirst($history->new_status)
-                };
+                $histories = collect($submission->statusHistories ?? [])
+                    ->sortBy(fn($h) => optional($h->created_at)->timestamp ?? 0)
+                    ->values();
             @endphp
+
+            {{-- Samakan timeline awal seperti show --}}
             <tr>
-                <td>{{ $history->created_at->format('d M Y H:i') }}</td>
-                <td>{{ $historyLabel }}</td>
-                <td>{{ $history->notes ?? '-' }}</td>
+                <td>{{ optional($submission->created_at)->format('d M Y H:i') }}</td>
+                <td>Tiket Dibuat</td>
+                <td>-</td>
             </tr>
-        @endforeach
+            <tr>
+                <td>{{ optional($submission->created_at)->format('d M Y H:i') }}</td>
+                <td>Tiket Diterima Sistem</td>
+                <td>-</td>
+            </tr>
+
+            @foreach($histories as $history)
+                @php
+                    $historyLabel = match($history->new_status) {
+                        'pending'     => 'Menunggu Verifikasi',
+                        'in_progress' => 'Sedang Diproses',
+                        'on_progress' => 'Sedang Diproses',
+                        'diproses'    => 'Sedang Diproses',
+                        'completed'   => 'Selesai',
+                        'approved'    => 'Selesai',
+                        'rejected'    => 'Ditolak',
+                        'ditolak'     => 'Ditolak',
+                        default       => ucfirst((string)$history->new_status)
+                    };
+                @endphp
+                <tr>
+                    <td>{{ optional($history->created_at)->format('d M Y H:i') }}</td>
+                    <td>{{ $historyLabel }}</td>
+                    <td style="white-space: pre-line;">{{ $history->notes ?? '-' }}</td>
+                </tr>
+            @endforeach
     </table>
 </div>
 
 <!-- Footer -->
 <div class="footer">
-    <p><strong>DINAS PERINDUSTRIAN DAN PERDAGANGAN PROVINSI JAWA TENGAH</strong></p>
+    <p><strong>DINAS PERINDUSTRIAN DAN PERDAGANGANG PROVINSI JAWA TENGAH</strong></p>
     <p>Dokumen ini dicetak secara otomatis oleh sistem SIAPKANGMAS</p>
     <p>Tanggal Cetak: {{ now()->format('d F Y, H:i') }} WIB</p>
 </div>

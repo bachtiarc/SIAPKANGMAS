@@ -156,59 +156,79 @@ class DashboardController extends Controller
     private function getRecentTickets()
     {
         $tickets = collect();
-        
-        // Get submissions
+
+        // helper: ambil nama pelapor sesuai aturan di blade permohonan
+        $resolveName = function ($item) {
+            // kalau creator pegawai -> ambil applicant
+            if ($item->user && $item->user->user_type === 'pegawai') {
+                if ($item->applicant) {
+                    if (!empty($item->applicant->nama_lengkap)) return $item->applicant->nama_lengkap;
+                    if (!empty($item->applicant->name)) return $item->applicant->name;
+                }
+            }
+
+            // kalau masyarakat -> ambil user
+            if ($item->user && !empty($item->user->name)) {
+                return $item->user->name;
+            }
+
+            return 'Unknown';
+        };
+
+        // ===== Submissions =====
         if (class_exists('App\Models\Submission')) {
-            $submissions = Submission::with('user')
+            $submissions = Submission::with(['user', 'applicant'])
                 ->latest()
                 ->take(5)
                 ->get()
-                ->map(function($item) {
+                ->map(function ($item) use ($resolveName) {
                     return [
-                        'name' => $item->user->name ?? 'Unknown',
+                        'name' => $resolveName($item),
                         'ticket_id' => $item->ticket_id,
                         'type' => 'Permohonan Informasi',
-                        'date' => $item->created_at
+                        'date' => $item->created_at,
                     ];
                 });
+
             $tickets = $tickets->merge($submissions);
         }
-        
-        // Get consultations
+
+        // ===== Consultations =====
         if (class_exists('App\Models\Consultation')) {
-            $consultations = Consultation::with('user')
+            $consultations = Consultation::with(['user', 'applicant'])
                 ->latest()
                 ->take(5)
                 ->get()
-                ->map(function($item) {
+                ->map(function ($item) use ($resolveName) {
                     return [
-                        'name' => $item->user->name ?? 'Unknown',
+                        'name' => $resolveName($item),
                         'ticket_id' => $item->ticket_id ?? 'KL' . str_pad($item->id, 4, '0', STR_PAD_LEFT),
                         'type' => 'Konsultasi',
-                        'date' => $item->created_at
+                        'date' => $item->created_at,
                     ];
                 });
+
             $tickets = $tickets->merge($consultations);
         }
-        
-        // Get complaints
+
+        // ===== Complaints =====
         if (class_exists('App\Models\Complaint')) {
-            $complaints = Complaint::with('user')
+            $complaints = Complaint::with(['user', 'applicant'])
                 ->latest()
                 ->take(5)
                 ->get()
-                ->map(function($item) {
+                ->map(function ($item) use ($resolveName) {
                     return [
-                        'name' => $item->user->name ?? 'Unknown',
+                        'name' => $resolveName($item),
                         'ticket_id' => $item->ticket_id ?? 'PD' . str_pad($item->id, 4, '0', STR_PAD_LEFT),
                         'type' => 'Pengaduan',
-                        'date' => $item->created_at
+                        'date' => $item->created_at,
                     ];
                 });
+
             $tickets = $tickets->merge($complaints);
         }
-        
-        // Sort by date and take latest 5
+
         return $tickets->sortByDesc('date')->take(5)->values();
     }
 
