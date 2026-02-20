@@ -55,17 +55,22 @@ class LoginController extends Controller
                 ->with('unverified', 'Akun Anda belum terverifikasi. Silakan cek email.');
         }
 
-        $selectedTab = $request->input('user_type', 'user'); 
+        // Tab dari form login (punyamu: user_type = admin / user)
+        $selectedTab = $request->input('user_type', 'user');
 
-        $superAdminEmail = 'admin@disperindag.jatengprov.go.id';
-        $coAdminEmail    = 'adminsiapkangmas@gmail.com';
+        // ====== PENENTUAN AKTOR (100% dari DB) ======
+        $adminType = strtolower((string) ($user->admin_type ?? '')); // super / co_admin / null
+        $role      = strtolower((string) ($user->role ?? 'user'));   // admin / user
 
-        $emailLower = strtolower((string) $user->email);
+        $isSuperAdmin = ($adminType === 'super') || ($role === 'admin');
+        $isCoAdmin    = ($adminType === 'co_admin');
 
-        $isSuperAdmin = ($emailLower === strtolower($superAdminEmail)) || ($user->role === 'admin');
-        $isCoAdmin    = ($emailLower === strtolower($coAdminEmail));
+        // kalau super, jangan dianggap co_admin
+        if ($isSuperAdmin) {
+            $isCoAdmin = false;
+        }
 
-        // Validasi tab
+        // ====== VALIDASI TAB ======
         if ($selectedTab === 'admin') {
             if (!($isSuperAdmin || $isCoAdmin)) {
                 Auth::logout();
@@ -86,24 +91,30 @@ class LoginController extends Controller
             }
         }
 
+        // IMPORTANT: biar gak nyangkut redirect ke /admin/dashboard lagi
+        $request->session()->forget('url.intended');
+
         Log::info('User logged in', [
             'email' => $user->email,
             'role' => $user->role,
             'user_type' => $user->user_type,
+            'admin_type' => $user->admin_type,
             'selected_tab' => $selectedTab,
             'is_super_admin' => $isSuperAdmin,
             'is_co_admin' => $isCoAdmin,
         ]);
 
-        if ($isSuperAdmin && !$isCoAdmin) {
-            return redirect()->intended(route('admin.dashboard'));
+        // ====== REDIRECT FINAL (PAKSA, TANPA intended) ======
+        if ($isSuperAdmin) {
+            return redirect()->route('admin.dashboard');
         }
 
-        if ($isCoAdmin || $user->user_type === 'pegawai') {
-            return redirect()->intended(route('user.dashboard'));
+        if ($isCoAdmin) {
+            // CO ADMIN kamu memang numpang dashboard pegawai lama
+            return redirect()->route('user.dashboard');
         }
 
-        return redirect()->intended(route('masyarakat.dashboard'));
+        return redirect()->route('masyarakat.dashboard');
     }
 
     public function logout(Request $request)
@@ -111,6 +122,7 @@ class LoginController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        $request->session()->forget('url.intended');
 
         return redirect()->route('login')
             ->with('success', 'Anda telah berhasil logout.');

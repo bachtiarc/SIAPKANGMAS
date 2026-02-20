@@ -75,6 +75,8 @@ class ComplaintController extends Controller
             'pekerjaan' => 'nullable|string|max:100',
             'pekerjaan_lainnya' => 'nullable|string|max:100',
 
+            // ✅ wajib isi provinsi (dari dropdown)
+            'provinsi_kode' => 'required|string|max:50',
             'kabupaten_kode' => 'required|string|max:50',
             'kecamatan_kode' => 'required|string|max:50',
             'desa_kode' => 'required|string|max:50',
@@ -89,19 +91,26 @@ class ComplaintController extends Controller
             'nik.required' => 'NIK wajib diisi.',
             'nik.size' => 'NIK harus 16 digit.',
             'phone.required' => 'Nomor telepon/WA wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+
+            'provinsi_kode.required' => 'Provinsi wajib diisi.',
             'kabupaten_kode.required' => 'Kabupaten/Kota wajib dipilih.',
             'kecamatan_kode.required' => 'Kecamatan wajib dipilih.',
             'desa_kode.required' => 'Desa/Kelurahan wajib dipilih.',
             'alamat_detail.required' => 'Alamat lengkap wajib diisi.',
+
             'foto_ktp.required' => 'Foto KTP wajib diupload.',
             'foto_ktp.image' => 'Foto KTP harus berupa gambar.',
             'foto_ktp.max' => 'Ukuran Foto KTP maksimal 2MB.',
+
             'subject.required' => 'Subjek pengaduan wajib diisi.',
             'description.required' => 'Deskripsi lengkap wajib diisi.',
+
             'documents.*.mimes' => 'Format dokumen harus PDF, JPG, JPEG, atau PNG.',
             'documents.*.max' => 'Ukuran setiap dokumen maksimal 2MB.',
         ]);
 
+        // ===== pekerjaan logic =====
         $pekerjaan = trim((string) ($validated['pekerjaan'] ?? ''));
         $pekerjaanLainnya = trim((string) ($validated['pekerjaan_lainnya'] ?? ''));
 
@@ -120,7 +129,7 @@ class ComplaintController extends Controller
                 ->withInput();
         }
 
-
+        // ===== cek NIK/email sudah punya akun =====
         $nik = (string) $validated['nik'];
         $email = trim((string) ($validated['email'] ?? ''));
 
@@ -134,6 +143,7 @@ class ComplaintController extends Controller
                 ->with('toast_duration', 9000);
         }
 
+        // ===== total dokumen max 6MB =====
         if ($request->hasFile('documents')) {
             $totalSize = 0;
             foreach ($request->file('documents') as $f) {
@@ -149,7 +159,7 @@ class ComplaintController extends Controller
         DB::beginTransaction();
 
         try {
-            // nomor tiket
+            // ===== nomor tiket =====
             $ticketNumber = $this->generateTicketNumber($validated['nik']);
             while (Complaint::where('ticket_number', $ticketNumber)->exists()) {
                 $ticketNumber = $this->generateTicketNumber($validated['nik']);
@@ -163,18 +173,26 @@ class ComplaintController extends Controller
                 'status' => 'pending',
             ]);
 
+            // ===== ✅ lookup wilayah pakai 4 tabel (kolom: code + name) =====
+            $prov = DB::table('reg_provinces')->where('code', $validated['provinsi_kode'])->first();
+            $kab  = DB::table('reg_regencies')->where('code', $validated['kabupaten_kode'])->first();
+            $kec  = DB::table('reg_districts')->where('code', $validated['kecamatan_kode'])->first();
+            $desa = DB::table('reg_villages')->where('code', $validated['desa_kode'])->first();
 
-            $kab  = DB::table('wilayah')->where('kode', $validated['kabupaten_kode'])->first();
-            $kec  = DB::table('wilayah')->where('kode', $validated['kecamatan_kode'])->first();
-            $desa = DB::table('wilayah')->where('kode', $validated['desa_kode'])->first();
+            if (!$prov) throw new \RuntimeException('Provinsi tidak ditemukan (code: ' . $validated['provinsi_kode'] . ').');
+            if (!$kab)  throw new \RuntimeException('Kabupaten/Kota tidak ditemukan (code: ' . $validated['kabupaten_kode'] . ').');
+            if (!$kec)  throw new \RuntimeException('Kecamatan tidak ditemukan (code: ' . $validated['kecamatan_kode'] . ').');
+            if (!$desa) throw new \RuntimeException('Desa/Kelurahan tidak ditemukan (code: ' . $validated['desa_kode'] . ').');
 
-            $kabName = $kab->nama ?? null;
-            $kecName = $kec->nama ?? null;
+            $provName = $prov->name ?? null;
+            $kabName  = $kab->name  ?? null;
+            $kecName  = $kec->name  ?? null;
+            $desaName = $desa->name ?? null;
+
             $isKelurahan = $this->detectIsKelurahan($kabName, $kecName);
 
-            $ktpPath = null;
+            // ===== upload KTP (bucket ktp) =====
             $ktp = $request->file('foto_ktp');
-
             $ktpName = 'ktp_' . Str::random(32) . '.' . $ktp->getClientOriginalExtension();
 
             $ktpPath = Storage::disk('supabase_ktp')
@@ -184,7 +202,7 @@ class ComplaintController extends Controller
                 throw new \RuntimeException('Upload KTP gagal (path kosong).');
             }
 
-            // simpan applicant
+            // ===== simpan applicant =====
             ComplaintApplicant::create([
                 'complaint_id' => $complaint->id,
                 'nama_lengkap' => $validated['nama_lengkap'],
@@ -200,15 +218,15 @@ class ComplaintController extends Controller
                 'kecamatan_kode' => $validated['kecamatan_kode'],
                 'kecamatan_nama' => $kecName,
                 'desa_kode' => $validated['desa_kode'],
-                'desa_nama' => $desa->nama ?? null,
+                'desa_nama' => $desaName,
 
-                'provinsi' => 'Jawa Tengah',
+                'provinsi' => $provName ?? '-',
                 'is_kelurahan' => $isKelurahan,
 
                 'foto_ktp' => $ktpPath,
             ]);
 
-
+            // ===== upload dokumen pendukung (bucket complaints) =====
             if ($request->hasFile('documents')) {
                 $docs = array_slice($request->file('documents'), 0, 3);
 
@@ -251,7 +269,6 @@ class ComplaintController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // biar kamu tau akar masalahnya pas dev (tanpa ngubah UI)
             $msg = app()->environment('local')
                 ? ('Terjadi kesalahan saat menyimpan pengaduan: ' . $e->getMessage())
                 : 'Terjadi kesalahan saat menyimpan pengaduan. Silakan coba lagi.';

@@ -166,31 +166,62 @@
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
-                {{-- PEKERJAAN --}}
-                <div>
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">Pekerjaan</label>
-                    <select name="pekerjaan" id="pekerjaan"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <!-- Pekerjaan -->
+                <div class="md:col-span-2">
+                    <label for="pekerjaan" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Pekerjaan <span class="text-red-500">*</span>
+                    </label>
+
+                    <select name="pekerjaan" id="pekerjaan" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('pekerjaan') border-red-500 @enderror">
                         <option value="">Pilih Pekerjaan</option>
-                        <option value="Pelajar/Mahasiswa" {{ old('pekerjaan') == 'Pelajar/Mahasiswa' ? 'selected' : '' }}>Pelajar/Mahasiswa</option>
-                        <option value="PNS" {{ old('pekerjaan') == 'PNS' ? 'selected' : '' }}>PNS</option>
-                        <option value="Karyawan Swasta" {{ old('pekerjaan') == 'Karyawan Swasta' ? 'selected' : '' }}>Karyawan Swasta</option>
-                        <option value="Wiraswasta" {{ old('pekerjaan') == 'Wiraswasta' ? 'selected' : '' }}>Wiraswasta</option>
-                        <option value="Ibu Rumah Tangga" {{ old('pekerjaan') == 'Ibu Rumah Tangga' ? 'selected' : '' }}>Ibu Rumah Tangga</option>
-                        <option value="Lainnya" {{ old('pekerjaan') == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
+                        <option value="Pelajar/Mahasiswa" {{ old('pekerjaan')=='Pelajar/Mahasiswa' ? 'selected' : '' }}>Pelajar/Mahasiswa</option>
+                        <option value="PNS" {{ old('pekerjaan')=='PNS' ? 'selected' : '' }}>PNS</option>
+                        <option value="TNI/POLRI" {{ old('pekerjaan')=='TNI/POLRI' ? 'selected' : '' }}>TNI/POLRI</option>
+                        <option value="Pegawai Swasta" {{ old('pekerjaan')=='Pegawai Swasta' ? 'selected' : '' }}>Pegawai Swasta</option>
+                        <option value="Wiraswasta" {{ old('pekerjaan')=='Wiraswasta' ? 'selected' : '' }}>Wiraswasta</option>
+                        <option value="Ibu Rumah Tangga" {{ old('pekerjaan')=='Ibu Rumah Tangga' ? 'selected' : '' }}>Ibu Rumah Tangga</option>
+                        <option value="Tidak Bekerja" {{ old('pekerjaan')=='Tidak Bekerja' ? 'selected' : '' }}>Tidak Bekerja</option>
+                        <option value="Lainnya" {{ old('pekerjaan')=='Lainnya' ? 'selected' : '' }}>Lainnya</option>
                     </select>
+
+                    @error('pekerjaan')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
-                <div id="pekerjaanLainnyaWrapper" class="{{ old('pekerjaan') == 'Lainnya' ? '' : 'hidden' }}">
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">Pekerjaan Lainnya</label>
-                    <input type="text" name="pekerjaan_lainnya"
-                        value="{{ old('pekerjaan_lainnya') }}"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Tulis pekerjaan lainnya">
+                <!-- Pekerjaan (Lainnya) -->
+                <div id="wrap_pekerjaan_lainnya" class="md:col-span-2 {{ old('pekerjaan')==='Lainnya' ? '' : 'hidden' }}">
+                    <label for="pekerjaan_lainnya" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Pekerjaan (Lainnya) <span class="text-red-500">*</span>
+                    </label>
+
+                    <input type="text" name="pekerjaan_lainnya" id="pekerjaan_lainnya" value="{{ old('pekerjaan_lainnya') }}"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('pekerjaan_lainnya') border-red-500 @enderror"
+                        placeholder="Tulis pekerjaan pemohon">
+
+                    @error('pekerjaan_lainnya')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- ===================== WILAYAH (4 TABLE) ===================== --}}
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Provinsi <span class="text-red-500">*</span>
+                    </label>
+                    <select name="provinsi_kode" id="provinsi" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Pilih Provinsi</option>
+                    </select>
+                    <input type="hidden" name="provinsi_nama" id="provinsi_nama" value="{{ old('provinsi_nama') }}">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">Kabupaten/Kota <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Kabupaten/Kota <span class="text-red-500">*</span>
+                    </label>
                     <select name="kabupaten_kode" id="kabupaten" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Pilih Kabupaten/Kota</option>
@@ -199,7 +230,9 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">Kecamatan <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Kecamatan <span class="text-red-500">*</span>
+                    </label>
                     <select name="kecamatan_kode" id="kecamatan" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Pilih Kecamatan</option>
@@ -208,7 +241,9 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">Desa/Kelurahan <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Desa/Kelurahan <span class="text-red-500">*</span>
+                    </label>
                     <select name="desa_kode" id="desa" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Pilih Desa/Kelurahan</option>
@@ -217,7 +252,9 @@
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-semibold text-gray-900 mb-2">Alamat Lengkap (RT/RW, No Jalan, Dusun, dll) <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Alamat Lengkap (RT/RW, No Jalan, Dusun, dll) <span class="text-red-500">*</span>
+                    </label>
                     <textarea name="alamat_detail" rows="3" required
                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               placeholder="Tulis RT/RW, nomor jalan, dusun, dll...">{{ old('alamat_detail') }}</textarea>
@@ -401,7 +438,6 @@ function copyTicket() {
     });
 }
 
-/** ✅ TOAST HELPER */
 function showToast(message, type='error', duration=9000){
     const container = document.getElementById('toastContainer');
     if(!container) return;
@@ -445,23 +481,29 @@ function showToast(message, type='error', duration=9000){
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    // ✅ toggle pekerjaan lainnya (samain konsultasi)
+    const pekerjaanEl = document.getElementById('pekerjaan');
+    const wrap = document.getElementById('wrap_pekerjaan_lainnya');
+    const input = document.getElementById('pekerjaan_lainnya');
 
-    const pekerjaanSelect = document.getElementById('pekerjaan');
-    const pekerjaanLainnyaWrapper = document.getElementById('pekerjaanLainnyaWrapper');
+    function togglePekerjaanLainnya() {
+        if (!pekerjaanEl || !wrap) return;
 
-    if (pekerjaanSelect && pekerjaanLainnyaWrapper) {
-        function togglePekerjaan() {
-            if (pekerjaanSelect.value === 'Lainnya') {
-                pekerjaanLainnyaWrapper.classList.remove('hidden');
-            } else {
-                pekerjaanLainnyaWrapper.classList.add('hidden');
+        if (pekerjaanEl.value === 'Lainnya') {
+            wrap.classList.remove('hidden');
+            if (input) input.required = true;
+        } else {
+            wrap.classList.add('hidden');
+            if (input) {
+                input.required = false;
+                input.value = '';
             }
         }
-        togglePekerjaan();
-        pekerjaanSelect.addEventListener('change', togglePekerjaan);
     }
 
-    /** ✅ INI YANG HILANG DI FILE KAMU: render toast dari session */
+    togglePekerjaanLainnya();
+    if (pekerjaanEl) pekerjaanEl.addEventListener('change', togglePekerjaanLainnya);
+
     @if(session('toast_error'))
         showToast(@json(session('toast_error')), 'error', {{ (int) session('toast_duration', 9000) }});
     @endif
@@ -472,16 +514,19 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const kab = document.getElementById('kabupaten');
-    const kec = document.getElementById('kecamatan');
+    const prov = document.getElementById('provinsi');
+    const kab  = document.getElementById('kabupaten');
+    const kec  = document.getElementById('kecamatan');
     const desa = document.getElementById('desa');
 
-    const kabNama = document.getElementById('kabupaten_nama');
-    const kecNama = document.getElementById('kecamatan_nama');
+    const provNama = document.getElementById('provinsi_nama');
+    const kabNama  = document.getElementById('kabupaten_nama');
+    const kecNama  = document.getElementById('kecamatan_nama');
     const desaNama = document.getElementById('desa_nama');
 
-    const oldKab = @json(old('kabupaten_kode'));
-    const oldKec = @json(old('kecamatan_kode'));
+    const oldProv = @json(old('provinsi_kode'));
+    const oldKab  = @json(old('kabupaten_kode'));
+    const oldKec  = @json(old('kecamatan_kode'));
     const oldDesa = @json(old('desa_kode'));
 
     async function fetchJson(url){
@@ -490,31 +535,64 @@ document.addEventListener('DOMContentLoaded', async () => {
         return await res.json();
     }
 
-    async function loadKabupaten(){
-        const data = await fetchJson('/api/kabupaten');
+    function resetKab(){
         kab.innerHTML = '<option value="">Pilih Kabupaten/Kota</option>';
+        kabNama.value = '';
+    }
+    function resetKec(){
+        kec.innerHTML = '<option value="">Pilih Kecamatan</option>';
+        kecNama.value = '';
+    }
+    function resetDesa(){
+        desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+        desaNama.value = '';
+    }
+
+    async function loadProvinsi(setOld=false){
+        const data = await fetchJson('/api/provinsi');
+        prov.innerHTML = '<option value="">Pilih Provinsi</option>';
+
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.kode;      // WAJIB: backend balikin {kode, nama}
+            opt.textContent = item.nama;
+            if (setOld && oldProv && oldProv === item.kode) opt.selected = true;
+            prov.appendChild(opt);
+        });
+
+        if (prov.value) {
+            provNama.value = prov.options[prov.selectedIndex]?.text || '';
+        } else {
+            provNama.value = '';
+        }
+    }
+
+    async function loadKabupaten(provKode, setOld=false){
+        resetKab(); resetKec(); resetDesa();
+        if(!provKode) return;
+
+        // ✅ kabupaten berdasarkan provinsi (4 table)
+        const data = await fetchJson(`/api/kabupaten/${provKode}`);
+
         data.forEach(item => {
             const opt = document.createElement('option');
             opt.value = item.kode;
             opt.textContent = item.nama;
-            if (oldKab && oldKab === item.kode) opt.selected = true;
+            if (setOld && oldKab && oldKab === item.kode) opt.selected = true;
             kab.appendChild(opt);
         });
+
         if(kab.value){
-            kabNama.value = kab.options[kab.selectedIndex].text;
+            kabNama.value = kab.options[kab.selectedIndex]?.text || '';
         }
     }
 
     async function loadKecamatan(kabKode, setOld=false){
-        if(!kabKode){
-            kec.innerHTML = '<option value="">Pilih Kecamatan</option>';
-            desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
-            kecNama.value = '';
-            desaNama.value = '';
-            return;
-        }
+        resetKec(); resetDesa();
+        if(!kabKode) return;
+
         const data = await fetchJson(`/api/kecamatan/${kabKode}`);
-        kec.innerHTML = '<option value="">Pilih Kecamatan</option>';
+
         data.forEach(item => {
             const opt = document.createElement('option');
             opt.value = item.kode;
@@ -522,19 +600,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (setOld && oldKec && oldKec === item.kode) opt.selected = true;
             kec.appendChild(opt);
         });
+
         if(kec.value){
-            kecNama.value = kec.options[kec.selectedIndex].text;
+            kecNama.value = kec.options[kec.selectedIndex]?.text || '';
         }
     }
 
     async function loadDesa(kecKode, setOld=false){
-        if(!kecKode){
-            desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
-            desaNama.value = '';
-            return;
-        }
+        resetDesa();
+        if(!kecKode) return;
+
         const data = await fetchJson(`/api/desa/${kecKode}`);
-        desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+
         data.forEach(item => {
             const opt = document.createElement('option');
             opt.value = item.kode;
@@ -542,28 +619,42 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (setOld && oldDesa && oldDesa === item.kode) opt.selected = true;
             desa.appendChild(opt);
         });
+
         if(desa.value){
-            desaNama.value = desa.options[desa.selectedIndex].text;
+            desaNama.value = desa.options[desa.selectedIndex]?.text || '';
         }
     }
 
-    await loadKabupaten();
-    if(oldKab) await loadKecamatan(oldKab, true);
-    if(oldKec) await loadDesa(oldKec, true);
+    // ===== INIT OLD =====
+    await loadProvinsi(true);
 
-    kab.addEventListener('change', async (e) => {
+    if (oldProv) {
+        await loadKabupaten(oldProv, true);
+    }
+    if (oldKab) {
+        await loadKecamatan(oldKab, true);
+    }
+    if (oldKec) {
+        await loadDesa(oldKec, true);
+    }
+
+    // ===== EVENTS =====
+    prov.addEventListener('change', async () => {
+        provNama.value = prov.options[prov.selectedIndex]?.text || '';
+        await loadKabupaten(prov.value, false);
+    });
+
+    kab.addEventListener('change', async () => {
         kabNama.value = kab.options[kab.selectedIndex]?.text || '';
-        await loadKecamatan(e.target.value);
-        desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
-        desaNama.value = '';
+        await loadKecamatan(kab.value, false);
     });
 
-    kec.addEventListener('change', async (e) => {
+    kec.addEventListener('change', async () => {
         kecNama.value = kec.options[kec.selectedIndex]?.text || '';
-        await loadDesa(e.target.value);
+        await loadDesa(kec.value, false);
     });
 
-    desa.addEventListener('change', async () => {
+    desa.addEventListener('change', () => {
         desaNama.value = desa.options[desa.selectedIndex]?.text || '';
     });
 });

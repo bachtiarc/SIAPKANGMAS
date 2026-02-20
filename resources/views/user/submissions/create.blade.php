@@ -235,6 +235,20 @@
                     @enderror
                 </div>
 
+                <!-- Provinsi -->
+                <div>
+                    <label for="provinsi_kode" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Provinsi <span class="text-red-500">*</span>
+                    </label>
+                    <select name="provinsi_kode" id="provinsi_kode" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('provinsi_kode') border-red-500 @enderror">
+                        <option value="">Pilih Provinsi</option>
+                    </select>
+                    @error('provinsi_kode')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Kabupaten -->
                 <div>
                     <label for="kabupaten_kode" class="block text-sm font-semibold text-gray-900 mb-2">
@@ -264,7 +278,7 @@
                 </div>
 
                 <!-- Desa/Kelurahan -->
-                <div class="md:col-span-2">
+                <div>
                     <label for="desa_kode" class="block text-sm font-semibold text-gray-900 mb-2">
                         Desa/Kelurahan <span class="text-red-500">*</span>
                     </label>
@@ -604,16 +618,22 @@ document.addEventListener('DOMContentLoaded', () => {
     radios.forEach(r => r.addEventListener('change', sync));
     sync();
 
-    loadKabupaten();
+    // ✅ DULU: loadKabupaten()
+    // ✅ SEKARANG: loadProvinsi() (karena urutan 4 tingkat)
+    loadProvinsi();
 
-    const oldKab = @json(old('kabupaten_kode'));
-    const oldKec = @json(old('kecamatan_kode'));
+    const oldProv = @json(old('provinsi_kode'));
+    const oldKab  = @json(old('kabupaten_kode'));
+    const oldKec  = @json(old('kecamatan_kode'));
     const oldDesa = @json(old('desa_kode'));
 
-    if (oldKab) {
+    if (oldProv) {
         setTimeout(() => {
-            document.getElementById('kabupaten_kode').value = oldKab;
-            loadKecamatan(oldKab, oldKec, oldDesa);
+            const provEl = document.getElementById('provinsi_kode');
+            if (provEl) provEl.value = oldProv;
+
+            // lanjut chain load sampai desa (kalau ada old value)
+            loadKabupaten(oldProv, oldKab, oldKec, oldDesa);
         }, 300);
     }
 });
@@ -792,9 +812,16 @@ document.getElementById('submissionForm').addEventListener('submit', function(e)
         { id: 'nik', label: 'NIK' },
         { id: 'phone', label: 'Nomor Telepon' },
         { id: 'pekerjaan', label: 'Pekerjaan' },
+
+        // ✅ tambah provinsi
+        { id: 'provinsi_kode', label: 'Provinsi' },
+
         { id: 'kabupaten_kode', label: 'Kabupaten/Kota' },
         { id: 'kecamatan_kode', label: 'Kecamatan' },
-        { id: 'desa_kode', label: 'Desa/Kelurahan' },
+
+        // (opsional) labelnya tak ubah biar sesuai permintaan kamu
+        { id: 'desa_kode', label: 'Kelurahan/Desa' },
+
         { id: 'foto_ktp', label: 'Foto KTP' },
         { id: 'title', label: 'Judul Permohonan' },
         { id: 'description', label: 'Deskripsi Lengkap' },
@@ -802,16 +829,17 @@ document.getElementById('submissionForm').addEventListener('submit', function(e)
     ];
 
     const pekerjaanEl = document.getElementById('pekerjaan');
-    const pekerjaanLainnyaWrap = document.getElementById('wrap_pekerjaan_lainnya');
     const pekerjaanLainnyaEl = document.getElementById('pekerjaan_lainnya');
+
+    // ⚠️ kamu punya bug kecil di sini: errors dipakai sebelum dideklarasikan
+    // aku benerin urutannya aja (ini masih "urusan form", aman)
+    let errors = [];
 
     if (pekerjaanEl && pekerjaanEl.value === 'Lainnya') {
         if (!pekerjaanLainnyaEl || !pekerjaanLainnyaEl.value || String(pekerjaanLainnyaEl.value).trim() === '') {
             errors.push('Pekerjaan (Lainnya)');
         }
     }
-
-    let errors = [];
 
     requiredFields.forEach(f => {
         const el = document.getElementById(f.id);
@@ -838,11 +866,46 @@ document.getElementById('submissionForm').addEventListener('submit', function(e)
     }
 });
 
-function loadKabupaten() {
-    const kabEl = document.getElementById('kabupaten_kode');
-    kabEl.innerHTML = '<option value="">Pilih Kabupaten/Kota</option>';
+// =====================
+// ✅ WILAYAH DROPDOWN BARU (4 tingkat)
+// =====================
 
-    fetch('/api/kabupaten')
+function resetSelect(el, placeholder) {
+    if (!el) return;
+    el.innerHTML = `<option value="">${placeholder}</option>`;
+}
+
+// ✅ NEW
+function loadProvinsi() {
+    const provEl = document.getElementById('provinsi_kode');
+    resetSelect(provEl, 'Pilih Provinsi');
+
+    fetch('/api/provinsi')
+        .then(r => r.json())
+        .then(items => {
+            items.forEach(it => {
+                const opt = document.createElement('option');
+                opt.value = it.kode;
+                opt.textContent = it.nama;
+                provEl.appendChild(opt);
+            });
+        })
+        .catch(() => showToast('Gagal memuat data Provinsi.', 'error'));
+}
+
+// ✅ REPLACE: loadKabupaten() lama → sekarang butuh provKode
+function loadKabupaten(provKode, setKab = null, setKec = null, setDesa = null) {
+    const kabEl  = document.getElementById('kabupaten_kode');
+    const kecEl  = document.getElementById('kecamatan_kode');
+    const desaEl = document.getElementById('desa_kode');
+
+    resetSelect(kabEl, 'Pilih Kabupaten/Kota');
+    resetSelect(kecEl, 'Pilih Kecamatan');
+    resetSelect(desaEl, 'Pilih Kelurahan/Desa');
+
+    if (!provKode) return;
+
+    fetch('/api/kabupaten/' + provKode)
         .then(r => r.json())
         .then(items => {
             items.forEach(it => {
@@ -851,16 +914,22 @@ function loadKabupaten() {
                 opt.textContent = it.nama;
                 kabEl.appendChild(opt);
             });
+
+            if (setKab) {
+                kabEl.value = setKab;
+                loadKecamatan(setKab, setKec, setDesa);
+            }
         })
-        .catch(() => showToast('Gagal memuat data Kabupaten.', 'error'));
+        .catch(() => showToast('Gagal memuat data Kabupaten/Kota.', 'error'));
 }
 
+// ✅ tweak: loadKecamatan() tetap, tapi source sekarang kabupaten id dari regencies
 function loadKecamatan(kabKode, setSelected = null, desaSelected = null) {
     const kecEl = document.getElementById('kecamatan_kode');
     const desaEl = document.getElementById('desa_kode');
 
-    kecEl.innerHTML = '<option value="">Pilih Kecamatan</option>';
-    desaEl.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+    resetSelect(kecEl, 'Pilih Kecamatan');
+    resetSelect(desaEl, 'Pilih Kelurahan/Desa');
 
     if (!kabKode) return;
 
@@ -904,9 +973,10 @@ function togglePekerjaanLainnya() {
 document.getElementById('pekerjaan')?.addEventListener('change', togglePekerjaanLainnya);
 togglePekerjaanLainnya();
 
+// ✅ tweak: loadDesa() tetap, tapi placeholder diganti
 function loadDesa(kecKode, setSelected = null) {
     const desaEl = document.getElementById('desa_kode');
-    desaEl.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+    resetSelect(desaEl, 'Pilih Kelurahan/Desa');
 
     if (!kecKode) return;
 
@@ -922,15 +992,20 @@ function loadDesa(kecKode, setSelected = null) {
 
             if (setSelected) desaEl.value = setSelected;
         })
-        .catch(() => showToast('Gagal memuat data Desa/Kelurahan.', 'error'));
+        .catch(() => showToast('Gagal memuat data Kelurahan/Desa.', 'error'));
 }
 
-document.getElementById('kabupaten_kode').addEventListener('change', function() {
-    loadKecamatan(this.value);
-});
-document.getElementById('kecamatan_kode').addEventListener('change', function() {
-    loadDesa(this.value);
+// ✅ change handlers: sekarang chain dimulai dari provinsi
+document.getElementById('provinsi_kode')?.addEventListener('change', function() {
+    loadKabupaten(this.value);
 });
 
+document.getElementById('kabupaten_kode')?.addEventListener('change', function() {
+    loadKecamatan(this.value);
+});
+
+document.getElementById('kecamatan_kode')?.addEventListener('change', function() {
+    loadDesa(this.value);
+});
 </script>
 @endsection

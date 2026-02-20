@@ -19,13 +19,13 @@ class SubmissionPdfController extends Controller
         $submission->load(['applicant', 'user']);
 
         $applicant = $submission->applicant;
-        $account   = $submission->user; 
+        $account   = $submission->user;
 
         if ($applicant) {
             $userData = (object)[
                 'name' => $applicant->nama_lengkap,
                 'nik' => $applicant->nik,
-                'email' => $applicant->email,      
+                'email' => $applicant->email,
                 'phone' => $applicant->phone,
                 'pekerjaan' => $applicant->pekerjaan,
                 'address' => $applicant->alamat_detail,
@@ -33,7 +33,6 @@ class SubmissionPdfController extends Controller
                 'kecamatan' => $applicant->kecamatan_nama,
                 'kabupaten' => $applicant->kabupaten_nama,
                 'provinsi' => $applicant->provinsi,
-                'is_kelurahan' => $applicant->is_kelurahan,
             ];
         } else {
             $userData = (object)[
@@ -46,8 +45,7 @@ class SubmissionPdfController extends Controller
                 'desa' => $account->desa_nama ?? '-',
                 'kecamatan' => $account->kecamatan_nama ?? '-',
                 'kabupaten' => $account->kabupaten_nama ?? '-',
-                'provinsi' => $account->provinsi ?? 'Jawa Tengah',
-                'is_kelurahan' => $account->is_kelurahan ?? false,
+                'provinsi' => $account->provinsi ?? '-',
             ];
         }
 

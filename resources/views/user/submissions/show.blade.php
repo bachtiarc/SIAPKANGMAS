@@ -38,33 +38,15 @@
 
         $app = $submission->applicant;
 
-        $alamatDetail = trim((string)($app->alamat_detail ?? ''));
+        // Field sesuai input (pisah)
+        $alamatDetail = trim((string) ($app->alamat_detail ?? ''));
 
-        $desaNama = $app->desa_nama ?? '-';
-        $kecNama  = $app->kecamatan_nama ?? '-';
+        $provNama = $app->provinsi ?? '-';
         $kabNama  = $app->kabupaten_nama ?? '-';
+        $kecNama  = $app->kecamatan_nama ?? '-';
+        $desaNama = $app->desa_nama ?? '-';
 
-        $desaLabel = ($app && $app->is_kelurahan)
-            ? 'Kelurahan ' . $desaNama
-            : 'Desa ' . $desaNama;
-
-        $kabLower = strtolower(trim($kabNama));
-        $isKotaKab = str_starts_with($kabLower, 'kota');
-
-        $kabClean = $isKotaKab
-            ? trim(preg_replace('/^kota\s+/i', '', $kabNama))
-            : trim(preg_replace('/^kab\.?\s+/i', '', $kabNama));
-
-        $kabLabel = $isKotaKab ? ('Kota ' . $kabClean) : ('Kab. ' . $kabClean);
-
-        $alamatLengkap = collect([
-            $alamatDetail,
-            $desaLabel,
-            'Kec. ' . $kecNama,
-            $kabLabel,
-            $app->provinsi ?? 'Jawa Tengah',
-        ])->filter(fn($v) => trim((string)$v) !== '' && trim((string)$v) !== '-')->implode(', ');
-
+        // KTP URL
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
 
@@ -83,8 +65,9 @@
                 $ktpUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
             }
         }
-        
-        $bucket = env('SUPABASE_BUCKET', 'submissions');
+
+        // bucket submissions
+        $bucket = env('SUPABASE_SUBMISSIONS_BUCKET', 'submissions');
     @endphp
 
     <!-- Breadcrumb -->
@@ -223,17 +206,37 @@
                 <div class="text-sm text-gray-600 font-semibold">Pekerjaan</div>
                 <div class="md:col-span-2 text-gray-900">{{ $app->pekerjaan ?? '-' }}</div>
             </div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="text-sm text-gray-600 font-semibold">Nomor Telepon</div>
                 <div class="md:col-span-2 text-gray-900">{{ $app->phone ?? '-' }}</div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="text-sm text-gray-600 font-semibold">Alamat</div>
+                <div class="text-sm text-gray-600 font-semibold">Provinsi</div>
+                <div class="md:col-span-2 text-gray-900">{{ $provNama ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Kabupaten/Kota</div>
+                <div class="md:col-span-2 text-gray-900">{{ $kabNama ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Kecamatan</div>
+                <div class="md:col-span-2 text-gray-900">{{ $kecNama ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Kelurahan/Desa</div>
+                <div class="md:col-span-2 text-gray-900">{{ $desaNama ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">RT/RW / Nomor Jalan</div>
                 <div class="md:col-span-2 text-gray-900">
                     <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 whitespace-pre-line">
-                        {{ $alamatLengkap ?: '-' }}
+                        {{ $alamatDetail !== '' ? $alamatDetail : '-' }}
                     </div>
                 </div>
             </div>
@@ -333,11 +336,10 @@
                 @foreach($submission->documents as $doc)
                     @php
                         $fileName = $doc->original_name ?? basename($doc->file_path);
-                        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
                         $path = ltrim($doc->file_path, '/');
-                        if (\Illuminate\Support\Str::startsWith($path, 'submissions/')) {
-                            $path = \Illuminate\Support\Str::after($path, 'submissions/');
+                        if (\Illuminate\Support\Str::startsWith($path, $bucket . '/')) {
+                            $path = \Illuminate\Support\Str::after($path, $bucket . '/');
                         }
                         $docUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
                     @endphp

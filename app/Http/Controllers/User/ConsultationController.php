@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use App\Services\BrevoMailer;
 
 class ConsultationController extends Controller
@@ -19,12 +18,9 @@ class ConsultationController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        if ($user->user_type !== 'pegawai') {
-            abort(403, 'Unauthorized access.');
-        }
+        if ($user->user_type !== 'pegawai') abort(403, 'Unauthorized access.');
 
-        $query = Consultation::where('user_id', $user->id)
-            ->with(['handler', 'applicant']);
+        $query = Consultation::where('user_id', $user->id)->with(['handler', 'applicant']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -36,7 +32,6 @@ class ConsultationController extends Controller
 
         if ($request->filled('status') && $request->status !== 'semua') {
             $statusFilter = strtolower($request->status);
-
             $query->where(function ($q) use ($statusFilter) {
                 if ($statusFilter === 'pending') {
                     $q->whereIn('status', ['pending', 'belum diproses']);
@@ -51,26 +46,20 @@ class ConsultationController extends Controller
         }
 
         $consultations = $query->latest()->paginate(10)->withQueryString();
-
         return view('user.consultations.index', compact('consultations'));
     }
 
     public function create()
     {
         $user = auth()->user();
-        if ($user->user_type !== 'pegawai') {
-            abort(403, 'Unauthorized access.');
-        }
-
+        if ($user->user_type !== 'pegawai') abort(403, 'Unauthorized access.');
         return view('user.consultations.create');
     }
 
     public function store(Request $request, BrevoMailer $brevo)
     {
         $user = auth()->user();
-        if ($user->user_type !== 'pegawai') {
-            abort(403, 'Unauthorized access.');
-        }
+        if ($user->user_type !== 'pegawai') abort(403, 'Unauthorized access.');
 
         $validated = $request->validate([
             'nama_lengkap'   => 'required|string|max:255',
@@ -78,9 +67,11 @@ class ConsultationController extends Controller
             'email'          => 'nullable|email|max:255',
             'phone'          => 'required|string|max:20',
 
-            // ✅ TAMBAH PEKERJAAN
             'pekerjaan'           => 'required|string|max:255',
             'pekerjaan_lainnya'   => 'nullable|string|max:255',
+
+            // ✅ PROVINSI BARU
+            'provinsi_kode'  => 'required|string',
 
             'kabupaten_kode' => 'required|string',
             'kecamatan_kode' => 'required|string',
@@ -97,37 +88,41 @@ class ConsultationController extends Controller
             'email.email' => 'Format email tidak valid. Contoh yang benar: ahmadsubari@gmail.com',
         ]);
 
-        // ✅ FINAL PEKERJAAN (kalau Lainnya -> ambil input pekerjaan_lainnya)
+        // ✅ FINAL PEKERJAAN
         $pekerjaanFinal = $validated['pekerjaan'] === 'Lainnya'
             ? trim((string)($validated['pekerjaan_lainnya'] ?? ''))
             : $validated['pekerjaan'];
 
         if ($validated['pekerjaan'] === 'Lainnya' && $pekerjaanFinal === '') {
+            return back()->withInput()->withErrors(['pekerjaan_lainnya' => 'Pekerjaan (Lainnya) wajib diisi.']);
+        }
+
+        // ✅ CEK AKUN EXISTING (SAMAIN SUBMISSION): NIK/EMAIL AJA, TANPA PHONE, KHUSUS MASYARAKAT
+        $existsUserAcc = false;
+        if (!empty($validated['nik']) || !empty($validated['email'])) {
+            $existsUserAcc = User::where('user_type', 'masyarakat_umum')
+                ->where(function ($q) use ($validated) {
+                    if (!empty($validated['nik'])) $q->where('nik', $validated['nik']);
+                    if (!empty($validated['email'])) {
+                        if (!empty($validated['nik'])) $q->orWhere('email', $validated['email']);
+                        else $q->where('email', $validated['email']);
+                    }
+                })
+                ->exists();
+        }
+
+        if ($existsUserAcc) {
             return back()
                 ->withInput()
-                ->withErrors(['pekerjaan_lainnya' => 'Pekerjaan (Lainnya) wajib diisi.']);
+                ->with('toast_error', 'Untuk pengguna yang telah memiliki akun, silakan membuat pengajuan melalui dashboard sendiri.')
+                ->with('toast_duration', 9000);
         }
 
-        if (!empty($validated['nik']) && !empty($validated['email']) && !empty($validated['phone'])) {
-            $existsUserAcc =
-                User::where('nik', $validated['nik'])->exists()
-                || User::where('email', $validated['email'])->exists()
-                || User::where('phone', $validated['phone'])->exists();
-
-            if ($existsUserAcc) {
-                return back()
-                    ->withInput()
-                    ->with('toast_error', 'Untuk pengguna yang telah memiliki akun, silakan membuat pengajuan melalui dashboard sendiri.')
-                    ->with('toast_duration', 9000);
-            }
-        }
-
+        // total size dokumen <= 6MB
         if ($request->hasFile('documents')) {
             $totalSize = 0;
             foreach ($request->file('documents') as $file) {
-                if ($file && $file->isValid()) {
-                    $totalSize += $file->getSize();
-                }
+                if ($file && $file->isValid()) $totalSize += $file->getSize();
             }
             if ($totalSize > 6 * 1024 * 1024) {
                 return back()
@@ -140,7 +135,6 @@ class ConsultationController extends Controller
 
         try {
             $ticketNumber = $this->generateTicketNumber($validated['nik']);
-
             while (Consultation::where('ticket_number', $ticketNumber)->exists()) {
                 $ticketNumber = $this->generateTicketNumber($validated['nik']);
             }
@@ -155,63 +149,61 @@ class ConsultationController extends Controller
                 'attachment'        => null,
             ]);
 
-            $kab  = DB::table('wilayah')->where('kode', $validated['kabupaten_kode'])->first();
-            $kec  = DB::table('wilayah')->where('kode', $validated['kecamatan_kode'])->first();
-            $desa = DB::table('wilayah')->where('kode', $validated['desa_kode'])->first();
+            // ✅ AMBIL NAMA WILAYAH DARI TABEL BARU reg_*
+            $prov  = DB::table('reg_provinces')->where('code', $validated['provinsi_kode'])->first();
+            $kab   = DB::table('reg_regencies')->where('code', $validated['kabupaten_kode'])->first();
+            $kec   = DB::table('reg_districts')->where('code', $validated['kecamatan_kode'])->first();
+            $desa  = DB::table('reg_villages')->where('code', $validated['desa_kode'])->first();
 
-            $kabName = $kab->nama ?? null;
-            $kecName = $kec->nama ?? null;
+            $provName = $prov->name ?? null;
+            $kabName  = $kab->name ?? null;
+            $kecName  = $kec->name ?? null;
+            $desaName = $desa->name ?? null;
 
-            $isKelurahan = $this->detectIsKelurahan($kabName, $kecName);
+            if (!$provName || !$kabName || !$kecName || !$desaName) {
+                DB::rollBack();
+                return back()
+                    ->withInput()
+                    ->withErrors(['kabupaten_kode' => 'Data wilayah tidak valid. Silakan pilih ulang Provinsi/Kabupaten/Kecamatan/Desa.']);
+            }
 
-            // ✅ FIX: FOTO KTP MASUK BUCKET CONSULTATIONS
-            // sebelumnya: $request->file('foto_ktp')->store('ktp', 'supabase');
+            // ✅ UPLOAD KTP KE BUCKET KTP (ktp-photos)
             $ktpFile = $request->file('foto_ktp');
             $ktpName = (string) Str::uuid() . '.' . $ktpFile->getClientOriginalExtension();
-
-            // ✅ simpan sesuai target: <NIK>/<filename>
             $ktpPath = $validated['nik'] . '/' . $ktpName;
 
-            // ✅ upload ke bucket ktp-photos via disk supabase_ktp
-            Storage::disk('supabase_ktp')->put(
-                $ktpPath,
-                file_get_contents($ktpFile)
-            );
+            Storage::disk('supabase_ktp')->put($ktpPath, file_get_contents($ktpFile));
 
+            // ✅ SIMPAN APPLICANT (TANPA is_kelurahan)
             $consultation->applicant()->create([
                 'nama_lengkap'   => $validated['nama_lengkap'],
                 'nik'            => $validated['nik'],
                 'email'          => $validated['email'] ?? null,
                 'phone'          => $validated['phone'],
-
-                // ✅ SIMPAN PEKERJAAN
                 'pekerjaan'      => $pekerjaanFinal,
-
                 'alamat_detail'  => $validated['alamat_detail'],
+
+                'provinsi_kode'  => $validated['provinsi_kode'],
+                'provinsi'       => $provName,
 
                 'kabupaten_kode' => $validated['kabupaten_kode'],
                 'kabupaten_nama' => $kabName,
                 'kecamatan_kode' => $validated['kecamatan_kode'],
                 'kecamatan_nama' => $kecName,
                 'desa_kode'      => $validated['desa_kode'],
-                'desa_nama'      => $desa->nama ?? null,
+                'desa_nama'      => $desaName,
 
-                'provinsi'       => 'Jawa Tengah',
-                'is_kelurahan'   => $isKelurahan,
                 'foto_ktp'       => $ktpPath,
             ]);
 
+            // ✅ DOKUMEN KE BUCKET consultatons
             if ($request->hasFile('documents')) {
                 foreach (array_slice($request->file('documents'), 0, 3) as $file) {
                     if ($file && $file->isValid()) {
                         $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
                         $path = $consultation->id . '/' . $filename;
 
-                        // ✅ DISK INI HARUS BUCKET CONSULTATIONS
-                        Storage::disk('supabase_consultations')->put(
-                            $path,
-                            file_get_contents($file)
-                        );
+                        Storage::disk('supabase_consultations')->put($path, file_get_contents($file));
 
                         ConsultationDocument::create([
                             'consultation_id' => $consultation->id,
@@ -224,13 +216,11 @@ class ConsultationController extends Controller
                 }
             }
 
+            // email notif
             if (!empty($validated['email'])) {
                 try {
                     $consultation->load(['applicant']);
-
-                    $html = view('emails.consultation-created', [
-                        'consultation' => $consultation,
-                    ])->render();
+                    $html = view('emails.consultation-created', ['consultation' => $consultation])->render();
 
                     $brevo->sendTransactional(
                         toEmail: $validated['email'],
@@ -256,7 +246,12 @@ class ConsultationController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('STORE CO ADMIN (consultation) failed', ['error' => $e->getMessage()]);
+
+            // ✅ BIAR KETAHUAN ERROR SEBENARNYA DI LOG
+            Log::error('STORE CO ADMIN (consultation) failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             return back()
                 ->withInput()
@@ -268,29 +263,18 @@ class ConsultationController extends Controller
     public function show(Consultation $consultation)
     {
         $user = auth()->user();
-        if ($user->user_type !== 'pegawai') {
-            abort(403, 'Unauthorized access.');
-        }
-
-        if ((int) $consultation->user_id !== (int) $user->id) {
-            abort(403, 'Unauthorized access.');
-        }
+        if ($user->user_type !== 'pegawai') abort(403, 'Unauthorized access.');
+        if ((int) $consultation->user_id !== (int) $user->id) abort(403, 'Unauthorized access.');
 
         $consultation->load(['handler', 'documents', 'applicant', 'statusHistories']);
-
         return view('user.consultations.show', compact('consultation'));
     }
 
     public function downloadDocument(ConsultationDocument $document)
     {
         $user = auth()->user();
-        if ($user->user_type !== 'pegawai') {
-            abort(403, 'Unauthorized access.');
-        }
-
-        if ((int) $document->consultation->user_id !== (int) $user->id) {
-            abort(403, 'Unauthorized access.');
-        }
+        if ($user->user_type !== 'pegawai') abort(403, 'Unauthorized access.');
+        if ((int) $document->consultation->user_id !== (int) $user->id) abort(403, 'Unauthorized access.');
 
         $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
         $bucket = env('SUPABASE_CONSULTATIONS_BUCKET', 'consultations');
@@ -327,7 +311,6 @@ class ConsultationController extends Controller
 
         $nikConsultation = substr($nik, 8, 4) ?: '0000';
         $date = now()->format('dmY');
-
         $todayPrefix = "KL.CA{$nikConsultation}.{$date}_";
 
         $last = Consultation::where('ticket_number', 'like', $todayPrefix . '%')
@@ -342,14 +325,6 @@ class ConsultationController extends Controller
         }
 
         $sequence = str_pad((string)$nextSeq, 3, '0', STR_PAD_LEFT);
-
         return "KL.CA{$nikConsultation}.{$date}_{$sequence}";
-    }
-
-    private function detectIsKelurahan(?string $kabName, ?string $kecName): bool
-    {
-        $kab = strtolower((string) $kabName);
-        $kec = strtolower((string) $kecName);
-        return str_contains($kab, 'kota') || str_contains($kec, 'kota');
     }
 }

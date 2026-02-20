@@ -8,11 +8,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ComplaintPdfController extends Controller
 {
-    /**
-     * Download complaint as PDF
-     * - Jika ada complaint_applicant: gunakan data applicant (CO ADMIN) TANPA fallback ke akun admin
-     * - Jika tidak ada applicant: gunakan data user (masyarakat)
-     */
     public function download(Complaint $complaint)
     {
         $auth = auth()->user();
@@ -21,17 +16,16 @@ class ComplaintPdfController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // butuh user untuk fallback masyarakat
         $complaint->load(['handler', 'documents', 'applicant', 'user']);
 
-        $applicant = $complaint->applicant; // complaint_applicants (CO ADMIN)
-        $account   = $complaint->user;      // users (masyarakat)
+        $applicant = $complaint->applicant;
+        $account   = $complaint->user;
 
         if ($applicant) {
             $userData = (object)[
                 'name' => $applicant->nama_lengkap,
                 'nik' => $applicant->nik,
-                'email' => $applicant->email, // opsional
+                'email' => $applicant->email,
                 'phone' => $applicant->phone,
                 'pekerjaan' => $applicant->pekerjaan ?? null,
 
@@ -39,8 +33,7 @@ class ComplaintPdfController extends Controller
                 'desa' => $applicant->desa_nama,
                 'kecamatan' => $applicant->kecamatan_nama,
                 'kabupaten' => $applicant->kabupaten_nama,
-                'provinsi' => $applicant->provinsi ?? 'Jawa Tengah',
-                'is_kelurahan' => (bool) $applicant->is_kelurahan,
+                'provinsi' => $applicant->provinsi ?? '-',
             ];
         } else {
             $userData = (object)[
@@ -54,32 +47,28 @@ class ComplaintPdfController extends Controller
                 'desa' => $account->desa ?? '',
                 'kecamatan' => $account->kecamatan ?? '',
                 'kabupaten' => $account->kabupaten ?? '',
-                'provinsi' => $account->provinsi ?? 'Jawa Tengah',
-                'is_kelurahan' => (bool) ($account->is_kelurahan ?? false),
+                'provinsi' => $account->provinsi ?? '-',
             ];
         }
 
-        // format alamat lengkap (samain konsultasi)
+        // alamat lengkap: DESA/KELURAHAN netral
         $alamatDetail = trim((string) ($userData->address ?? ''));
         $desa         = trim((string) ($userData->desa ?? ''));
         $kecamatan    = trim((string) ($userData->kecamatan ?? ''));
         $kabupaten    = trim((string) ($userData->kabupaten ?? ''));
-        $provinsi     = $userData->provinsi ?? 'Jawa Tengah';
+        $provinsi     = $userData->provinsi ?? '-';
 
-        $isKota = str_contains(strtolower($kabupaten), 'kota');
+        $isKotaKab = str_starts_with(strtolower($kabupaten), 'kota');
+
+        $kabClean = $isKotaKab
+            ? trim(preg_replace('/^kota\s+/i', '', $kabupaten))
+            : trim(preg_replace('/^kab\.?\s+/i', '', $kabupaten));
 
         $kabLabel = $kabupaten
-            ? ($isKota
-                ? 'Kota ' . trim(str_ireplace('kota', '', $kabupaten))
-                : 'Kab. ' . $kabupaten)
+            ? ($isKotaKab ? ('Kota ' . $kabClean) : ('Kab. ' . $kabClean))
             : null;
 
-        $desaLabel = null;
-        if ($desa) {
-            $desaLabel = ($userData->is_kelurahan ?? false)
-                ? 'Kelurahan ' . $desa
-                : 'Desa ' . $desa;
-        }
+        $desaLabel = $desa ? ('Desa/Kelurahan ' . $desa) : null;
 
         $alamatLengkap = collect([
             $alamatDetail ?: null,
@@ -89,7 +78,6 @@ class ComplaintPdfController extends Controller
             $provinsi,
         ])->filter()->implode(', ');
 
-        // status label (biar blade lama kamu tetap jalan)
         $status = strtolower((string) ($complaint->status ?? ''));
         $statusLabel = match ($status) {
             'pending', 'belum diproses' => 'Menunggu Diproses',

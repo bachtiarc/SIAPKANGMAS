@@ -33,8 +33,15 @@
     $desaNama = $app->desa_nama ?? '-';
     $kecNama  = $app->kecamatan_nama ?? '-';
     $kabNama  = $app->kabupaten_nama ?? '-';
+    $provNama = $app->provinsi ?? '-';
 
-    $desaLabel = ($app && $app->is_kelurahan) ? 'Kelurahan ' . $desaNama : 'Desa ' . $desaNama;
+    // pekerjaan (kalau "Lainnya", pakai isinya)
+    $pekerjaan = $app->pekerjaan ?? '-';
+    $pekerjaanLainnya = $app->pekerjaan_lainnya ?? null;
+    if ($pekerjaan === 'Lainnya' && $pekerjaanLainnya) $pekerjaan = $pekerjaanLainnya;
+
+    $isKel = (isset($app->is_kelurahan) && (bool) $app->is_kelurahan);
+    $desaLabel = ($app && $isKel) ? 'Kelurahan ' . $desaNama : 'Desa ' . $desaNama;
 
     $kabLower = strtolower(trim((string) $kabNama));
     $isKotaKab = str_starts_with($kabLower, 'kota');
@@ -48,17 +55,31 @@
         $desaLabel,
         'Kec. ' . $kecNama,
         $kabLabel,
-        $app->provinsi ?? 'Jawa Tengah',
+        $provNama,
     ])->filter(fn($v) => trim((string)$v) !== '' && trim((string)$v) !== '-')->implode(', ');
 
-    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-    $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
+    $supabaseUrl = rtrim((string) env('SUPABASE_URL'), '/');
 
-    $ktpPath = ltrim((string)($app->foto_ktp ?? ''), '/');
-    if (\Illuminate\Support\Str::startsWith($ktpPath, 'complaints/')) {
-        $ktpPath = \Illuminate\Support\Str::after($ktpPath, 'complaints/');
+    // URL KTP
+    $ktpBucket = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
+    $ktpRaw = $app->foto_ktp ?? null;
+    $ktpUrl = null;
+
+    if ($ktpRaw && $supabaseUrl) {
+        $ktpRaw = ltrim((string) $ktpRaw, '/');
+
+        if (\Illuminate\Support\Str::startsWith($ktpRaw, ['http://', 'https://'])) {
+            $ktpUrl = $ktpRaw;
+        } else {
+            if (\Illuminate\Support\Str::startsWith($ktpRaw, $ktpBucket . '/')) {
+                $ktpRaw = \Illuminate\Support\Str::after($ktpRaw, $ktpBucket . '/');
+            }
+            $ktpUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
+        }
     }
-    $ktpUrl = $ktpPath ? "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$ktpPath}" : null;
+
+    // bucket dokumen pengaduan (kalau controller view/download kamu sudah benar, blade ga perlu bikin url supabase langsung)
+    $bucket = env('SUPABASE_COMPLAINTS_BUCKET', 'complaints');
 @endphp
 
     <!-- Breadcrumb -->
@@ -75,7 +96,6 @@
     <!-- Header Action -->
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center space-x-4">
-
             @unless($isPdf ?? false)
                 <a href="{{ $backUrl }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,7 +198,7 @@
         </div>
     </div>
 
-    <!-- I. Data Pemohon -->
+    <!-- I. Data Pemohon (tampil 1-1) -->
     <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
         <h2 class="text-lg font-bold text-gray-900 mb-6 border-b pb-3">I. Data Pemohon</h2>
 
@@ -204,10 +224,35 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="text-sm text-gray-600 font-semibold">Alamat</div>
+                <div class="text-sm text-gray-600 font-semibold">Pekerjaan</div>
+                <div class="md:col-span-2 text-gray-900">{{ $pekerjaan ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Provinsi</div>
+                <div class="md:col-span-2 text-gray-900">{{ $provNama ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Kabupaten/Kota</div>
+                <div class="md:col-span-2 text-gray-900">{{ $kabLabel ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Kecamatan</div>
+                <div class="md:col-span-2 text-gray-900">{{ $kecNama ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Desa/Kelurahan</div>
+                <div class="md:col-span-2 text-gray-900">{{ $desaLabel ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Alamat Lengkap</div>
                 <div class="md:col-span-2 text-gray-900">
                     <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 whitespace-pre-line">
-                        {{ $alamatLengkap ?: '-' }}
+                        {{ $alamatDetail !== '' ? $alamatDetail : '-' }}
                     </div>
                 </div>
             </div>
@@ -270,29 +315,29 @@
             <div class="space-y-3">
                 @foreach($complaint->documents as $doc)
                     @php
-                        $fileName = $doc->original_name ?? basename($doc->file_path);
-                        $path = ltrim((string)$doc->file_path, '/');
-                        if (\Illuminate\Support\Str::startsWith($path, 'complaints/')) {
-                            $path = \Illuminate\Support\Str::after($path, 'complaints/');
-                        }
-                        $docUrl = "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
+                        $fileName = $doc->original_name ?? basename((string)$doc->file_path);
+
+                        // ✅ ini sesuai route yang kamu kasih (DENGAN prefix user.)
+                        $viewRoute = route('user.complaints.documents.view', $doc);
+                        $downloadRoute = route('user.complaints.document.download', $doc);
                     @endphp
 
                     <div class="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition">
                         <div class="min-w-0">
                             <p class="font-semibold text-gray-900 truncate max-w-[260px]">{{ $fileName }}</p>
-                            <p class="text-xs text-gray-500">{{ number_format(($doc->file_size ?? 0) / 1024, 2) }} KB</p>
+                            @if(!empty($doc->file_size))
+                                <p class="text-xs text-gray-500">{{ number_format(($doc->file_size ?? 0) / 1024, 2) }} KB</p>
+                            @endif
                         </div>
 
                         @unless($isPdf ?? false)
                             <div class="flex items-center gap-2">
-                                <a href="{{ $docUrl }}" target="_blank"
+                                <a href="{{ $viewRoute }}" target="_blank"
                                    class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-blue-600">
                                     Lihat
                                 </a>
 
-                                {{-- tombol download dokumen kamu biarin sesuai punyamu (karena kamu bilang yang lain jangan disentuh) --}}
-                                <a href="{{ route('user.complaints.download', $doc) }}"
+                                <a href="{{ $downloadRoute }}"
                                    class="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                                     Download
                                 </a>

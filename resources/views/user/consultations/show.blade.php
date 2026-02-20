@@ -33,38 +33,36 @@
 
         $app = $consultation->applicant;
 
+        // field sesuai input
         $alamatDetail = trim((string)($app->alamat_detail ?? ''));
 
-        $desaNama = $app->desa_nama ?? '-';
-        $kecNama  = $app->kecamatan_nama ?? '-';
+        $provNama = $app->provinsi ?? '-';
         $kabNama  = $app->kabupaten_nama ?? '-';
+        $kecNama  = $app->kecamatan_nama ?? '-';
+        $desaNama = $app->desa_nama ?? '-';
 
-        $desaLabel = ($app && ($app->is_kelurahan ?? false))
-            ? 'Kelurahan ' . $desaNama
-            : 'Desa ' . $desaNama;
-
-        $kabLower = strtolower(trim((string)$kabNama));
-        $isKotaKab = str_starts_with($kabLower, 'kota');
-
-        $kabClean = $isKotaKab
-            ? trim(preg_replace('/^kota\s+/i', '', (string)$kabNama))
-            : trim(preg_replace('/^kab\.?\s+/i', '', (string)$kabNama));
-
-        $kabLabel = $isKotaKab ? ('Kota ' . $kabClean) : ('Kab. ' . $kabClean);
-
-        $alamatLengkap = collect([
-            $alamatDetail,
-            $desaLabel,
-            'Kec. ' . $kecNama,
-            $kabLabel,
-            $app->provinsi ?? 'Jawa Tengah',
-        ])->filter(fn($v) => trim((string)$v) !== '' && trim((string)$v) !== '-')->implode(', ');
-
+        // URL KTP pakai bucket KTP (ktp-photos)
         $supabaseUrl = rtrim((string) env('SUPABASE_URL'), '/');
-        $bucket = env('SUPABASE_CONSULTATIONS_BUCKET', 'consultations');
+        $ktpBucket   = env('SUPABASE_KTP_BUCKET', 'ktp-photos');
 
-        $ktpPath = ltrim((string)($app->foto_ktp ?? ''), '/');
-        $ktpUrl = $ktpPath ? "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$ktpPath}" : null;
+        $ktpRaw = $app->foto_ktp ?? null;
+        $ktpUrl = null;
+
+        if ($ktpRaw && $supabaseUrl) {
+            $ktpRaw = ltrim((string) $ktpRaw, '/');
+
+            if (\Illuminate\Support\Str::startsWith($ktpRaw, ['http://', 'https://'])) {
+                $ktpUrl = $ktpRaw;
+            } else {
+                if (\Illuminate\Support\Str::startsWith($ktpRaw, $ktpBucket . '/')) {
+                    $ktpRaw = \Illuminate\Support\Str::after($ktpRaw, $ktpBucket . '/');
+                }
+                $ktpUrl = "{$supabaseUrl}/storage/v1/object/public/{$ktpBucket}/{$ktpRaw}";
+            }
+        }
+
+        // dokumen pendukung pakai bucket consultations
+        $docsBucket = env('SUPABASE_CONSULTATIONS_BUCKET', 'consultations');
     @endphp
 
     <!-- Breadcrumb -->
@@ -218,10 +216,30 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="text-sm text-gray-600 font-semibold">Alamat</div>
+                <div class="text-sm text-gray-600 font-semibold">Provinsi</div>
+                <div class="md:col-span-2 text-gray-900">{{ $provNama ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Kabupaten/Kota</div>
+                <div class="md:col-span-2 text-gray-900">{{ $kabNama ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Kecamatan</div>
+                <div class="md:col-span-2 text-gray-900">{{ $kecNama ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">Desa/Kelurahan</div>
+                <div class="md:col-span-2 text-gray-900">{{ $desaNama ?: '-' }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-sm text-gray-600 font-semibold">RT/RW / Nomor Jalan</div>
                 <div class="md:col-span-2 text-gray-900">
                     <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 whitespace-pre-line">
-                        {{ $alamatLengkap ?: '-' }}
+                        {{ $alamatDetail !== '' ? $alamatDetail : '-' }}
                     </div>
                 </div>
             </div>
@@ -232,12 +250,6 @@
                     @if($ktpUrl)
                         <a href="{{ $ktpUrl }}" target="_blank"
                            class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-blue-600">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
                             Lihat Foto KTP
                         </a>
                     @else
@@ -299,13 +311,12 @@
                         $fileName = $doc->original_name ?? basename((string)$doc->file_path);
                         $path = ltrim((string)$doc->file_path, '/');
 
-                        // kalau suatu saat tersimpan 'consultations/...', rapihin
-                        if (\Illuminate\Support\Str::startsWith($path, 'consultations/')) {
-                            $path = \Illuminate\Support\Str::after($path, 'consultations/');
+                        if (\Illuminate\Support\Str::startsWith($path, $docsBucket . '/')) {
+                            $path = \Illuminate\Support\Str::after($path, $docsBucket . '/');
                         }
 
-                        $docUrl = $supabaseUrl && $bucket
-                            ? "{$supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}"
+                        $docUrl = $supabaseUrl
+                            ? "{$supabaseUrl}/storage/v1/object/public/{$docsBucket}/{$path}"
                             : null;
                     @endphp
 

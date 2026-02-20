@@ -17,14 +17,14 @@ class ConsultationApplicant extends Model
         'phone',
         'pekerjaan',
         'alamat_detail',
+        'provinsi_kode',
+        'provinsi',
         'kabupaten_kode',
         'kabupaten_nama',
         'kecamatan_kode',
         'kecamatan_nama',
         'desa_kode',
         'desa_nama',
-        'provinsi',
-        'is_kelurahan',
         'foto_ktp',
     ];
 

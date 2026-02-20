@@ -21,7 +21,6 @@ class SubmissionApplicant extends Model
         'desa_kode',
         'desa_nama',
         'provinsi',
-        'is_kelurahan',
         'foto_ktp',
     ];
 

@@ -239,6 +239,16 @@
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
+                        Provinsi <span class="text-red-500">*</span>
+                    </label>
+                    <select name="provinsi_kode" id="provinsi" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Pilih Provinsi</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-2">
                         Kabupaten/Kota <span class="text-red-500">*</span>
                     </label>
                     <select name="kabupaten_kode" id="kabupaten" required
@@ -267,7 +277,7 @@
                     </select>
                 </div>
 
-                <div class="md:col-span-2">
+                <div>
                     <label class="block text-sm font-semibold text-gray-900 mb-2">
                         Alamat Lengkap (RT/RW, No Jalan, Dusun, dll) <span class="text-red-500">*</span>
                     </label>
@@ -454,6 +464,7 @@ function copyTicket() {
     });
 }
 
+// ===== Pekerjaan Lainnya =====
 function togglePekerjaanLainnya() {
     const pekerjaanEl = document.getElementById('pekerjaan');
     const wrap = document.getElementById('wrap_pekerjaan_lainnya');
@@ -475,6 +486,7 @@ function togglePekerjaanLainnya() {
 
 document.getElementById('pekerjaan')?.addEventListener('change', togglePekerjaanLainnya);
 togglePekerjaanLainnya();
+
 
 function displayFileName(index, input) {
     const fileNameEl = document.getElementById(`fileName${index}`);
@@ -510,13 +522,16 @@ function clearFile(index) {
     if (clearBtn) clearBtn.classList.add('hidden');
 }
 
+// ===== Wilayah Cascade: Provinsi -> Kabupaten -> Kecamatan -> Desa =====
 document.addEventListener('DOMContentLoaded', async () => {
-    const kab = document.getElementById('kabupaten');
-    const kec = document.getElementById('kecamatan');
+    const prov = document.getElementById('provinsi');
+    const kab  = document.getElementById('kabupaten');
+    const kec  = document.getElementById('kecamatan');
     const desa = document.getElementById('desa');
 
-    const oldKab = @json(old('kabupaten_kode'));
-    const oldKec = @json(old('kecamatan_kode'));
+    const oldProv = @json(old('provinsi_kode'));
+    const oldKab  = @json(old('kabupaten_kode'));
+    const oldKec  = @json(old('kecamatan_kode'));
     const oldDesa = @json(old('desa_kode'));
 
     async function fetchJson(url){
@@ -525,27 +540,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         return await res.json();
     }
 
-    async function loadKabupaten(){
-        const data = await fetchJson('/api/kabupaten');
+    function resetKab() {
         kab.innerHTML = '<option value="">Pilih Kabupaten/Kota</option>';
+    }
+    function resetKec() {
+        kec.innerHTML = '<option value="">Pilih Kecamatan</option>';
+    }
+    function resetDesa() {
+        desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+    }
+
+    async function loadProvinsi(setOld = false) {
+        const data = await fetchJson('/api/provinsi');
+        prov.innerHTML = '<option value="">Pilih Provinsi</option>';
         data.forEach(item => {
             const opt = document.createElement('option');
             opt.value = item.kode;
             opt.textContent = item.nama;
-            if (oldKab && oldKab === item.kode) opt.selected = true;
+            if (setOld && oldProv && oldProv === item.kode) opt.selected = true;
+            prov.appendChild(opt);
+        });
+    }
+
+    async function loadKabupaten(provKode, setOld = false){
+        resetKab(); resetKec(); resetDesa();
+        if(!provKode) return;
+
+        const data = await fetchJson(`/api/kabupaten/${provKode}`);
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.kode;
+            opt.textContent = item.nama;
+            if (setOld && oldKab && oldKab === item.kode) opt.selected = true;
             kab.appendChild(opt);
         });
     }
 
     async function loadKecamatan(kabKode, setOld = false){
-        if(!kabKode){
-            kec.innerHTML = '<option value="">Pilih Kecamatan</option>';
-            desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
-            return;
-        }
+        resetKec(); resetDesa();
+        if(!kabKode) return;
 
         const data = await fetchJson(`/api/kecamatan/${kabKode}`);
-        kec.innerHTML = '<option value="">Pilih Kecamatan</option>';
         data.forEach(item => {
             const opt = document.createElement('option');
             opt.value = item.kode;
@@ -556,13 +591,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function loadDesa(kecKode, setOld = false){
-        if(!kecKode){
-            desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
-            return;
-        }
+        resetDesa();
+        if(!kecKode) return;
 
         const data = await fetchJson(`/api/desa/${kecKode}`);
-        desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
         data.forEach(item => {
             const opt = document.createElement('option');
             opt.value = item.kode;
@@ -572,22 +604,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    await loadKabupaten();
+    // init
+    await loadProvinsi(true);
 
-    if(oldKab){
-        await loadKecamatan(oldKab, true);
-    }
-    if(oldKec){
-        await loadDesa(oldKec, true);
-    }
+    if (oldProv) await loadKabupaten(oldProv, true);
+    if (oldKab)  await loadKecamatan(oldKab, true);
+    if (oldKec)  await loadDesa(oldKec, true);
+
+    prov.addEventListener('change', async (e) => {
+        await loadKabupaten(e.target.value, false);
+    });
 
     kab.addEventListener('change', async (e) => {
-        await loadKecamatan(e.target.value);
-        desa.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
+        await loadKecamatan(e.target.value, false);
     });
 
     kec.addEventListener('change', async (e) => {
-        await loadDesa(e.target.value);
+        await loadDesa(e.target.value, false);
     });
 });
 </script>

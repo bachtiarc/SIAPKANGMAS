@@ -9,7 +9,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use App\Services\BrevoMailer;
@@ -88,26 +87,6 @@ class SubmissionController extends Controller
         return "PI.CA{$nikPart}.{$datePart}_{$sequence}";
     }
 
-    private function detectIsKelurahan(?string $kabupatenName, ?string $kecamatanName): bool
-    {
-        $kabupatenName = trim((string) $kabupatenName);
-        $kecamatanName = trim((string) $kecamatanName);
-
-        $isKota = str_starts_with(strtolower($kabupatenName), 'kota');
-
-        $kecamatanKota = [
-            'banjarnegara','purwokerto timur','purwokerto barat','purwokerto selatan','purwokerto utara',
-            'batang','blora','boyolali','brebes','cilacap tengah','cilacap selatan','cilacap utara',
-            'demak','purwodadi','jepara','karanganyar','kebumen','kendal','klaten tengah',
-            'kota kudus','mungkid','pati','kajen','pemalang','purbalingga','purworejo',
-            'rembang','sragen','sukoharjo','slawi','temanggung','wonosobo','wonogiri'
-        ];
-
-        $isKecamatanKota = in_array(strtolower($kecamatanName), $kecamatanKota, true);
-
-        return $isKota || $isKecamatanKota;
-    }
-
     public function store(Request $request, BrevoMailer $brevo)
     {
         $user = auth()->user();
@@ -124,10 +103,12 @@ class SubmissionController extends Controller
             'pekerjaan' => 'required|string|max:255',
             'pekerjaan_lainnya' => 'nullable|string|max:255',
 
+            'provinsi_kode' => 'required|string',
             'kabupaten_kode' => 'required|string',
             'kecamatan_kode' => 'required|string',
             'desa_kode' => 'required|string',
             'alamat_detail' => 'required|string|max:500',
+
             'foto_ktp' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
@@ -152,16 +133,25 @@ class SubmissionController extends Controller
                 ->withErrors(['pekerjaan_lainnya' => 'Pekerjaan (Lainnya) wajib diisi.']);
         }
 
-        if (!empty($validated['nik']) && !empty($validated['email']) && !empty($validated['phone'])) {
-            $existsUserAcc = User::where('nik', $validated['nik'])->exists() || User::where('email', $validated['email'])->exists()
-            || User::where('phone', $validated['phone'])->exists();
+        $nik   = preg_replace('/\D/', '', (string) ($validated['nik'] ?? ''));
+        $email = strtolower(trim((string) ($validated['email'] ?? '')));
 
-            if ($existsUserAcc) {
-                return back()
-                    ->withInput()
-                    ->with('toast_error', 'Untuk pengguna yang telah memiliki akun, silakan membuat pengajuan melalui dashboard sendiri.')
-                    ->with('toast_duration', 9000);
-            }
+        $existsUserAcc = User::query()
+            ->where('user_type', 'masyarakat_umum')
+            ->where(function ($q) use ($nik, $email) {
+                $q->where('nik', $nik);
+
+                if ($email !== '') {
+                    $q->orWhereRaw('LOWER(email) = ?', [$email]);
+                }
+            })
+            ->exists();
+
+        if ($existsUserAcc) {
+            return back()
+                ->withInput()
+                ->with('toast_error', 'Untuk pengguna yang telah memiliki akun, silakan membuat pengajuan melalui dashboard sendiri.')
+                ->with('toast_duration', 9000);
         }
 
         if ($request->hasFile('documents')) {
@@ -182,7 +172,6 @@ class SubmissionController extends Controller
 
         try {
             $ticketId = $this->generateTicketId($validated['nik']);
-
             while (Submission::where('ticket_id', $ticketId)->exists()) {
                 $ticketId = $this->generateTicketId($validated['nik']);
             }
@@ -192,14 +181,9 @@ class SubmissionController extends Controller
 
             if ($caraPenyampaian === 'datang_langsung') {
                 $raw = $validated['datang_langsung_opsi'] ?? null;
-
-                if ($raw === 'keduanya') {
-                    $opsiDatang = ['flashdisk', 'cetak'];
-                } elseif ($raw === 'flashdisk') {
-                    $opsiDatang = ['flashdisk'];
-                } elseif ($raw === 'cetak') {
-                    $opsiDatang = ['cetak'];
-                }
+                if ($raw === 'keduanya') $opsiDatang = ['flashdisk', 'cetak'];
+                elseif ($raw === 'flashdisk') $opsiDatang = ['flashdisk'];
+                elseif ($raw === 'cetak') $opsiDatang = ['cetak'];
             }
 
             $submission = Submission::create([
@@ -214,16 +198,20 @@ class SubmissionController extends Controller
                 'datang_langsung_opsi' => $opsiDatang,
             ]);
 
-            $kab = DB::table('wilayah')->where('kode', $validated['kabupaten_kode'])->first();
-            $kec = DB::table('wilayah')->where('kode', $validated['kecamatan_kode'])->first();
-            $desa = DB::table('wilayah')->where('kode', $validated['desa_kode'])->first();
+            // ===== ambil NAMA dari tabel reg_* (bukan wilayah) =====
+            $prov = DB::table('reg_provinces')->where('code', $validated['provinsi_kode'])->first();
+            $kab  = DB::table('reg_regencies')->where('code', $validated['kabupaten_kode'])->first();
+            $kec  = DB::table('reg_districts')->where('code', $validated['kecamatan_kode'])->first();
+            $desa = DB::table('reg_villages')->where('code', $validated['desa_kode'])->first();
 
-            $kabName = $kab->nama ?? null;
-            $kecName = $kec->nama ?? null;
-            $isKelurahan = $this->detectIsKelurahan($kabName, $kecName);
+            $provName = $prov->name ?? null;
+            $kabName  = $kab->name ?? null;
+            $kecName  = $kec->name ?? null;
+            $desaName = $desa->name ?? null;
 
+            // ===== upload KTP ke bucket ktp-photos =====
             $file = $request->file('foto_ktp');
-            $ktpPath = $validated['nik'].'/'.Str::uuid().'.'.$file->extension();
+            $ktpPath = $validated['nik'] . '/' . Str::uuid() . '.' . $file->extension();
 
             Storage::disk('supabase_ktp')->put(
                 $ktpPath,
@@ -231,27 +219,28 @@ class SubmissionController extends Controller
                 ['ContentType' => $file->getMimeType()]
             );
 
+            // ===== simpan applicant (TANPA is_kelurahan) =====
             $submission->applicant()->create([
                 'nama_lengkap' => $validated['nama_lengkap'],
                 'nik' => $validated['nik'],
                 'email' => $validated['email'] ?? null,
                 'phone' => $validated['phone'],
-
                 'pekerjaan' => $pekerjaanFinal,
 
                 'alamat_detail' => $validated['alamat_detail'],
 
+                'provinsi' => $provName, // kolomnya string
                 'kabupaten_kode' => $validated['kabupaten_kode'],
                 'kabupaten_nama' => $kabName,
                 'kecamatan_kode' => $validated['kecamatan_kode'],
                 'kecamatan_nama' => $kecName,
                 'desa_kode' => $validated['desa_kode'],
-                'desa_nama' => $desa->nama ?? null,
+                'desa_nama' => $desaName,
 
-                'is_kelurahan' => $isKelurahan,
                 'foto_ktp' => $ktpPath,
             ]);
 
+            // ===== dokumen pendukung ke bucket submissions =====
             if ($request->hasFile('documents')) {
                 foreach (array_slice($request->file('documents'), 0, 3) as $document) {
                     if ($document && $document->isValid()) {
