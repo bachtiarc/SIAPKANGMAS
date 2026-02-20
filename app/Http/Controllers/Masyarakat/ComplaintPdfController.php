@@ -12,7 +12,11 @@ class ComplaintPdfController extends Controller
     {
         $user = auth()->user();
 
-        if ((int) $complaint->user_id !== (int) $user->id) {
+        if (!$user || (int) $complaint->user_id !== (int) $user->id) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
 
@@ -20,47 +24,29 @@ class ComplaintPdfController extends Controller
 
         $statusRaw = strtolower((string) ($complaint->status ?? 'pending'));
         $statusLabel = match ($statusRaw) {
-            'pending', 'belum diproses' => 'Menunggu Proses',
-            'diproses', 'in_progress', 'on_progress', 'sedang diproses' => 'Diproses',
+            'pending', 'belum diproses', 'menunggu', 'menunggu diproses' => 'Menunggu Diproses',
+            'diproses', 'in_progress', 'on_progress', 'sedang diproses' => 'Sedang Diproses',
             'selesai', 'completed' => 'Selesai',
             'ditolak', 'rejected' => 'Ditolak',
-            default => ucfirst($statusRaw),
+            default => ucfirst(str_replace('_', ' ', $statusRaw)),
         };
 
         $alamatDetail = trim((string) ($user->address ?? ''));
         $desa         = trim((string) ($user->desa ?? ''));
         $kecamatan    = trim((string) ($user->kecamatan ?? ''));
         $kabupaten    = trim((string) ($user->kabupaten ?? ''));
-        $provinsi     = trim((string) ($user->provinsi ?? 'Jawa Tengah'));
-        $isKota = str_contains(strtolower($kabupaten), 'kota');
-
-        $kabLabel = $kabupaten
-            ? ($isKota
-                ? 'Kota ' . trim(str_ireplace('kota', '', $kabupaten))
-                : 'Kab. ' . $kabupaten
-              )
-            : null;
-
-        $isKelurahan = (bool) ($user->is_kelurahan ?? false);
-
-        $desaLabel = $desa
-            ? ($isKelurahan ? 'Kelurahan ' . $desa : 'Desa ' . $desa)
-            : null;
-
-        $alamatLengkap = collect([
-            $alamatDetail ?: null,
-            $desaLabel,
-            $kecamatan ? 'Kec. ' . $kecamatan : null,
-            $kabLabel,
-            $provinsi ?: null,
-        ])->filter()->implode(', ');
+        $provinsi     = trim((string) ($user->provinsi ?? ''));
 
         $data = [
-            'serviceTitle'   => 'PENGADUAN',
-            'complaint'      => $complaint,
-            'user'           => $user,
-            'statusLabel'    => $statusLabel,
-            'alamatLengkap'  => $alamatLengkap,
+            'serviceTitle' => 'PENGADUAN',
+            'complaint'    => $complaint,
+            'user'         => $user,
+            'statusLabel'  => $statusLabel,
+            'alamatDetail' => $alamatDetail,
+            'desa'         => $desa,
+            'kecamatan'    => $kecamatan,
+            'kabupaten'    => $kabupaten,
+            'provinsi'     => $provinsi,
         ];
 
         $pdf = Pdf::loadView('pdfs.masyarakat-complaint', $data)

@@ -140,6 +140,14 @@
         li {
             margin-bottom: 3px;
         }
+
+        .note {
+            border: 1px solid #000;
+            padding: 10px 12px;
+            background: #fafafa;
+            font-size: 10pt;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -164,14 +172,15 @@
     <p>Jl. Pahlawan No.4, Pleburan, Kec. Semarang Sel., Kota Semarang, Jawa Tengah 50241</p>
     <p>Website: www.disperindag.jatengprov.go.id</p>
 </div>
+
 <!-- NOTE (DOKUMEN PENDUKUNG) -->
-    <div class="note">
-        <strong>Catatan:</strong>
-        Dokumen pendukung yang diunggah pada pengaduan ini
-        <u>tidak tercetak secara otomatis</u>.
-        Apabila diperlukan, dokumen pendukung dapat dicetak sendiri
-        atau diakses melalui sistem SIAPKANGMAS.
-    </div>
+<div class="note">
+    <strong>Catatan:</strong>
+    Dokumen pendukung yang diunggah pada pengaduan ini
+    <u>tidak tercetak secara otomatis</u>.
+    Apabila diperlukan, dokumen pendukung dapat dicetak sendiri
+    atau diakses melalui sistem SIAPKANGMAS.
+</div>
 
 <!-- TITLE -->
 <div class="document-title">
@@ -219,30 +228,34 @@
         <div class="info-content">{{ $user->phone ?? '-' }}</div>
     </div>
 
-    @php
-        $alamat = trim($user->address ?? '');
-
-        $desaLabel = $user->is_kelurahan
-            ? 'Kelurahan ' . $user->desa
-            : 'Desa ' . $user->desa;
-
-        $kabLabel = str_starts_with(strtolower($user->kabupaten), 'kota')
-            ? 'Kota ' . str_replace('Kota ', '', $user->kabupaten)
-            : 'Kab. ' . $user->kabupaten;
-
-        $alamatLengkap = collect([
-            $alamat,
-            $desaLabel,
-            'Kec. ' . $user->kecamatan,
-            $kabLabel,
-            $user->provinsi ?? 'Jawa Tengah',
-        ])->implode(', ');
-    @endphp
+    <div class="info-row">
+        <div class="info-label">Provinsi</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $alamat_provinsi ?? ($user->provinsi ?? '-') }}</div>
+    </div>
 
     <div class="info-row">
-        <div class="info-label">Alamat</div>
+        <div class="info-label">Kota/Kabupaten</div>
         <div class="info-sep">:</div>
-        <div class="info-content">{{ $alamatLengkap }}</div>
+        <div class="info-content">{{ $alamat_kabupaten ?? ($user->kabupaten ?? '-') }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Kecamatan</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $alamat_kecamatan ?? ($user->kecamatan ?? '-') }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Kelurahan/Desa</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $alamat_desa ?? ($user->desa ?? '-') }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Alamat Lengkap</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $alamat_detail ?? ($user->address ?? '-') }}</div>
     </div>
 </div>
 

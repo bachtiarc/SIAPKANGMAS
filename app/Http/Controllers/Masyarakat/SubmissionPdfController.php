@@ -18,26 +18,11 @@ class SubmissionPdfController extends Controller
 
         $submission->load(['user']);
 
-
-        $alamatDetail = trim($user->address ?? '');
-        $desa         = trim($user->desa ?? '');
-        $kecamatan    = trim($user->kecamatan ?? '');
-        $kabupaten    = trim($user->kabupaten ?? '');
-        $provinsi     = $user->provinsi ?? 'Jawa Tengah';
-        $isKota = str_contains(strtolower($kabupaten), 'kota');
-        $kabLabel = $isKota
-            ? 'Kota ' . trim(str_ireplace('kota', '', $kabupaten))
-            : 'Kab. ' . $kabupaten;
-        $desaLabel = $isKota
-            ? 'Kelurahan ' . $desa
-            : 'Desa ' . $desa;
-        $alamatLengkap = collect([
-            $alamatDetail ?: null,
-            $desa ? $desaLabel : null,
-            $kecamatan ? 'Kec. ' . $kecamatan : null,
-            $kabupaten ? $kabLabel : null,
-            $provinsi,
-        ])->filter()->implode(', ');
+        $alamatDetail = trim((string) ($user->address ?? ''));
+        $desa         = trim((string) ($user->desa ?? ''));
+        $kecamatan    = trim((string) ($user->kecamatan ?? ''));
+        $kabupaten    = trim((string) ($user->kabupaten ?? ''));
+        $provinsi     = trim((string) ($user->provinsi ?? ''));
 
         $submissionType = $this->getSubmissionType($submission->type ?? 'permohonan');
 
@@ -45,7 +30,11 @@ class SubmissionPdfController extends Controller
             'submission'     => $submission,
             'user'           => $user,
             'submissionType' => $submissionType,
-            'alamatLengkap'  => $alamatLengkap,
+            'alamat_provinsi'  => $provinsi ?: '-',
+            'alamat_kabupaten' => $kabupaten ?: '-',
+            'alamat_kecamatan' => $kecamatan ?: '-',
+            'alamat_desa'      => $desa ?: '-',
+            'alamat_detail'    => $alamatDetail ?: '-',
         ]);
 
         $pdf->setPaper('a4', 'portrait');

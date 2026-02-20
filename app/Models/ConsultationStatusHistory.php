@@ -9,7 +9,6 @@ class ConsultationStatusHistory extends Model
 {
     use HasFactory;
 
-    // Nama tabel di Supabase Anda
     protected $table = 'status_histories'; 
 
     protected $fillable = [
@@ -21,9 +20,7 @@ class ConsultationStatusHistory extends Model
         'changed_by',
     ];
 
-    /**
-     * Relasi Polymorphic ke Consultation
-     */
+ 
     public function trackable()
     {
         return $this->morphTo();

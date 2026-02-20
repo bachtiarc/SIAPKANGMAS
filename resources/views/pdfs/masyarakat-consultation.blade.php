@@ -164,6 +164,14 @@
     <p>Tanggal: {{ $consultation->created_at->format('d F Y') }}</p>
 </div>
 
+@php
+    $alamatDetailPdf = trim((string) ($alamatDetail ?? ($user->address ?? '')));
+    $desaPdf         = trim((string) ($desa ?? ($user->desa ?? '')));
+    $kecamatanPdf    = trim((string) ($kecamatan ?? ($user->kecamatan ?? '')));
+    $kabupatenPdf    = trim((string) ($kabupaten ?? ($user->kabupaten ?? '')));
+    $provinsiPdf     = trim((string) ($provinsi ?? ($user->provinsi ?? '')));
+@endphp
+
 <!-- DATA PEMOHON -->
 <div class="content-section">
     <h3>I. DATA PEMOHON</h3>
@@ -201,9 +209,33 @@
     </div>
 
     <div class="info-row">
-        <div class="info-label">Alamat</div>
+        <div class="info-label">Provinsi</div>
         <div class="info-sep">:</div>
-        <div class="info-content">{{ $alamatLengkap ?? '-' }}</div>
+        <div class="info-content">{{ $provinsiPdf !== '' ? $provinsiPdf : '-' }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Kota/Kabupaten</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $kabupatenPdf !== '' ? $kabupatenPdf : '-' }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Kecamatan</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $kecamatanPdf !== '' ? $kecamatanPdf : '-' }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Kelurahan/Desa</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $desaPdf !== '' ? $desaPdf : '-' }}</div>
+    </div>
+
+    <div class="info-row">
+        <div class="info-label">Alamat Lengkap</div>
+        <div class="info-sep">:</div>
+        <div class="info-content">{{ $alamatDetailPdf !== '' ? $alamatDetailPdf : '-' }}</div>
     </div>
 </div>
 
@@ -229,8 +261,18 @@
         <div class="info-label">Status</div>
         <div class="info-sep">:</div>
         <div class="info-content">
+            @php
+                $statusLabel = match($consultation->status) {
+                    'pending', 'belum diproses' => 'Menunggu Diproses',
+                    'in_progress', 'on_progress', 'diproses' => 'Sedang Diproses',
+                    'completed', 'selesai' => 'Selesai',
+                    'rejected', 'ditolak' => 'Ditolak',
+                    default => ucfirst(str_replace('_',' ',$consultation->status)),
+                };
+            @endphp
+
             <span class="status-badge">
-                {{ ucfirst(str_replace('_',' ',$consultation->status)) }}
+                {{ $statusLabel }}
             </span>
         </div>
     </div>

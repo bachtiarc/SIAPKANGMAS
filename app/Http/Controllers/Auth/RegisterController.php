@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB; 
+use Illuminate\Support\Facades\DB;
 use App\Services\BrevoMailer;
 
 class RegisterController extends Controller
@@ -28,6 +28,7 @@ class RegisterController extends Controller
             'phone'     => ['required','regex:/^(08|62|\+62)[0-9]{9,13}$/'],
             'pekerjaan' => 'required|string|max:255',
             'pekerjaan_lainnya' => 'nullable|string|max:255',
+            'provinsi'  => 'required|string',
             'kabupaten' => 'required|string',
             'kecamatan' => 'required|string',
             'desa'      => 'required|string',
@@ -53,39 +54,26 @@ class RegisterController extends Controller
             ['ContentType' => $file->getMimeType()]
         );
 
-        $kabupatenName = DB::table('wilayah')->where('kode', $request->kabupaten)->value('nama') ?? $request->kabupaten;
-        $kecamatanName = DB::table('wilayah')->where('kode', $request->kecamatan)->value('nama') ?? $request->kecamatan;
-        $desaName      = DB::table('wilayah')->where('kode', $request->desa)->value('nama') ?? $request->desa;
-
-        $isKota = str_starts_with(strtolower($kabupatenName), 'Kota');
-        $kecamatanKota = [
-            'banjarnegara','purwokerto timur','purwokerto barat','purwokerto selatan','purwokerto utara',
-            'batang','blora','boyolali','brebes','cilacap tengah','cilacap selatan','cilacap utara',
-            'demak','purwodadi','jepara','karanganyar','kebumen','kendal','klaten tengah',
-            'kota kudus','mungkid','pati','kajen','pemalang','purbalingga','purworejo',
-            'rembang','sragen','sukoharjo','slawi','temanggung','wonosobo','wonogiri'
-        ];
-
-        $isKelurahan =
-            $isKota ||
-            in_array(strtolower($kecamatanName), $kecamatanKota);
+        $provinsiName  = DB::table('reg_provinces')->where('code', $request->provinsi)->value('name') ?? $request->provinsi;
+        $kabupatenName = DB::table('reg_regencies')->where('code', $request->kabupaten)->value('name') ?? $request->kabupaten;
+        $kecamatanName = DB::table('reg_districts')->where('code', $request->kecamatan)->value('name') ?? $request->kecamatan;
+        $desaName      = DB::table('reg_villages')->where('code', $request->desa)->value('name') ?? $request->desa;
 
         $user = User::create([
-            'name'       => $request->name,
-            'nik'        => $request->nik,
-            'email'      => $request->email,
-            'phone'      => $request->phone,
-            'address'    => $request->alamat,
-            'desa'       => $desaName,
-            'kecamatan'  => $kecamatanName,
-            'kabupaten'  => $kabupatenName, 
-            'provinsi'   => 'Jawa Tengah',
-            'is_kelurahan' => $isKelurahan,
-            'pekerjaan'  => $pekerjaan,
-            'foto_ktp'   => $path,
-            'role'       => 'user',
-            'user_type'  => 'masyarakat_umum',
-            'password'   => Hash::make($request->password),
+            'name'        => $request->name,
+            'nik'         => $request->nik,
+            'email'       => $request->email,
+            'phone'       => $request->phone,
+            'address'     => $request->alamat,
+            'provinsi'    => $provinsiName,
+            'kabupaten'   => $kabupatenName,
+            'kecamatan'   => $kecamatanName,
+            'desa'        => $desaName,
+            'pekerjaan'   => $pekerjaan,
+            'foto_ktp'    => $path,
+            'role'        => 'user',
+            'user_type'   => 'masyarakat_umum',
+            'password'    => Hash::make($request->password),
         ]);
 
         $this->sendBrevoVerificationEmail($user);

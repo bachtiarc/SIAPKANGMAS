@@ -86,12 +86,6 @@ Route::middleware('auth')->group(function () {
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
     ->name('verification.verify');
 
-// WILAYAH
-Route::prefix('api')->group(function () {
-    Route::get('/kabupaten', [WilayahController::class, 'kabupaten']);
-    Route::get('/kecamatan/{kodeKab}', [WilayahController::class, 'kecamatan']);
-    Route::get('/desa/{kodeKec}', [WilayahController::class, 'desa']);
-});
 
 // User Pegawai Dashboard 
 Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')->name('user.')->group(function () {
@@ -264,3 +258,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('/submissions/{id}/unarchive', [\App\Http\Controllers\Admin\ArchiveController::class, 'unarchiveSubmission'])
         ->name('submissions.unarchive');
 });
+
+Route::get('/api/provinsi', [WilayahController::class, 'provinces']);
+Route::get('/api/kabupaten/{provinsi}', [WilayahController::class, 'regencies']);
+Route::get('/api/kecamatan/{kabupaten}', [WilayahController::class, 'districts']);
+Route::get('/api/desa/{kecamatan}', [WilayahController::class, 'villages']);

@@ -11,6 +11,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // ========================================
+        // SEED DATA WILAYAH (PROV/KAB/KEC/DESA)
+        // ========================================
+        $this->call(\Database\Seeders\RegionalSeeder::class);
+
+        // ========================================
         // CREATE OR UPDATE ADMIN USER
         // ========================================
         $adminEmail = 'admin@disperindag.jatengprov.go.id';

@@ -8,51 +8,33 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ConsultationPdfController extends Controller
 {
-    /**
-     * Download consultation as PDF for masyarakat
-     */
     public function download(Consultation $consultation)
     {
         $user = auth()->user();
 
-        if ($consultation->user_id !== $user->id) {
+        if (!$user || $consultation->user_id !== $user->id) {
             abort(403, 'Unauthorized access.');
         }
 
         if ($user->user_type !== 'masyarakat_umum') {
             abort(403, 'Unauthorized access.');
         }
-        
+
         $consultation->load(['handler', 'user', 'documents']);
-
-        $alamatDetail = trim($user->address ?? '');
-        $desa         = trim($user->desa ?? '');
-        $kecamatan    = trim($user->kecamatan ?? '');
-        $kabupaten    = trim($user->kabupaten ?? '');
-        $provinsi     = $user->provinsi ?? 'Jawa Tengah';
-
-        $isKota = str_contains(strtolower($kabupaten), 'kota');
-
-        $kabLabel = $isKota
-            ? 'Kota ' . trim(str_ireplace('kota', '', $kabupaten))
-            : 'Kab. ' . $kabupaten;
-
-        $desaLabel = $isKota
-            ? 'Kelurahan ' . $desa
-            : 'Desa ' . $desa;
-
-        $alamatLengkap = collect([
-            $alamatDetail ?: null,
-            $desa ? $desaLabel : null,
-            $kecamatan ? 'Kec. ' . $kecamatan : null,
-            $kabupaten ? $kabLabel : null,
-            $provinsi,
-        ])->filter()->implode(', ');
+        $alamatDetail = trim((string) ($user->address ?? ''));
+        $desa         = trim((string) ($user->desa ?? ''));
+        $kecamatan    = trim((string) ($user->kecamatan ?? ''));
+        $kabupaten    = trim((string) ($user->kabupaten ?? ''));
+        $provinsi     = trim((string) ($user->provinsi ?? ''));
 
         $pdf = Pdf::loadView('pdfs.masyarakat-consultation', [
             'consultation'  => $consultation,
             'user'          => $user,
-            'alamatLengkap' => $alamatLengkap,
+            'alamatDetail'  => $alamatDetail,
+            'desa'          => $desa,
+            'kecamatan'     => $kecamatan,
+            'kabupaten'     => $kabupaten,
+            'provinsi'      => $provinsi,
         ]);
 
         $pdf->setPaper('a4', 'portrait');

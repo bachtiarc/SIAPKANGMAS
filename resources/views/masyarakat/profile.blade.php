@@ -101,7 +101,7 @@
                         <input type="text" value="{{ auth()->user()->pekerjaan ?? '-' }}" readonly
                             class="font-lato w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
                     </div>
-
+                    
                     <div>
                         <label class="font-montserrat block text-sm font-semibold text-gray-700 mb-2">Provinsi</label>
                         <input type="text" value="{{ auth()->user()->provinsi ?? '-' }}" readonly
@@ -129,8 +129,7 @@
                     <div class="md:col-span-2">
                         <label class="font-montserrat block text-sm font-semibold text-gray-700 mb-2">Alamat Lengkap</label>
                         <textarea readonly rows="3"
-                            class="font-lato w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 resize-none">{{ auth()->user()->address ?? '-' }}
-                        </textarea>
+                            class="font-lato w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 resize-none">{{ auth()->user()->address ?? '-' }}</textarea>
                     </div>
 
                     @if(auth()->user()->foto_ktp)

@@ -12,9 +12,6 @@ use App\Services\BrevoMailer;
 
 class ComplaintController extends Controller
 {
-    /**
-     * Display a listing of complaints
-     */
     public function index(Request $request)
     {
         $user = auth()->user();
@@ -53,17 +50,13 @@ class ComplaintController extends Controller
         return view('masyarakat.complaints.index', compact('complaints'));
     }
 
-    /**
-     * Show the form for creating a new complaint
-     */
+
     public function create()
     {
         return view('masyarakat.complaints.create');
     }
 
-    /**
-     * Store a newly created complaint in storage
-     */
+
     public function store(Request $request, BrevoMailer $brevo)
     {
         $user = auth()->user();
@@ -138,10 +131,8 @@ class ComplaintController extends Controller
         // SEND EMAIL VIA BREVO API
         // =========================
         try {
-            // load relasi yang dipakai di blade
             $complaint->load(['user']);
 
-            // render view (nama file pakai dash)
             $html = view('emails.complaint-created', [
                 'complaint' => $complaint,
             ])->render();
@@ -179,9 +170,6 @@ class ComplaintController extends Controller
             ->with('complaint_id', $complaint->id);
     }
 
-    /**
-     * Display the specified complaint
-     */
     public function show(Complaint $complaint)
     {
         $user = auth()->user();
@@ -195,9 +183,7 @@ class ComplaintController extends Controller
         return view('masyarakat.complaints.show', compact('complaint'));
     }
 
-    /**
-     * Show the form for editing the specified complaint
-     */
+
     public function edit(Complaint $complaint)
     {
         $user = auth()->user();
@@ -214,9 +200,6 @@ class ComplaintController extends Controller
         return view('masyarakat.complaints.edit', compact('complaint'));
     }
 
-    /**
-     * Update the specified complaint in storage
-     */
     public function update(Request $request, Complaint $complaint)
     {
         $user = auth()->user();
@@ -273,9 +256,7 @@ class ComplaintController extends Controller
             ->with('success', 'Pengaduan berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified complaint from storage
-     */
+
     public function destroy(Complaint $complaint)
     {
         $user = auth()->user();

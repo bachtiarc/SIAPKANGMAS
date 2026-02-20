@@ -19,7 +19,6 @@
 
 @section('content')
 
-<!-- TOAST -->
 <div id="toast-container" class="fixed top-6 right-6 z-[9999]"></div>
 
 <!-- PAGE -->
@@ -109,6 +108,14 @@
             </div>
 
             <!-- WILAYAH -->
+            <div>
+                <label class="font-semibold">Provinsi</label>
+                <select id="provinsi" name="provinsi" required
+                        class="w-full mt-1 border rounded-lg px-4 py-2">
+                    <option value="">Pilih Provinsi</option>
+                </select>
+            </div>
+
             <div>
                 <label class="font-semibold">Kabupaten / Kota</label>
                 <select id="kabupaten" name="kabupaten" required
@@ -228,7 +235,7 @@ function showToast(msg, type='success') {
     }, 4000);
 }
 
-// FILE SIZE
+
 document.getElementById('foto_ktp')?.addEventListener('change', e => {
     if (e.target.files[0]?.size > 2 * 1024 * 1024) {
         showToast('Ukuran file maksimal 2MB', 'error');
@@ -236,7 +243,7 @@ document.getElementById('foto_ktp')?.addEventListener('change', e => {
     }
 });
 
-// PEKERJAAN LAINNYA
+
 document.getElementById('pekerjaan')?.addEventListener('change', function () {
     const wrapper = document.getElementById('pekerjaan_lainnya_wrapper');
     const input = document.getElementById('pekerjaan_lainnya');
@@ -251,24 +258,83 @@ document.getElementById('pekerjaan')?.addEventListener('change', function () {
     }
 });
 
-// WILAYAH
-fetch('/api/kabupaten').then(r=>r.json()).then(d=>{
-    d.forEach(x=>kabupaten.innerHTML+=`<option value="${x.kode}">${x.nama}</option>`);
-});
 
-kabupaten.onchange=e=>{
-    fetch(`/api/kecamatan/${e.target.value}`).then(r=>r.json()).then(d=>{
-        kecamatan.innerHTML='<option value="">Pilih Kecamatan</option>';
-        desa.innerHTML='<option value="">Pilih Desa</option>';
-        d.forEach(x=>kecamatan.innerHTML+=`<option value="${x.kode}">${x.nama}</option>`);
+const provinsi  = document.getElementById('provinsi');
+const kabupaten = document.getElementById('kabupaten');
+const kecamatan = document.getElementById('kecamatan');
+const desa      = document.getElementById('desa');
+
+const oldProv = @json(old('provinsi'));
+const oldKab  = @json(old('kabupaten'));
+const oldKec  = @json(old('kecamatan'));
+const oldDes  = @json(old('desa'));
+
+fetch('/api/provinsi')
+    .then(r => r.json())
+    .then(d => {
+        d.forEach(x => {
+            const selected = String(x.kode) === String(oldProv) ? 'selected' : '';
+            provinsi.innerHTML += `<option value="${x.kode}" ${selected}>${x.nama}</option>`;
+        });
+        if (provinsi.value) {
+            provinsi.dispatchEvent(new Event('change'));
+        }
     });
+
+provinsi.onchange = e => {
+    kabupaten.innerHTML = '<option value="">Pilih Kabupaten / Kota</option>';
+    kecamatan.innerHTML = '<option value="">Pilih Kecamatan</option>';
+    desa.innerHTML      = '<option value="">Pilih Desa</option>';
+
+    if (!e.target.value) return;
+
+    fetch(`/api/kabupaten/${e.target.value}`)
+        .then(r => r.json())
+        .then(d => {
+            d.forEach(x => {
+                const selected = String(x.kode) === String(oldKab) ? 'selected' : '';
+                kabupaten.innerHTML += `<option value="${x.kode}" ${selected}>${x.nama}</option>`;
+            });
+
+            if (kabupaten.value) {
+                kabupaten.dispatchEvent(new Event('change'));
+            }
+        });
 };
 
-kecamatan.onchange=e=>{
-    fetch(`/api/desa/${e.target.value}`).then(r=>r.json()).then(d=>{
-        desa.innerHTML='<option value="">Pilih Desa</option>';
-        d.forEach(x=>desa.innerHTML+=`<option value="${x.kode}">${x.nama}</option>`);
-    });
+kabupaten.onchange = e => {
+    kecamatan.innerHTML = '<option value="">Pilih Kecamatan</option>';
+    desa.innerHTML      = '<option value="">Pilih Desa</option>';
+
+    if (!e.target.value) return;
+
+    fetch(`/api/kecamatan/${e.target.value}`)
+        .then(r => r.json())
+        .then(d => {
+            d.forEach(x => {
+                const selected = String(x.kode) === String(oldKec) ? 'selected' : '';
+                kecamatan.innerHTML += `<option value="${x.kode}" ${selected}>${x.nama}</option>`;
+            });
+
+            if (kecamatan.value) {
+                kecamatan.dispatchEvent(new Event('change'));
+            }
+        });
+};
+
+kecamatan.onchange = e => {
+    desa.innerHTML = '<option value="">Pilih Desa</option>';
+
+    if (!e.target.value) return;
+
+    fetch(`/api/desa/${e.target.value}`)
+        .then(r => r.json())
+        .then(d => {
+            d.forEach(x => {
+                const selected = String(x.kode) === String(oldDes) ? 'selected' : '';
+                desa.innerHTML += `<option value="${x.kode}" ${selected}>${x.nama}</option>`;
+            });
+        });
 };
 </script>
 @endpush

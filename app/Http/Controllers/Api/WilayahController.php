@@ -7,30 +7,38 @@ use Illuminate\Support\Facades\DB;
 
 class WilayahController extends Controller
 {
-    public function kabupaten()
+    public function provinces()
     {
-        return DB::table('wilayah')
-            ->where('parent', '33')
-            ->where('level', 2)
-            ->orderBy('nama')
-            ->get(['kode', 'nama']);
+        return DB::table('reg_provinces')
+            ->select('code as kode', 'name as nama')
+            ->orderBy('name')
+            ->get();
     }
 
-    public function kecamatan($kodeKab)
+    public function regencies(string $provinsi)
     {
-        return DB::table('wilayah')
-            ->where('parent', $kodeKab)
-            ->where('level', 3)
-            ->orderBy('nama')
-            ->get(['kode', 'nama']);
+        return DB::table('reg_regencies')
+            ->select('code as kode', 'name as nama')
+            ->where('province_code', $provinsi)
+            ->orderBy('name')
+            ->get();
     }
 
-    public function desa($kodeKec)
+    public function districts(string $kabupaten)
     {
-        return DB::table('wilayah')
-            ->where('parent', $kodeKec)
-            ->where('level', 4)
-            ->orderBy('nama')
-            ->get(['kode', 'nama']);
+        return DB::table('reg_districts')
+            ->select('code as kode', 'name as nama')
+            ->where('regency_code', $kabupaten)
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function villages(string $kecamatan)
+    {
+        return DB::table('reg_villages')
+            ->select('code as kode', 'name as nama')
+            ->where('district_code', $kecamatan)
+            ->orderBy('name')
+            ->get();
     }
 }
