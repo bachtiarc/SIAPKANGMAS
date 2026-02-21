@@ -442,18 +442,6 @@
             <th>Catatan</th>
         </tr>
 
-        {{-- Samakan timeline awal seperti show --}}
-        <tr>
-            <td>{{ optional($submission->created_at)->format('d M Y H:i') }}</td>
-            <td>Tiket Dibuat</td>
-            <td>-</td>
-        </tr>
-        <tr>
-            <td>{{ optional($submission->created_at)->format('d M Y H:i') }}</td>
-            <td>Tiket Diterima Sistem</td>
-            <td>-</td>
-        </tr>
-
             @php
                 $histories = collect($submission->statusHistories ?? [])
                     ->sortBy(fn($h) => optional($h->created_at)->timestamp ?? 0)

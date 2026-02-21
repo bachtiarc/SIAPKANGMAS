@@ -109,11 +109,6 @@ class ArchiveController extends Controller
     {
         $x = Consultation::findOrFail($id);
 
-        // hanya boleh selesai/ditolak
-        if (!in_array($x->status, ['completed','rejected'])) {
-            return back()->with('error', 'Hanya pengajuan selesai/ditolak yang dapat diarsipkan.');
-        }
-
         $x->update(['archived_at' => now()]);
         return back()->with('success', 'Konsultasi berhasil diarsipkan.');
     }
@@ -121,9 +116,7 @@ class ArchiveController extends Controller
     public function archiveComplaint($id)
     {
         $x = Complaint::findOrFail($id);
-        if (!in_array($x->status, ['selesai','ditolak'])) {
-            return back()->with('error', 'Hanya pengaduan selesai/ditolak yang dapat diarsipkan.');
-        }
+
         $x->update(['archived_at' => now()]);
         return back()->with('success', 'Pengaduan berhasil diarsipkan.');
     }
@@ -131,9 +124,7 @@ class ArchiveController extends Controller
     public function archiveSubmission($id)
     {
         $x = Submission::findOrFail($id);
-        if (!in_array($x->status, ['completed','rejected'])) {
-            return back()->with('error', 'Hanya permohonan selesai/ditolak yang dapat diarsipkan.');
-        }
+       
         $x->update(['archived_at' => now()]);
         return back()->with('success', 'Permohonan berhasil diarsipkan.');
     }

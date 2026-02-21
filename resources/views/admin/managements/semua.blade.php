@@ -13,11 +13,11 @@
         'Bidang Pengembangan Sarana Prasarana, Pengawasan Dan Pengendalian Industri',
         'Bidang Perdagangan Dalam Negeri',
         'Bidang Perdagangan Luar Negeri',
-        'Balai Industri Logam dan Kayu (BILK) Kelas A',
-        'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Surakarta Kelas A',
+        'Balai Industri Logam dan Kayu (BILK)',
+        'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Surakarta',
         'Balai Pengujian dan Sertifikasi Mutu Barang (BPSMB) Semarang',
         'Balai Industri Produk Tekstil dan Alas Kaki (BIPTAK)',
-        'Balai Industri Kreatif Digital dan Kemasan Kelas A (BIKDK)',
+        'Balai Industri Kreatif Digital dan Kemasan (BIKDK)',
     ];
 @endphp
 
@@ -192,8 +192,13 @@
                         </div>
 
                         <div class="shrink-0 flex items-center gap-2 ml-2">
-                            <button type="submit" class="px-4 py-2 bg-blue-700 text-white text-sm font-semibold rounded-2xl hover:bg-blue-800 transition shadow-sm whitespace-nowrap active:scale-[.99]">Terapkan</button>
-                            <a href="{{ route('admin.management.semua') }}" class="px-4 py-2 border border-blue-600/80 text-blue-700 text-sm font-semibold rounded-2xl hover:bg-blue-50/70 transition shadow-sm bg-white/70 whitespace-nowrap active:scale-[.99]">Reset</a>
+                            <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-700 text-white text-sm font-semibold rounded-xl hover:bg-blue-800 active:scale-[.98] transition-all shadow-sm whitespace-nowrap">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
+                                Terapkan
+                            </button>
+                            <a href="{{ route('admin.management.semua') }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 active:scale-[.98] transition-all bg-white whitespace-nowrap">
+                                Reset
+                            </a>
                             <a href="{{ route('admin.management.export', ['tab' => 'semua'] + request()->query()) }}"
                                 class="px-3 py-2 bg-orange-500 text-white rounded-2xl hover:bg-orange-600 transition shadow-sm flex items-center justify-center active:scale-[.99]"
                                 title="Unduh Excel">
