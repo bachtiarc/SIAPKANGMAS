@@ -241,10 +241,10 @@ class SubmissionController extends Controller
         }
 
         // ✅ WhatsApp (manual link)
-        // - jika admin centang notify_whatsapp ATAU
-        // - notify_user dicentang tapi email kosong
+        // - kalau admin centang notify_whatsapp => selalu prepare (walau status sama)
+        // - atau kalau notify_user dicentang tapi email kosong => prepare wa sebagai fallback
         $wantEmail = $request->has('notify_user') && $oldStatus !== $newStatus;
-        $wantWa    = $request->has('notify_whatsapp') && $oldStatus !== $newStatus;
+        $wantWa    = $request->has('notify_whatsapp'); // ⬅️ HAPUS syarat status berubah
 
         $shouldPrepareWa = $wantWa || ($wantEmail && empty($toEmail));
 
@@ -262,13 +262,18 @@ class SubmissionController extends Controller
             } else {
                 $recipientName = $recipient->nama_lengkap ?? $recipient->name ?? 'Bapak/Ibu';
 
+                // optional: kalau status nggak berubah, jangan tampilkan "dari-menjadi"
                 $msgLines = [
                     "Halo {$recipientName},",
                     "",
-                    "Update status Permohonan Informasi: {$submission->ticket_id}",
-                    "Dari: " . $this->statusTextId($oldStatus),
-                    "Menjadi: " . $this->statusTextId($newStatus),
+                    "Informasi Permohonan: {$submission->ticket_id}",
                 ];
+
+                if ($oldStatus !== $newStatus) {
+                    $msgLines[] = "Update status:";
+                    $msgLines[] = "Dari: " . $this->statusTextId($oldStatus);
+                    $msgLines[] = "Menjadi: " . $this->statusTextId($newStatus);
+                }
 
                 if (!empty($request->admin_notes)) {
                     $msgLines[] = "";
@@ -282,7 +287,6 @@ class SubmissionController extends Controller
                 $waText = implode("\n", $msgLines);
                 $waLink = 'https://wa.me/' . $waPhone . '?text=' . rawurlencode($waText);
 
-                // flash session -> nanti di show.blade muncul tombol "Kirim via WhatsApp"
                 $request->session()->flash('wa_link', $waLink);
 
                 Log::info('WA DEBUG (admin) - prepared wa link', [
@@ -293,7 +297,11 @@ class SubmissionController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Status permohonan informasi berhasil diperbarui.');
+        $redirect = redirect()
+            ->route('admin.submissions.show', $submission->id)
+            ->with('success', 'Status permohonan informasi berhasil diperbarui.');
+
+        return $redirect;
     }
 
     // ============================

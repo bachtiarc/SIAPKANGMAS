@@ -147,6 +147,7 @@ class AllSubmissionsController extends Controller
                 'status'     => $x->status,
                 'show_route' => route('admin.consultations.show', $x->id),
                 'id' => $x->id,
+                'diproses_bidang' => $x->diproses_bidang ?? null,
             ];
         });
 
@@ -166,6 +167,7 @@ class AllSubmissionsController extends Controller
                 'status'     => $x->status,
                 'show_route' => route('admin.complaints.show', $x->id),
                 'id' => $x->id,
+                'diproses_bidang' => $x->diproses_bidang ?? null,
             ];
         });
 
@@ -185,6 +187,7 @@ class AllSubmissionsController extends Controller
                 'status'     => $x->status,
                 'show_route' => route('admin.submissions.show', $x->id),
                 'id' => $x->id,
+                'diproses_bidang' => $x->diproses_bidang ?? null,
             ];
         });
 

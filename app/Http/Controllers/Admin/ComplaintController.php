@@ -220,11 +220,11 @@ class ComplaintController extends Controller
 
         // ==========================
         // WhatsApp (manual link)
-        // - jika admin centang notify_whatsapp
-        // - ATAU notify_user dicentang tapi email kosong
+        // - jika admin centang notify_whatsapp => prepare (walau status/notes sama)
+        // - ATAU notify_user dicentang tapi email kosong => fallback ke WA
         // ==========================
         $wantEmail = $request->has('notify_user') && ($statusChanged || $notesChanged);
-        $wantWa    = $request->has('notify_whatsapp') && ($statusChanged || $notesChanged);
+        $wantWa    = $request->has('notify_whatsapp'); // ✅ WA tidak wajib ada perubahan
 
         $shouldPrepareWa = $wantWa || ($wantEmail && empty($toEmail));
 
@@ -241,16 +241,21 @@ class ComplaintController extends Controller
                     'pemohon_id'    => $pemohon->id ?? null,
                 ]);
             } else {
-                $ticketNo = $complaint->ticket_number ?? $complaint->id ?? '-';
+                $ticketNo    = $complaint->ticket_number ?? $complaint->id ?? '-';
                 $pemohonName = $pemohon->nama_lengkap ?? $pemohon->name ?? 'Bapak/Ibu';
 
                 $msgLines = [
                     "Halo {$pemohonName},",
                     "",
-                    "Update status Pengaduan: {$ticketNo}",
-                    "Dari: " . $this->statusTextId($oldStatus),
-                    "Menjadi: " . $this->statusTextId($newStatus),
+                    "Informasi Pengaduan: {$ticketNo}",
                 ];
+
+                // ✅ kalau status berubah baru tampilkan update status
+                if ($statusChanged) {
+                    $msgLines[] = "Update status:";
+                    $msgLines[] = "Dari: " . $this->statusTextId($oldStatus);
+                    $msgLines[] = "Menjadi: " . $this->statusTextId($newStatus);
+                }
 
                 if (!empty($newNotes)) {
                     $msgLines[] = "";

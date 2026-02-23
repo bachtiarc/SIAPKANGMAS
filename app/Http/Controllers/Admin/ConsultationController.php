@@ -245,11 +245,11 @@ class ConsultationController extends Controller
 
         // ============================
         // WhatsApp (manual link)
-        // - jika admin centang notify_whatsapp ATAU
-        // - notify_user dicentang tapi email kosong
+        // - jika admin centang notify_whatsapp => prepare (walau status sama)
+        // - atau notify_user dicentang tapi email kosong => fallback ke WA
         // ============================
         $wantEmail = $request->has('notify_user') && $oldStatus !== $newStatus;
-        $wantWa    = $request->has('notify_whatsapp') && $oldStatus !== $newStatus;
+        $wantWa    = $request->has('notify_whatsapp'); // ✅ HAPUS syarat status berubah
 
         $shouldPrepareWa = $wantWa || ($wantEmail && empty($toEmail));
 
@@ -268,16 +268,21 @@ class ConsultationController extends Controller
                     'pemohon_id'    => $pemohon->id ?? null,
                 ]);
             } else {
-                $ticketId = $consultation->ticket_id ?? $consultation->ticket_number ?? '-';
+                $ticketId    = $consultation->ticket_id ?? $consultation->ticket_number ?? '-';
                 $pemohonName = $pemohon->nama_lengkap ?? $pemohon->name ?? 'Bapak/Ibu';
 
                 $msgLines = [
                     "Halo {$pemohonName},",
                     "",
-                    "Update status Konsultasi: {$ticketId}",
-                    "Dari: " . $this->statusTextId($oldStatus),
-                    "Menjadi: " . $this->statusTextId($newStatus),
+                    "Informasi Konsultasi: {$ticketId}",
                 ];
+
+                // ✅ kalau status berubah baru tampilkan info dari/menjadi
+                if ($oldStatus !== $newStatus) {
+                    $msgLines[] = "Update status:";
+                    $msgLines[] = "Dari: " . $this->statusTextId($oldStatus);
+                    $msgLines[] = "Menjadi: " . $this->statusTextId($newStatus);
+                }
 
                 if (!empty($request->admin_notes)) {
                     $msgLines[] = "";

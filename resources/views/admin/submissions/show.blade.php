@@ -362,7 +362,7 @@
         <div class="p-5 md:p-6">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div class="flex items-start gap-4">
-                    <a href="{{ url()->previous() }}"
+                    <a href="{{ route('admin.submissions.permohonan') }}"
                        class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border-2 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition"
                        title="Kembali">
                         <svg class="w-4.5 h-4.5 text-gray-600" style="width:18px;height:18px" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -470,9 +470,6 @@
                 </div>
                 <span class="section-title">Riwayat Aktivitas</span>
             </div>
-            <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                {{ $activeIndex + 1 }} / {{ $timelineItems->count() }} langkah
-            </span>
         </div>
 
         <div class="p-6">
@@ -946,27 +943,33 @@
 </div>
 
 {{-- Modal Konfirmasi --}}
-<div id="saveModalSubmission" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
-        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 text-center">
-            <div class="mx-auto mb-4 w-14 h-14 flex items-center justify-center rounded-2xl bg-blue-100 shadow-sm">
-                <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-            </div>
-            <h2 class="text-lg font-bold text-gray-900">Konfirmasi Perubahan</h2>
-            <p class="text-sm text-gray-500 mt-1">Pastikan semua data sudah benar sebelum menyimpan.</p>
+<div id="saveModalSubmission" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-center border border-gray-100">
+        <div class="mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-full bg-blue-100">
+            <svg class="w-9 h-9 text-blue-600"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24"
+                 stroke-width="2.5"
+                 stroke-linecap="round"
+                 stroke-linejoin="round">
+                <path d="M5 13l4 4L19 7"/>
+            </svg>
         </div>
 
-        <div class="p-5 flex gap-3">
+        <h2 class="text-lg font-montserrat font-bold text-gray-900">Konfirmasi Perubahan</h2>
+        <p class="text-sm text-gray-600 mt-2">Anda yakin ingin menyimpan perubahan?</p>
+
+        <div class="mt-6 flex justify-center gap-3">
             <button type="button"
                     onclick="closeSaveModalSubmission()"
-                    class="btn-outline flex-1 justify-center">
+                    class="px-5 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 transition">
                 Batal
             </button>
+
             <button type="button"
                     onclick="submitSubmissionFollowup()"
-                    class="btn-primary flex-1 justify-center">
+                    class="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition inline-flex items-center gap-2">
                 Ya, Simpan
             </button>
         </div>

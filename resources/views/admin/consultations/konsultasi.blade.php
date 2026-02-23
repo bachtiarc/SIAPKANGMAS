@@ -217,6 +217,7 @@
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[190px]">Nama Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[240px]">Email Pelapor</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[140px]">Jenis Pelapor</th>
+                            <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[260px]">Diteruskan Oleh</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[300px]">Subjek</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[150px]">Status</th>
                             <th class="px-4 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200/70 text-center whitespace-nowrap min-w-[90px]">Aksi</th>
@@ -285,6 +286,25 @@
                                 } }}
                             </td>
 
+                            @php
+                                // Prioritas 1: kolom diproses_bidang
+                                $bidangTampil = $item->diproses_bidang ?? null;
+
+                                // Fallback: kalau hanya ada gabungan "Bidang - Kelompok"
+                                if (!$bidangTampil && !empty($item->diproses_oleh)) {
+                                    $tmp = explode(' - ', (string) $item->diproses_oleh, 2);
+                                    $bidangTampil = trim($tmp[0] ?? '');
+                                }
+
+                                $bidangTampil = $bidangTampil ?: '-';
+                            @endphp
+
+                            <td class="px-4 py-4 text-sm text-gray-600 whitespace-nowrap text-center">
+                                <div class="max-w-[260px] truncate mx-auto">
+                                    {{ $bidangTampil }}
+                                </div>
+                            </td>
+
                             <td class="px-4 py-4 text-sm text-gray-900 font-medium">
                                 <div class="max-w-[360px] truncate">{{ $item->subject ?? '-' }}</div>
                             </td>
@@ -319,7 +339,7 @@
                                         </svg>
                                     </a>
 
-                                    @php $canArchive = in_array($item->status, ['completed','rejected']); @endphp
+                                    @php $canArchive = true; @endphp
 
                                     @if($canArchive)
                                         <form method="POST" action="{{ route('admin.consultations.archive', $item->id) }}" class="inline">
