@@ -18,11 +18,10 @@
                     $searchQuery = request()->get('q', '');
                     $backUrl = route('search.result', ['q' => $searchQuery]);
                 } else {
-                    // Default: back to index
+                    
                     $backUrl = route('masyarakat.submissions.index');
                 }
 
-                // Status flags
                 $statusLower = strtolower($submission->status);
                 $isPending    = in_array($statusLower, ['pending','belum diproses']);
                 $isProcessing = in_array($statusLower, ['in_progress','on_progress','diproses','sedang diproses']);
@@ -30,22 +29,18 @@
                 $isRejected   = in_array($statusLower, ['rejected','ditolak']);
                 $isFinished   = $isCompleted || $isRejected;
 
-                // Progress width
                 if ($isPending) $progressWidth = '25%';
                 elseif ($isProcessing) $progressWidth = '58%';
                 elseif ($isFinished) $progressWidth = '100%';
                 else $progressWidth = '0%';
 
-                // === FITUR BARU (DISPLAY) ===
                 $caraPenyampaian = $submission->cara_penyampaian ?? null;
                 $opsiDatang = $submission->datang_langsung_opsi ?? [];
 
-                // Pastikan array
                 if (!is_array($opsiDatang)) {
                     $opsiDatang = [];
                 }
 
-                // Jika ada "keduanya" dari data lama, normalisasi jadi flashdisk+cetak
                 if (in_array('keduanya', $opsiDatang, true)) {
                     $opsiDatang = ['flashdisk', 'cetak'];
                 }

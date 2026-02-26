@@ -125,8 +125,6 @@ Route::middleware(['auth', 'verified', 'role:user,pegawai'])->prefix('pegawai')-
     Route::get('/complaints/document/{document}', [ComplaintController::class, 'viewDocument'])->name('complaints.documents.view');
     Route::get('/complaints/document/{document}/download', [ComplaintController::class, 'downloadDocument'])
     ->name('complaints.document.download');
-
-    // RIWAYAT PENGAJUAN - PERBAIKAN: Menggunakan HistoryController yang sudah di-import di atas
     Route::get('/riwayat-pengajuan', [HistoryController::class, 'index'])->name('history.index');
 });
 

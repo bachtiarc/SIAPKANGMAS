@@ -95,8 +95,8 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ID Tiket</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Subjek</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Nomor Tiket</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Judul Pengajuan</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Tanggal</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aksi</th>
@@ -106,9 +106,8 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($consultations as $consultation)
                         <tr class="hover:bg-gray-50">
-                            <!-- ID Tiket -->
+                            <!-- Nomor Tiket -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <!-- tiket jangan biru -->
                                 <div class="text-sm text-gray-900">{{ $consultation->ticket_number }}</div>
                             </td>
 

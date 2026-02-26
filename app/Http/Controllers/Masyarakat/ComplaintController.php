@@ -50,12 +50,10 @@ class ComplaintController extends Controller
         return view('masyarakat.complaints.index', compact('complaints'));
     }
 
-
     public function create()
     {
         return view('masyarakat.complaints.create');
     }
-
 
     public function store(Request $request, BrevoMailer $brevo)
     {
@@ -183,7 +181,6 @@ class ComplaintController extends Controller
         return view('masyarakat.complaints.show', compact('complaint'));
     }
 
-
     public function edit(Complaint $complaint)
     {
         $user = auth()->user();
@@ -256,7 +253,6 @@ class ComplaintController extends Controller
             ->with('success', 'Pengaduan berhasil diperbarui.');
     }
 
-
     public function destroy(Complaint $complaint)
     {
         $user = auth()->user();
@@ -279,5 +275,50 @@ class ComplaintController extends Controller
 
         return redirect()->route('masyarakat.complaints.index')
             ->with('success', 'Pengaduan berhasil dihapus.');
+    }
+
+
+    public function viewDocument(ComplaintDocument $document)
+    {
+        $user = auth()->user();
+
+        $document->loadMissing('complaint');
+
+        if (!$document->complaint || $document->complaint->user_id !== $user->id) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $disk = Storage::disk('supabase_complaints');
+
+        if (!$document->file_path || !$disk->exists($document->file_path)) {
+            abort(404, 'Dokumen tidak ditemukan.');
+        }
+
+        $filename = $document->original_name ?: basename($document->file_path);
+
+        return $disk->response($document->file_path, $filename, [
+            'Content-Disposition' => 'inline; filename="' . addslashes($filename) . '"',
+        ]);
+    }
+
+    public function downloadDocument(ComplaintDocument $document)
+    {
+        $user = auth()->user();
+
+        $document->loadMissing('complaint');
+
+        if (!$document->complaint || $document->complaint->user_id !== $user->id) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $disk = Storage::disk('supabase_complaints');
+
+        if (!$document->file_path || !$disk->exists($document->file_path)) {
+            abort(404, 'Dokumen tidak ditemukan.');
+        }
+
+        $filename = $document->original_name ?: basename($document->file_path);
+
+        return $disk->download($document->file_path, $filename);
     }
 }

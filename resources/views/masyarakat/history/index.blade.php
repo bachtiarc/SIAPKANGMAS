@@ -220,9 +220,9 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ID Tiket</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Nomor Tiket</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Jenis</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Judul</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Judul Pengajuan</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Tanggal</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Aksi</th>
@@ -253,6 +253,18 @@
                                     $statusBadge = 'bg-red-100 text-red-800';
                                     $statusLabel = 'Ditolak';
                                 }
+
+                                $backParams = array_filter([
+                                    'from' => 'history',
+                                    'q' => request('q'),
+                                    'jenis' => request('jenis'),
+                                    'status' => request('status'),
+                                    'page' => request('page'),
+                                ]);
+
+                                $detailUrl = \Illuminate\Support\Str::contains($row['route'], '?')
+                                    ? $row['route'] . '&' . http_build_query($backParams)
+                                    : $row['route'] . '?' . http_build_query($backParams);
                             @endphp
 
                             <tr class="hover:bg-gray-50">
@@ -282,7 +294,7 @@
                                 </td>
 
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <a href="{{ $row['route'] }}" class="text-blue-600 hover:text-blue-800" title="Lihat Detail">
+                                    <a href="{{ $detailUrl }}" class="text-blue-600 hover:text-blue-800" title="Lihat Detail">
                                         <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                   d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
