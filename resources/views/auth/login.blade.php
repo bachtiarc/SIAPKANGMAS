@@ -189,10 +189,10 @@
                 <!-- reCAPTCHA -->
 
                 <div class="mb-6 flex justify-center">
-                    {!! app('captcha')->display() !!}
+                    {!! NoCaptcha::display() !!}
                 </div>
 
-                {!! app('captcha')->displayJs() !!}
+                {!! NoCaptcha::renderJs() !!}
 
                 <!-- Submit Button -->
                 <div>
