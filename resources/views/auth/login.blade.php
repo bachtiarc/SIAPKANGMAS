@@ -192,6 +192,8 @@
                     {!! app('captcha')->display() !!}
                 </div>
 
+                {!! app('captcha')->displayJs() !!}
+
                 <!-- Submit Button -->
                 <div>
                     <button type="submit" class="font-montserrat group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-bold rounded-lg text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
