@@ -22,7 +22,7 @@
                 <thead class="bg-gray-50">
                     <tr class="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         <th class="px-4 py-3">Layanan</th>
-                        <th class="px-4 py-3">No. Tiket</th>
+                        <th class="px-4 py-3">Nomor Tiket</th>
                         <th class="px-4 py-3">Nama Pelapor</th>
                         <th class="px-4 py-3">Email</th>
                         <th class="px-4 py-3">Subjek</th>

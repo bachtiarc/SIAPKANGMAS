@@ -164,7 +164,7 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead>
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">ID Tiket</th>
+                            <th class="px-4 py-3 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Nomor Tiket</th>
                             <th class="px-4 py-3 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Jenis Layanan Pengajuan</th>
                             <th class="px-4 py-3 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Judul/Subjek</th>
                             <th class="px-4 py-3 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Tanggal</th>
@@ -175,7 +175,7 @@
                     <tbody class="divide-y divide-gray-200">
                         @foreach($recentActivities as $activity)
                             <tr class="hover:bg-gray-50">
-                                {{-- ID Tiket --}}
+                                {{-- Nomor Tiket --}}
                                 <td class="px-4 py-4 whitespace-nowrap font-lato text-sm text-gray-900 font-medium">
                                     {{ $activity['ticket_id'] ?? '-' }}
                                 </td>

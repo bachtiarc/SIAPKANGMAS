@@ -383,7 +383,7 @@
                     <div class="mt-6 flex items-center justify-between gap-3 rounded-2xl bg-blue-50 border border-blue-100 px-5 py-4 premium-hover">
                         <div>
                             <p class="text-sm font-semibold text-gray-900">Butuh cek cepat?</p>
-                            <p class="text-sm text-gray-600">Klik tombol “Lacak Tiket Cepat” dan masukkan ID tiket.</p>
+                            <p class="text-sm text-gray-600">Klik tombol “Lacak Tiket Cepat” dan masukkan Nomor tiket.</p>
                         </div>
                         <button type="button"
                                 class="btn-breathe shrink-0 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
@@ -601,7 +601,7 @@
 
                     <form action="{{ route('ticket.search') }}" method="GET" class="space-y-3">
                         <label class="block text-sm font-semibold text-gray-700">
-                            ID Tiket
+                            Nomor Tiket
                             <span class="text-gray-400 font-normal">(22–23 karakter)</span>
                         </label>
 
@@ -625,7 +625,7 @@
                         </div>
 
                         <div class="text-xs text-gray-500 mt-1">
-                            Pastikan ID tiket dimasukkan lengkap (tanpa spasi).
+                            Pastikan Nomor tiket dimasukkan lengkap (tanpa spasi).
                         </div>
                     </form>
 

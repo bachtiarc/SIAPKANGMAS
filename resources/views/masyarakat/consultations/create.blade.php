@@ -53,7 +53,7 @@
                 <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
                     <li>Pastikan semua data yang Anda masukkan sudah benar</li>
                     <li>Anda akan menerima notifikasi via email setelah konsultasi diproses</li>
-                    <li>Simpan ID tiket Anda untuk melacak status konsultasi</li>
+                    <li>Simpan nomor tiket Anda untuk melacak status konsultasi</li>
                 </ul>
             </div>
         </div>

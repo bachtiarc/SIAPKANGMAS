@@ -36,7 +36,7 @@
                     <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
 
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari ID tiket atau subjek.."
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nomor tiket atau subjek.."
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64">
 
                 <button type="submit" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition">

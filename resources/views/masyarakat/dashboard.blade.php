@@ -211,7 +211,7 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead>
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">ID Tiket</th>
+                                <th class="px-4 py-3 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Nomor Tiket</th>
                                 <th class="px-4 py-3 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Jenis Layanan Pengajuan</th>
                                 <th class="px-4 py-3 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Tanggal</th>
                                 <th class="px-4 py-3 text-left text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wider">Status</th>

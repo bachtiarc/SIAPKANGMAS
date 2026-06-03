@@ -60,7 +60,7 @@
                                 </svg>
                             </button>
                         </div>
-                        <p class="text-[11px] text-gray-500 mt-2">Simpan ID tiket ini untuk pelacakan status.</p>
+                        <p class="text-[11px] text-gray-500 mt-2">Simpan Nomor tiket ini untuk pelacakan status.</p>
                     </div>
                 </div>
 
@@ -128,7 +128,7 @@
                 <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
                     <li>Pastikan semua data pemohon yang dimasukkan sudah benar.</li>
                     <li>Jika Email pemohon diisi, sistem akan mengirim notifikasi ke Email pemohon.</li>
-                    <li>Simpan ID tiket untuk pelacakan status.</li>
+                    <li>Simpan Nomor tiket untuk pelacakan status.</li>
                 </ul>
             </div>
         </div>
