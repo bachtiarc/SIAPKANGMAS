@@ -134,44 +134,6 @@ Powered by Laravel DomPDF untuk generate PDF documents
 
 ---
 
-## 🌍 Environment Variables
-
-Key environment variables yang perlu dikonfigurasi:
-
-```env
-# Application
-APP_NAME=SIAPKANGMAS
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://yourdomain.com
-
-# Database
-DB_CONNECTION=mysql
-DB_HOST=localhost
-DB_DATABASE=siapkangmas
-DB_USERNAME=root
-DB_PASSWORD=secret
-
-# Mail (Brevo)
-MAIL_MAILER=brevo
-MAIL_HOST=smtp-relay.brevo.com
-MAIL_PORT=587
-MAIL_USERNAME=your_brevo_email
-MAIL_PASSWORD=your_brevo_api_key
-
-# AWS S3
-AWS_ACCESS_KEY_ID=your_key
-AWS_SECRET_ACCESS_KEY=your_secret
-AWS_DEFAULT_REGION=ap-southeast-1
-AWS_BUCKET=your_bucket
-
-# Captcha
-NOCAPTCHA_SECRET=your_recaptcha_secret
-NOCAPTCHA_SITEKEY=your_recaptcha_sitekey
-```
-
----
-
 ## 📝 Fitur Utama
 
 ✅ Manajemen Submission PKL  
