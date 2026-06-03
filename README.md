@@ -1,10 +1,10 @@
-# Sistem Informasi PKL (Praktik Kerja Lapangan)
+# SIAPKANGMAS
 
 **Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah**
 
 ## Deskripsi Proyek
 
-Sistem Informasi Praktik Kerja Lapangan (PKL) adalah aplikasi web komprehensif yang dirancang untuk mendukung pengelolaan kegiatan PKL di Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Sistem ini memfasilitasi pengelolaan submission, consultation, complaint, dan ticketing untuk meningkatkan efisiensi administrasi.
+SIAPKANGMAS adalah aplikasi web komprehensif yang dirancang untuk mendukung pengelolaan kegiatan di Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Sistem ini memfasilitasi pengelolaan submission, consultation, complaint, dan ticketing untuk meningkatkan efisiensi administrasi.
 
 ---
 
