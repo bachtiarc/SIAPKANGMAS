@@ -2,13 +2,13 @@
 
 **Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah**
 
-## 📋 Deskripsi Proyek
+## Deskripsi Proyek
 
 Sistem Informasi Praktik Kerja Lapangan (PKL) adalah aplikasi web komprehensif yang dirancang untuk mendukung pengelolaan kegiatan PKL di Dinas Perindustrian dan Perdagangan Provinsi Jawa Tengah. Sistem ini memfasilitasi pengelolaan submission, consultation, complaint, dan ticketing untuk meningkatkan efisiensi administrasi.
 
 ---
 
-## 🛠️ Stack Teknologi
+## Stack Teknologi
 
 ### Backend
 - **Framework**: Laravel 12.0
@@ -39,7 +39,7 @@ Sistem Informasi Praktik Kerja Lapangan (PKL) adalah aplikasi web komprehensif y
 
 ---
 
-## 📂 Struktur Proyek
+## Struktur Proyek
 
 ```
 .
@@ -83,7 +83,7 @@ Sistem Informasi Praktik Kerja Lapangan (PKL) adalah aplikasi web komprehensif y
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
 Sistem ini menyediakan API RESTful yang dapat diakses di `/api/`:
 
@@ -98,7 +98,7 @@ Dokumentasi API lengkap tersedia di `routes/api.php`
 
 ---
 
-## 📧 Email & Notifications
+## Email & Notifications
 
 Sistem menggunakan **Brevo** (Sendinblue) untuk pengiriman email:
 
@@ -110,7 +110,7 @@ Sistem menggunakan **Brevo** (Sendinblue) untuk pengiriman email:
 
 ---
 
-## 📤 Export Features
+## Export Features
 
 ### Excel Export
 - Tickets Export
@@ -123,7 +123,7 @@ Powered by Laravel DomPDF untuk generate PDF documents
 
 ---
 
-## 🔐 Security
+## Security
 
 - CSRF Protection enabled
 - SQL Injection Prevention dengan Eloquent ORM
@@ -134,7 +134,7 @@ Powered by Laravel DomPDF untuk generate PDF documents
 
 ---
 
-## 📝 Fitur Utama
+## Fitur Utama
 
 ✅ Manajemen Submission PKL  
 ✅ Sistem Consultation  
@@ -149,7 +149,7 @@ Powered by Laravel DomPDF untuk generate PDF documents
 
 ---
 
-## 🤝 Kontribusi
+## Kontribusi
 
 Kami menerima kontribusi dari komunitas. Untuk berkontribusi:
 
@@ -161,33 +161,22 @@ Kami menerima kontribusi dari komunitas. Untuk berkontribusi:
 
 ---
 
-## 📄 Lisensi
+## Lisensi
 
 Proyek ini dilisensikan di bawah MIT License. Lihat file `LICENSE` untuk detail lebih lanjut.
 
 ---
 
-## 👥 Tim Pengembang
+## Tim Pengembang
 
 - **Cikal Wahyuning Bachtuar**
 - **Evia Auamara Unsa Nasyta**
 
 ---
 
-## 📞 Support & Contact
+## Support & Contact
 
 Untuk pertanyaan atau dukungan teknis, silakan buka issue di repository ini atau hubungi tim pengembang.
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Enhanced Dashboard
-- [ ] Advanced Reporting
-- [ ] Mobile App
-- [ ] Integration dengan Sistem DPMPTSP Lainnya
-- [ ] Automated Workflow
-- [ ] Analytics Dashboard
 
 ---
 
